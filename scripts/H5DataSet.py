@@ -32,3 +32,35 @@ class H5DataSet:
 
     def get_dataset(self):
         return self.dataset
+
+    def getSlideIdx(self, slide):
+        idx = np.argwhere(self.dataset["slides"] == slide)[0, 0]
+        return idx
+
+    def getDataIdx(self, index):
+        return self.dataset["dataIdx[index][0]"]
+
+    def getObjNum(self, index):
+        if self.dataset["n_slides"] > index + 1:
+            num = self.dataset["dataIdx"][index + 1, 0]
+        else:
+            num = self.dataset["n_objects"]
+        return num - self.dataset["dataIdx"][index, 0]
+
+    def getFeatureSet(self, index, num):
+        return self.dataset["features"][index : index + num]
+
+    def getWSI_Mean(self, index):
+        return self.dataset["wsi_mean"][index][:]
+
+    def getWSI_Std(self, index):
+        return self.dataset["wsi_stddev"][index][:]
+
+    def getXcentroidSet(self, index, num):
+        return self.dataset["x_centroid"][index : index + num]
+
+    def getYcentroidSet(self, index, num):
+        return self.dataset["y_centroid"][index : index + num]
+
+    def getSlideIdxSet(self, index, num):
+        return self.dataset["slideIdx"][index : index + num]
