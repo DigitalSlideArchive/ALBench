@@ -1,17 +1,22 @@
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.optimizers import (
+    Adam,
+    RMSprop,
+    Adadelta,
+    SGD,
+    Adagrad,
+    Adamax,
+    Nadam,
+)
+
 """
 Network class
 
 Initialize neural network model.
 Perform train model.
-Return predicted probabilities/Predicted labels.
+Return predicted probabilities/predicted labels.
 """
-
-import h5py as h5
-import numpy as np
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.models import Sequential, model_from_json
-from tensorflow.keras.models import load_model
-from tensorflow.keras.optimizers import Adam, RMSprop, Adadelta, SGD, Adagrad, Adamax, Nadam
 
 
 class Network:
@@ -65,28 +70,40 @@ class Network:
         return data
 
     def init_model(self):
-        self.model = Sequential()
-        self.model.add(Dense(self.hidden_units, input_dim=self.input_units, activation=self.activation))
-        self.model.add(Dropout(self.dropout, noise_shape=self.noise_shape, seed=self.seed))
-        self.model.add(Dense(self.output_units, activation=self.activation_last))
+        self.model = tf.keras.models.Sequental()
+        self.model.add(
+            tf.keras.layers.Dense(
+                self.hidden_units,
+                input_dim=self.input_units,
+                activation=self.activation,
+            )
+        )
+        self.model.add(
+            tf.keras.layers.Dropout(
+                self.dropout, noise_shape=self.noise_shape, seed=self.seed
+            )
+        )
+        self.model.add(
+            tf.keras.layers.Dense(self.output_units, activation=self.activation_last)
+        )
         if self.optimizer == "RMSprop":
-            opt = RMSprop(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.RMSprop(learning_rate=self.learning_rate)
         elif self.optimizer == "Adadelta":
-            opt = kAdadelta(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.Adadelta(learning_rate=self.learning_rate)
         elif self.optimizer == "SGD":
-            opt = SGD(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.SGD(learning_rate=self.learning_rate)
         elif self.optimizer == "Adagrad":
-            opt = Adagrad(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.Adagrad(learning_rate=self.learning_rate)
         elif self.optimizer == "Adamax":
-            opt = Adamax(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.Adamax(learning_rate=self.learning_rate)
         elif self.optimizer == "Nadam":
-            opt = Nadam(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.Nadam(learning_rate=self.learning_rate)
         else:
-            opt = Adam(learning_rate=self.learning_rate)
+            opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             self.model.compile(optimizer=opt, loss=self.loss, metrics=[self.metrics])
 
     def loading_model(self, path):
-        self.model = load_model(path)
+        self.model = tf.keras.models.load_model(path)
 
     def saving_model(self, path):
         self.model.save(path)
@@ -111,33 +128,6 @@ class Network:
                 # multi-class classification via 'softmax' as last-layer activation
                 predicts_classes = np.argmax(self.predict(features), axis=-1)
             return predicts_classes
-
-
-class DataSet:
-    def __init__(self, filename=None):
-        self.filename = filename
-        self.data = None
-
-    def set_filename(self, filename):
-        if self.filename != filename:
-            self.filename = filename
-            self.data = None
-
-    def get_filename(self):
-        return self.filename
-
-    def load_dataset(self, filename=None):
-        if filename is not None:
-            self.filename = filename
-        self.data = None
-        if self.filename:
-            file_handle = h5.File(filename)
-            self.data = {
-                key: np.array(value) if len(value.shape) > 0 else value[()] for (key, value) in file_handle.items()
-            }
-
-    def get_dataset(self):
-        return self.data
 
 
 def run():
