@@ -19,7 +19,7 @@ done
 python -m venv ~/venv/superpixel && source ~/venv/superpixel/bin/activate && pip install -U pip setuptools wheel
 
 # Install packages into our Python virtual environment.
-pip install histomicstk 'large-image[all]' h5py 'tensorflow<2.7' --find-links https://girder.github.io/large_image_wheels
+pip install histomicstk 'large-image[openslide,ometiff,openjpeg,bioformats]' h5py 'tensorflow' --find-links https://girder.github.io/large_image_wheels
 
 # Note: We also need to have the configuration file FeatureExtraction.xml in the
 # same directory as the present executable file, FeatureExtraction.py.

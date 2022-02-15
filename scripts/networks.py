@@ -70,7 +70,7 @@ class Network:
         return data
 
     def init_model(self):
-        self.model = tf.keras.models.Sequental()
+        self.model = tf.keras.models.Sequential()
         self.model.add(
             tf.keras.layers.Dense(
                 self.hidden_units,
@@ -100,7 +100,8 @@ class Network:
             opt = tf.keras.optimizers.Nadam(learning_rate=self.learning_rate)
         else:
             opt = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            self.model.compile(optimizer=opt, loss=self.loss, metrics=[self.metrics])
+
+        self.model.compile(optimizer=opt, loss=self.loss, metrics=[self.metrics])
 
     def loading_model(self, path):
         self.model = tf.keras.models.load_model(path)
@@ -128,8 +129,3 @@ class Network:
                 # multi-class classification via 'softmax' as last-layer activation
                 predicts_classes = np.argmax(self.predict(features), axis=-1)
             return predicts_classes
-
-
-def run():
-    model = Network()
-    model.init_model()
