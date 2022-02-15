@@ -1,3 +1,52 @@
+"""
+# ############
+# INSTALLATION
+# ############
+
+# Create, launch, and update a Python virtual environment as ~/venv/superpixel or
+# elsewhere.
+python -m venv ~/venv/superpixel
+source ~/venv/superpixel/bin/activate
+pip install -U pip setuptools wheel
+
+# Install h5py and tensorflow-gpu or tensorflow-cpu
+pip install h5py tensorflow-gpu
+
+# Note: We also need to have the module networks.py in the same directory as the present
+# executable file, Predict.py.
+
+# ############
+# RUN
+# ############
+
+# Use a command like:
+python Predict.py features.h5 labels.h5 predict.h5 BRCA-spfeatures-1 predictions.h5
+# where features.h5, labels.h5 and predict.h5 are input files and
+# checkpoints/BRCA-spfeatures-1.h5 and predictions.h5 are where the
+# output is written.
+
+python Predict.py -h
+# produces:
+#   usage: Predict.py [-h] features labels predict classifier predictions
+#
+#   Make some predictions.
+#
+#   positional arguments:
+#     features     h5py file containing a "features" (S, F)-array of the F feature values
+#                  for S superpixels
+#     labels       h5py file containing a "labels" (L, 2)-array, which is the index (into
+#                  "features") and label for each of L labeled superpixels
+#     predict      h5py file containing a "predict" (P,)-array, which is the index (into
+#                  "features") for each of P superpixels to make predictions for
+#     classifier   ./checkpoints/classifier.h5 is the h5py file to write the model to
+#     predictions  h5py file to write out, containing a "predictions" (P, 2)-array, which
+#                  is the index (into "features") and label for each of P predicted
+#                  superpixels
+#
+#   optional arguments:
+#     -h, --help   show this help message and exit
+"""
+
 # Run from the command line with, e.g.,
 #    python Predict.py BRCA-spfeatures-1.h5 HistomicsML_dataset.h5 labels.h5 predict.h5
 
@@ -11,13 +60,6 @@ def main():
     # Create parser
     #
     parser = argparse.ArgumentParser(description="Make some predictions.")
-    parser.add_argument(
-        "classifier",
-        metavar="classifier",
-        type=str,
-        nargs=1,
-        help="./checkpoints/classifier.h5 contains the model",
-    )
     parser.add_argument(
         "features",
         metavar="features",
@@ -38,6 +80,13 @@ def main():
         type=str,
         nargs=1,
         help='h5py file containing a "predict" (P,)-array, which is the index (into "features") for each of P superpixels to make predictions for',
+    )
+    parser.add_argument(
+        "classifier",
+        metavar="classifier",
+        type=str,
+        nargs=1,
+        help="./checkpoints/classifier.h5 is the h5py file to write the model to",
     )
     parser.add_argument(
         "predictions",
