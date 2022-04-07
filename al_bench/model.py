@@ -12,40 +12,40 @@ class GenericModel:
     def __init__():
         pass
 
-    def set_model(model):
+    def set_model(self, model):
         raise ValueError(
             "Abstract method GenericModel::set_model should not be called."
         )
 
-    def set_desired_outputs():
+    def set_desired_outputs(self):
         # Write me!!!  Alternatively, record everything and then have a method that
         # selectively fetches some of them.  This may be called from subclass overrides.
         pass
 
-    def set_training_parameters():
+    def set_training_parameters(self):
         # Write me!!!  Generally called just once.  Includes batch size, number of
         # epochs, loss function / stopping conditions.
         pass
 
-    def set_all_labels():
+    def set_all_labels(self):
         # Write me!!!  Be able to handle different treatments for newly labeled
         # examples; generally, handle a weighting scheme that depends upon when examples
         # were labeled.
         pass
 
-    def set_some_labels():
+    def set_some_labels(self):
         # Write me!!!  Be able to handle different treatments for newly labeled
         # examples; generally, handle a weighting scheme that depends upon when examples
         # were labeled.
         pass
 
-    def train():
+    def train(self):
         # Write me!!!  Generally called each time we train.  Includes dataset; should
         # this already be divided into train, test, verify?  Should it already have
         # weights?
         pass
 
-    def predict():
+    def predict(self):
         # Write me!!! Which members of the data set should we predict for?
         pass
 
@@ -56,7 +56,7 @@ class TensorFlowModel(GenericModel):
     TensorFlow.
     """
 
-    def __init__():
+    def __init__(self):
         pass
 
 
@@ -66,7 +66,7 @@ class PyTorchModel(GenericModel):
     PyTorch.
     """
 
-    def __init__():
+    def __init__(self):
         pass
 
 
@@ -77,7 +77,7 @@ class GenericEnsembleModel(GenericModel):
     subclasses deliver an actual implementation.
     """
 
-    def __init__():
+    def __init__(self):
         pass
 
 
@@ -89,5 +89,5 @@ class ExampleEnsembleModel(GenericEnsembleModel):
     ensemble.
     """
 
-    def __init__():
+    def __init__(self):
         pass
