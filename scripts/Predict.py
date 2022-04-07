@@ -47,9 +47,6 @@ python Predict.py -h
 #     -h, --help   show this help message and exit
 """
 
-# Run from the command line with, e.g.,
-#    python Predict.py BRCA-spfeatures-1.h5 HistomicsML_dataset.h5 labels.h5 predict.h5
-
 import argparse
 import h5py as h5
 import numpy as np
