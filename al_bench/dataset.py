@@ -2,7 +2,7 @@ import h5py as h5
 import numpy as np
 
 
-class Dataset:
+class DatasetHandler:
     def __init__(self):
         self.features = None
         self.labels = None
