@@ -1,28 +1,29 @@
 import numpy as np
 
 """
-Strategy is a class that can be configured to run an active learning strategy.  At some
-point we should have a abstract superclass that defines the interface!!!
+StrategyHandler is a class that can be configured to run an active learning strategy.
+At some point we should have a abstract superclass that defines the interface!!!
 """
 
-class Strategy:
+
+class StrategyHandler:
     def __init__(self):
-        self.model = None
-        self.dataset = None
+        self.model_handler = None
+        self.dataset_handler = None
         self.scoring_metric = None
         self.diversity_metric = None
 
-    def set_model(self, model):
-        self.model = model
+    def set_model_handler(self, model_handler):
+        self.model_handler = model_handler
 
-    def get_model(self):
-        return self.model
+    def get_model_handler(self):
+        return self.model_handler
 
-    def set_dataset(self, dataset):
-        self.dataset = dataset
+    def set_dataset_handler(self, dataset_handler):
+        self.dataset_handler = dataset_handler
 
-    def get_dataset(self):
-        return self.dataset
+    def get_dataset_handler(self):
+        return self.dataset_handler
 
     def set_scoring_metric(self, scoring_metric):
         self.scoring_metric = scoring_metric
@@ -48,5 +49,6 @@ class Strategy:
     for each example in the entire set of examples, both those examples that have been
     labeled and those that could be selected for labeling.
     """
+
     def select_next_examples(self, number_to_select, currently_selected, features):
         pass

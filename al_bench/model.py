@@ -1,12 +1,13 @@
 import numpy as np
 
 
-class GenericModel:
+class GenericModelHandler:
     """
     Functionality that is agnostic to the choice of the deep-learning framework is
-    handled by this class.  GenericModel is the superclass for TensorFlowModel, PyTorchModel,
-    etc.  These subclasses handle GenericModel operations that are dependent upon which deep
-    learning framework is being used.
+    handled by this class.  GenericModelHandler is the superclass for
+    TensorFlowModelHandler, PyTorchModelHandler, etc.  These subclasses handle
+    GenericModelHandler operations that are dependent upon which deep learning framework
+    is being used.
     """
 
     def __init__():
@@ -50,43 +51,43 @@ class GenericModel:
         pass
 
 
-class TensorFlowModel(GenericModel):
+class TensorFlowModelHandler(GenericModelHandler):
     """
-    TensorFlowModel is the class that implements framework-agnostic GenericModel routines via
-    TensorFlow.
-    """
-
-    def __init__(self):
-        pass
-
-
-class PyTorchModel(GenericModel):
-    """
-    PyTorchModel is the class that implements framework-agnostic GenericModel routines via
-    PyTorch.
+    TensorFlowModelHandler is the class that implements framework-agnostic
+    GenericModelHandler routines via TensorFlow.
     """
 
     def __init__(self):
         pass
 
 
-class GenericEnsembleModel(GenericModel):
+class PyTorchModelHandler(GenericModelHandler):
     """
-    GenericEnsembleModel is a generic implementation of a GenericModel that uses a
-    committee of models, via voting or similar, to determine its responses.  It's
-    subclasses deliver an actual implementation.
+    PyTorchModelHandler is the class that implements framework-agnostic
+    GenericModelHandler routines via PyTorch.
     """
 
     def __init__(self):
         pass
 
 
-class ExampleEnsembleModel(GenericEnsembleModel):
+class GenericEnsembleModelHandler(GenericModelHandler):
     """
-    ExampleEnsembleModel is a specific implementation of a GenericEnsembleModel that
-    uses a committee of models, via voting or similar, to determine its responses.  The
-    methods of ExampleEnsembleModel determine the specific implementation of this
-    ensemble.
+    GenericEnsembleModelHandler is a generic implementation of a GenericModelHandler
+    that uses a committee of modelHandlers, via voting or similar, to determine its
+    responses.  It's subclasses deliver an actual implementation.
+    """
+
+    def __init__(self):
+        pass
+
+
+class ExampleEnsembleModelHandler(GenericEnsembleModelHandler):
+    """
+    ExampleEnsembleModelHandler is a specific implementation of a
+    GenericEnsembleModelHandler that uses a committee of modelHandlers, via voting or
+    similar, to determine its responses.  The methods of ExampleEnsembleModelHandler
+    determine the specific implementation of this ensemble.
     """
 
     def __init__(self):
