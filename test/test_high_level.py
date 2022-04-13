@@ -27,11 +27,36 @@ def test_imports():
 def test_high_level():
     """Purpose: Test that high-level operations work"""
     import al_bench as alb
+    import numpy as np
 
-    my_dataset = alb.dataset.Dataset()
-    my_model = alb.model.PyTorchModel()
-    my_strategy = alb.strategy.Strategy()
-    my_strategy.set_model(my_model)
-    assert my_strategy.get_model() is my_model
-    my_strategy.set_dataset(my_dataset)
-    assert my_strategy.get_dataset() is my_dataset
+    # Exercise a strategy.StrategyHandler()
+    my_strategy_handler = alb.strategy.StrategyHandler()
+
+    my_model_handler = alb.model.PyTorchModelHandler()
+    my_strategy_handler.set_model_handler(my_model_handler)
+    assert my_strategy_handler.get_model_handler() is my_model_handler
+    my_strategy_handler.set_model_handler(None)
+    assert my_strategy_handler.get_model_handler() is None
+    my_strategy_handler.set_model_handler(my_model_handler)
+    assert my_strategy_handler.get_model_handler() is my_model_handler
+
+    my_dataset_handler = alb.dataset.DatasetHandler()
+    my_strategy_handler.set_dataset_handler(my_dataset_handler)
+    assert my_strategy_handler.get_dataset_handler() is my_dataset_handler
+    my_strategy_handler.set_dataset_handler(None)
+    assert my_strategy_handler.get_dataset_handler() is None
+    my_strategy_handler.set_dataset_handler(my_dataset_handler)
+    assert my_strategy_handler.get_dataset_handler() is my_dataset_handler
+
+    number_of_superpixels = 10
+    number_of_features = 6
+    my_features = np.random.normal(
+        0, 1, size=(number_of_superpixels, number_of_features)
+    )
+    my_dataset_handler.set_all_features(my_features)
+    assert my_dataset_handler.get_all_features() is my_features
+    my_dataset_handler.clear_all_features()
+    assert my_dataset_handler.get_all_features() is None
+    my_dataset_handler.set_all_features(my_features)
+    assert my_dataset_handler.get_all_features() is my_features
+    assert my_strategy_handler.get_dataset_handler().get_all_features() is my_features
