@@ -17,6 +17,7 @@
 # ==========================================================================
 
 import numpy as np
+import tensorflow as tf
 
 
 class GenericModelHandler:
@@ -76,7 +77,14 @@ class TensorFlowModelHandler(GenericModelHandler):
     """
 
     def __init__(self):
-        pass
+        self.model = None
+
+    def set_model(self, model):
+        if not isinstance(model, tf.keras.Model):
+            raise ValueError(
+                "The parameter of TensorFlowModelHandler.set_model must be tf.keras.Model"
+            )
+        self.model = model
 
 
 class PyTorchModelHandler(GenericModelHandler):

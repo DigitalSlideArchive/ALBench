@@ -210,6 +210,10 @@ class DatasetHandler:
         lengths_test = len(all_lengths) == 1 or (
             len(all_lengths) == 2 and 0 in all_lengths
         )
+        if not lengths_test:
+            raise ValueError(
+                f"len(features) = {features_length}, len(labels) = {labels_length}, and len(dictionaries) = {dictionaries_length} do not match"
+            )
         # Print output if lengths_test fails!!!
         """
         Check that the label_definitions include at least all the labels that have been

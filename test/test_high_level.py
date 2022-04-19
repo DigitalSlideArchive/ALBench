@@ -24,6 +24,7 @@ def test_imports():
     import al_bench as alb
     import h5py as h5
     import numpy as np
+    import tensorflow as tf
 
 
 def test_high_level():
@@ -40,20 +41,29 @@ def test_high_level():
     assert my_strategy_handler.get_model_handler() is None
     assert my_strategy_handler.get_dataset_handler() is None
 
-    # Create feature vectors
+    # Create random feature vectors
     number_of_superpixels = 10
     number_of_features = 6
     my_features = np.random.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
     )
 
-    # Create labels
-    min_label, max_label = 0, 3  # inclusive, exclusive
-    labels_per_superpixel = 1
-    my_labels = np.random.random_integers(
-        0, max_label - 1, size=(number_of_superpixels, labels_per_superpixel)
+    # Create labels: Unknown=0. Known=1, ..., number_of_labels.  (Note that we could
+    # instead use different numbers, or strings, etc.)
+    labels_per_superpixel = 1   # May need more if a GAN, etc.
+    number_of_labels = 3
+    label_names = ["Unknown"] + [
+        "Label" + str(i) for i in range(1, number_of_labels + 1)
+    ]
+    my_label_definitions = {
+        idx: {"description": name} for idx, name in enumerate(label_names)
+    }
+    # Create a random label for each superpixel
+    my_labels = np.random.randint(
+        1,
+        number_of_labels + 1,
+        size=(number_of_superpixels, labels_per_superpixel),
     )
-    my_label_definitions = ["Unknown"] + ["Label" + str(i) for i in range(1, max_label)]
 
     ## Exercise the StrategyHandler
     my_strategy_handler.set_model_handler(my_model_handler)
@@ -94,7 +104,44 @@ def test_high_level():
 
     #!!! my_dataset_handler.read_all_labels_from_h5py()
     #!!! my_dataset_handler.set_some_features()
+
     #!!! my_dataset_handler.set_all_dictionaries()
     #!!! my_dataset_handler.set_some_dictionaries()
 
+    my_dataset_handler.set_all_label_definitions(my_label_definitions)
+
+    my_dataset_handler.check_data_consistency()
+
     ## Exercise the ModelHandler
+    my_model_handler.set_model(
+        create_tensorflow_model(number_of_features, number_of_labels)
+    )
+    #!!! my_model_handler.desired_outputs()
+    #!!! my_model_handler.training_parameters()
+    #!!! my_model_handler.all_labels()
+    #!!! my_model_handler.some_labels()
+    #!!! my_model_handler.train()
+    #!!! my_model_handler.predict()
+
+
+"""
+Create a toy TensorFlow model that has the right shape for inputs and outputs
+"""
+
+
+def create_tensorflow_model(number_of_features, number_of_labels):
+    import tensorflow as tf
+
+    model = tf.keras.models.Sequential(
+        [
+            tf.keras.Input(shape=(number_of_features,)),
+            tf.keras.layers.Dense(number_of_labels, activation="relu"),
+        ],
+        name=f"{number_of_labels}_labels_from_{number_of_features}_features",
+    )
+    return model
+
+
+if __name__ == "__main__":
+    test_imports()
+    test_high_level()
