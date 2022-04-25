@@ -30,7 +30,6 @@ def test_imports():
 def test_high_level():
     """Purpose: Test that high-level operations work"""
     import al_bench as alb
-    import numpy as np
 
     ## Create handlers
     my_dataset_handler = alb.dataset.DatasetHandler()
@@ -44,25 +43,8 @@ def test_high_level():
     # Create random feature vectors
     number_of_superpixels = 10
     number_of_features = 6
-    my_features = np.random.normal(
-        0, 1, size=(number_of_superpixels, number_of_features)
-    )
-
-    # Create labels: Unknown=0. Known=1, ..., number_of_labels.  (Note that we could
-    # instead use different numbers, or strings, etc.)
-    labels_per_superpixel = 1   # May need more if a GAN, etc.
-    number_of_labels = 3
-    label_names = ["Unknown"] + [
-        "Label" + str(i) for i in range(1, number_of_labels + 1)
-    ]
-    my_label_definitions = {
-        idx: {"description": name} for idx, name in enumerate(label_names)
-    }
-    # Create a random label for each superpixel
-    my_labels = np.random.randint(
-        1,
-        number_of_labels + 1,
-        size=(number_of_superpixels, labels_per_superpixel),
+    number_of_labels, my_features, my_label_definitions, my_labels = create_dataset(
+        number_of_superpixels, number_of_features
     )
 
     ## Exercise the StrategyHandler
@@ -122,6 +104,37 @@ def test_high_level():
     #!!! my_model_handler.some_labels()
     #!!! my_model_handler.train()
     #!!! my_model_handler.predict()
+
+
+"""
+Create a toy set of features
+"""
+
+
+def create_dataset(number_of_superpixels, number_of_features):
+    import numpy as np
+
+    my_features = np.random.normal(
+        0, 1, size=(number_of_superpixels, number_of_features)
+    )
+
+    # Create labels: Unknown=0. Known=1, ..., number_of_labels.  (Note that we could
+    # instead use different numbers, or strings, etc.)
+    labels_per_superpixel = 1  # May need more if a GAN, etc.
+    number_of_labels = 3
+    label_names = ["Unknown"] + [
+        "Label" + str(i) for i in range(1, number_of_labels + 1)
+    ]
+    my_label_definitions = {
+        idx: {"description": name} for idx, name in enumerate(label_names)
+    }
+    # Create a random label for each superpixel
+    my_labels = np.random.randint(
+        1,
+        number_of_labels + 1,
+        size=(number_of_superpixels, labels_per_superpixel),
+    )
+    return number_of_labels, my_features, my_label_definitions, my_labels
 
 
 """
