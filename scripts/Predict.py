@@ -100,31 +100,31 @@ def main():
     classifier = args.classifier[0]
 
     # features = np.array([(64-term tuple), (64-term tuple), ...])
-    if False:
-        # If `features` is an np.array of shape (N, 64) then it can be written to file with:
-        with h5.File("features.h5", "w") as f:
-            f.create_dataset("features", features.shape, data=features)
     # Read features from disk
     with h5.File(args.features[0]) as ds:
         features = np.array(ds["features"])
+        if False:
+            # If `features` is an np.array of shape (N, 64) then it can be written to file with:
+            with h5.File("features.h5", "w") as f:
+                f.create_dataset("features", features.shape, data=features)
 
     # labels = np.array([(index, label) for index, label in labels])
-    if False:
-        # If `labels` is an np.array of shape (N, 2) then it can be written to file with:
-        with h5.File("labels.h5", "w") as f:
-            f.create_dataset("labels", labels.shape, data=labels)
     # Read labels from disk
     with h5.File(args.labels[0]) as ds:
         labels = np.array(ds["labels"])
+        if False:
+            # If `labels` is an np.array of shape (N, 2) then it can be written to file with:
+            with h5.File("labels.h5", "w") as f:
+                f.create_dataset("labels", labels.shape, data=labels)
 
     # predict = np.array([index, index, ...])
-    if False:
-        # If `predict` is an np.array of shape (N,) then it can be written to file with:
-        with h5.File("predict.h5", "w") as f:
-            f.create_dataset("predict", predict.shape, data=predict)
     # Read `predict` from disk
     with h5.File(args.predict[0]) as ds:
         predict = np.array(ds["predict"])
+        if False:
+            # If `predict` is an np.array of shape (N,) then it can be written to file with:
+            with h5.File("predict.h5", "w") as f:
+                f.create_dataset("predict", predict.shape, data=predict)
 
     # Build and train the model
     model = networks.Network()
