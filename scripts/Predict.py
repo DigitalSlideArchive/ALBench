@@ -99,8 +99,8 @@ def main():
 
     classifier = args.classifier[0]
 
-    # features = np.array([(64-term tuple), (64-term tuple), ...])
-    # Read features from disk
+    # Read features from disk.  features = np.array([(64-term tuple), (64-term tuple),
+    # ...])
     with h5.File(args.features[0]) as ds:
         features = np.array(ds["features"])
         if False:
@@ -108,8 +108,8 @@ def main():
             with h5.File("features.h5", "w") as f:
                 f.create_dataset("features", features.shape, data=features)
 
-    # labels = np.array([(index, label) for index, label in labels])
-    # Read labels from disk
+    # Read labels from disk.  labels = np.array([(index, label) for index, label in
+    # labels])
     with h5.File(args.labels[0]) as ds:
         labels = np.array(ds["labels"])
         if False:
@@ -117,8 +117,7 @@ def main():
             with h5.File("labels.h5", "w") as f:
                 f.create_dataset("labels", labels.shape, data=labels)
 
-    # predict = np.array([index, index, ...])
-    # Read `predict` from disk
+    # Read `predict` from disk.  predict = np.array([index, index, ...])
     with h5.File(args.predict[0]) as ds:
         predict = np.array(ds["predict"])
         if False:
