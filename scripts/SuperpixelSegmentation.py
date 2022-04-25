@@ -16,7 +16,9 @@ done
 
 # Create, launch, and update a Python virtual environment as ~/venv/superpixel (or
 # elsewhere).
-python -m venv ~/venv/superpixel && source ~/venv/superpixel/bin/activate && pip install -U pip setuptools wheel
+python -m venv ~/venv/superpixel
+source ~/venv/superpixel/bin/activate
+pip install -U pip setuptools wheel
 
 # Install packages into our Python virtual environment.
 pip install histomicstk 'large-image[openslide,ometiff,openjpeg,bioformats]' h5py --find-links https://girder.github.io/large_image_wheels
