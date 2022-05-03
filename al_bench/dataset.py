@@ -63,7 +63,7 @@ class DatasetHandler:
         """
 
         # This does not (yet) handle insert, delete, or append.
-        self.features[feature_indices,] = features
+        self.features[feature_indices] = features
 
     def get_some_features(self, feature_indices):
         """
@@ -71,7 +71,7 @@ class DatasetHandler:
         feature index will have different behaviors, in that the former drops an array
         dimension but the latter does not.
         """
-        return self.features[feature_indices,]
+        return self.features[feature_indices]
 
     """
     Handle the label(s) for each stored entity.
@@ -90,8 +90,7 @@ class DatasetHandler:
             self.labels = labels
         else:
             raise ValueError(
-                "The argument to set_all_labels must be a 1-dimensional or 2-dimensional "
-                "numpy ndarray."
+                "The argument to set_all_labels must be a 1-dimensional or 2-dimensional numpy ndarray."
             )
 
     def get_all_labels(self):
@@ -111,7 +110,7 @@ class DatasetHandler:
         This does not (yet) handle insert, delete, or append.
         """
 
-        self.labels[label_indices,] = labels
+        self.labels[label_indices] = labels
 
     def get_some_labels(self, label_indices):
         """
@@ -119,7 +118,7 @@ class DatasetHandler:
         label index will have different behaviors, in that the former drops an array
         dimension but the latter does not.
         """
-        return self.labels[label_indices,]
+        return self.labels[label_indices]
 
     """
     Handle the dictionary of supplemental information for each stored entity.
@@ -139,8 +138,7 @@ class DatasetHandler:
             self.dictionaries = dictionaries
         else:
             raise ValueError(
-                "The argument to set_all_dictionaries must be a non-empty list or tuple "
-                "of dictionaries."
+                "The argument to set_all_dictionaries must be a non-empty list or tuple of dictionaries."
             )
 
     def get_all_dictionaries(self):
@@ -168,7 +166,7 @@ class DatasetHandler:
             )
 
         # This does not (yet) handle insert, delete, or append.
-        self.dictionaries[dictionary_indices,] = dictionaries
+        self.dictionaries[dictionary_indices] = dictionaries
 
     def get_some_dictionaries(self, dictionary_indices):
         """
@@ -176,7 +174,7 @@ class DatasetHandler:
         one dictionary index will have different behaviors, in that the former drops an
         array dimension but the latter does not.
         """
-        return self.dictionaries[dictionary_indices,]
+        return self.dictionaries[dictionary_indices]
 
     """
     Handle operations not specific to the feature vectors, labels, or dictionaries of
