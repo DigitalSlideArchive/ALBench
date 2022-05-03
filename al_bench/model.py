@@ -30,7 +30,7 @@ class GenericModelHandler:
     """
 
     def __init__():
-        pass
+        raise NotImplementedError("Not implemented")
 
     def set_model(self, model):
         raise ValueError(
@@ -40,34 +40,34 @@ class GenericModelHandler:
     def set_desired_outputs(self):
         # Write me!!!  Alternatively, record everything and then have a method that
         # selectively fetches some of them.  This may be called from subclass overrides.
-        pass
+        raise NotImplementedError("Not implemented")
 
     def set_training_parameters(self):
         # Write me!!!  Generally called just once.  Includes batch size, number of
         # epochs, loss function / stopping conditions.
-        pass
+        raise NotImplementedError("Not implemented")
 
     def set_all_labels(self):
         # Write me!!!  Be able to handle different treatments for newly labeled
         # examples; generally, handle a weighting scheme that depends upon when examples
         # were labeled.
-        pass
+        raise NotImplementedError("Not implemented")
 
     def set_some_labels(self):
         # Write me!!!  Be able to handle different treatments for newly labeled
         # examples; generally, handle a weighting scheme that depends upon when examples
         # were labeled.
-        pass
+        raise NotImplementedError("Not implemented")
 
     def train(self):
         # Write me!!!  Generally called each time we train.  Includes dataset; should
         # this already be divided into train, test, verify?  Should it already have
         # weights?
-        pass
+        raise NotImplementedError("Not implemented")
 
     def predict(self):
         # Write me!!! Which members of the data set should we predict for?
-        pass
+        raise NotImplementedError("Not implemented")
 
 
 class TensorFlowModelHandler(GenericModelHandler):
@@ -94,7 +94,7 @@ class PyTorchModelHandler(GenericModelHandler):
     """
 
     def __init__(self):
-        pass
+        raise NotImplementedError("Not implemented")
 
 
 class GenericEnsembleModelHandler(GenericModelHandler):
@@ -105,7 +105,7 @@ class GenericEnsembleModelHandler(GenericModelHandler):
     """
 
     def __init__(self):
-        pass
+        raise NotImplementedError("Not implemented")
 
 
 class ExampleEnsembleModelHandler(GenericEnsembleModelHandler):
@@ -117,4 +117,4 @@ class ExampleEnsembleModelHandler(GenericEnsembleModelHandler):
     """
 
     def __init__(self):
-        pass
+        raise NotImplementedError("Not implemented")

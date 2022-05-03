@@ -26,32 +26,8 @@ At some point we should have a abstract superclass that defines the interface!!!
 
 class StrategyHandler:
     def __init__(self):
-        self.model_handler = None
-        self.dataset_handler = None
         self.scoring_metric = None
         self.diversity_metric = None
-
-    def set_model_handler(self, model_handler):
-        if model_handler is None:
-            raise ValueError("The argument to set_model_handler must not be None")
-        self.model_handler = model_handler
-
-    def get_model_handler(self):
-        return self.model_handler
-
-    def clear_model_handler(self):
-        self.model_handler = None
-
-    def set_dataset_handler(self, dataset_handler):
-        if dataset_handler is None:
-            raise ValueError("The argument to set_dataset_handler must not be None")
-        self.dataset_handler = dataset_handler
-
-    def get_dataset_handler(self):
-        return self.dataset_handler
-
-    def clear_dataset_handler(self):
-        self.dataset_handler = None
 
     def set_scoring_metric(self, scoring_metric):
         if scoring_metric is None:
@@ -89,4 +65,17 @@ class StrategyHandler:
     """
 
     def select_next_examples(self, number_to_select, currently_selected, features):
-        pass
+        # This implementation simply selects a subset of labels from those not currently
+        # selected
+
+        if number_to_select + len(currently_selected) > features.shape[0]:
+            raise ValueError(
+                f"Cannot not select {number_to_select} unlabeled feature vectors."
+            )
+
+        import random
+
+        return random.sample(
+            [x for x in range(features.shape[0]) if x not in currently_selected],
+            number_to_select,
+        )

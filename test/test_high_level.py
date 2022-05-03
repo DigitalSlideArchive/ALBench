@@ -32,13 +32,14 @@ def test_high_level():
     import al_bench as alb
 
     ## Create handlers
+    my_al_benchmark = alb.benchmark.BenchmarkTool()
     my_dataset_handler = alb.dataset.DatasetHandler()
     my_model_handler = alb.model.TensorFlowModelHandler()
     my_strategy_handler = alb.strategy.StrategyHandler()
     assert my_dataset_handler.get_all_features() is None
     assert my_dataset_handler.get_all_labels() is None
-    assert my_strategy_handler.get_model_handler() is None
-    assert my_strategy_handler.get_dataset_handler() is None
+    assert my_al_benchmark.get_model_handler() is None
+    assert my_al_benchmark.get_dataset_handler() is None
 
     # Create random feature vectors
     number_of_superpixels = 10
@@ -48,19 +49,26 @@ def test_high_level():
     )
 
     ## Exercise the StrategyHandler
-    my_strategy_handler.set_model_handler(my_model_handler)
-    assert my_strategy_handler.get_model_handler() is my_model_handler
-    my_strategy_handler.clear_model_handler()
-    assert my_strategy_handler.get_model_handler() is None
-    my_strategy_handler.set_model_handler(my_model_handler)
-    assert my_strategy_handler.get_model_handler() is my_model_handler
+    my_al_benchmark.set_model_handler(my_model_handler)
+    assert my_al_benchmark.get_model_handler() is my_model_handler
+    my_al_benchmark.clear_model_handler()
+    assert my_al_benchmark.get_model_handler() is None
+    my_al_benchmark.set_model_handler(my_model_handler)
+    assert my_al_benchmark.get_model_handler() is my_model_handler
 
-    my_strategy_handler.set_dataset_handler(my_dataset_handler)
-    assert my_strategy_handler.get_dataset_handler() is my_dataset_handler
-    my_strategy_handler.clear_dataset_handler()
-    assert my_strategy_handler.get_dataset_handler() is None
-    my_strategy_handler.set_dataset_handler(my_dataset_handler)
-    assert my_strategy_handler.get_dataset_handler() is my_dataset_handler
+    my_al_benchmark.set_dataset_handler(my_dataset_handler)
+    assert my_al_benchmark.get_dataset_handler() is my_dataset_handler
+    my_al_benchmark.clear_dataset_handler()
+    assert my_al_benchmark.get_dataset_handler() is None
+    my_al_benchmark.set_dataset_handler(my_dataset_handler)
+    assert my_al_benchmark.get_dataset_handler() is my_dataset_handler
+
+    my_al_benchmark.set_strategy_handler(my_strategy_handler)
+    assert my_al_benchmark.get_strategy_handler() is my_strategy_handler
+    my_al_benchmark.clear_strategy_handler()
+    assert my_al_benchmark.get_strategy_handler() is None
+    my_al_benchmark.set_strategy_handler(my_strategy_handler)
+    assert my_al_benchmark.get_strategy_handler() is my_strategy_handler
 
     #!!! my_strategy_handler.set_scoring_metric()
     #!!! my_strategy_handler.set_diversity_metric()
@@ -72,7 +80,7 @@ def test_high_level():
     assert my_dataset_handler.get_all_features() is None
     my_dataset_handler.set_all_features(my_features)
     assert my_dataset_handler.get_all_features() is my_features
-    assert my_strategy_handler.get_dataset_handler().get_all_features() is my_features
+    assert my_al_benchmark.get_dataset_handler().get_all_features() is my_features
 
     #!!! my_dataset_handler.read_all_features_from_h5py()
     #!!! my_dataset_handler.set_some_features()
