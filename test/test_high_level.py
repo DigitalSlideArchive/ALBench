@@ -20,7 +20,6 @@
 def test_imports():
     """Purpose: Test that needed packages are available"""
 
-    # Import succeeds
     import al_bench as alb
     import h5py as h5
     import numpy as np
@@ -31,87 +30,82 @@ def test_high_level():
     """Purpose: Test that high-level operations work"""
     import al_bench as alb
 
-    ## Create handlers
-    my_al_benchmark = alb.benchmark.BenchmarkTool()
-    my_dataset_handler = alb.dataset.DatasetHandler()
+    ## Create the three top-level handlers and the main tool
+    my_dataset_handler = alb.dataset.BasicDatasetHandler()
     my_model_handler = alb.model.TensorFlowModelHandler()
-    my_strategy_handler = alb.strategy.StrategyHandler()
-    assert my_dataset_handler.get_all_features() is None
-    assert my_dataset_handler.get_all_labels() is None
-    assert my_al_benchmark.get_model_handler() is None
-    assert my_al_benchmark.get_dataset_handler() is None
+    my_strategy_handler = alb.strategy.ToyStrategyHandler()
 
-    # Create random feature vectors
-    number_of_superpixels = 10
-    number_of_features = 6
-    number_of_labels, my_features, my_label_definitions, my_labels = create_dataset(
-        number_of_superpixels, number_of_features
+    # Specify some testing parameters
+    parameters = dict(
+        number_of_superpixels=1000,
+        number_of_features=2048,
+        number_of_categories_by_label=[5, 7],
+        label_to_test=0,
     )
 
-    ## Exercise the StrategyHandler
-    my_al_benchmark.set_model_handler(my_model_handler)
-    assert my_al_benchmark.get_model_handler() is my_model_handler
-    my_al_benchmark.clear_model_handler()
-    assert my_al_benchmark.get_model_handler() is None
-    my_al_benchmark.set_model_handler(my_model_handler)
-    assert my_al_benchmark.get_model_handler() is my_model_handler
+    ## Try trivial exercises on the handler interfaces
+    exercise_database_handler(my_dataset_handler, **parameters)
+    exercise_model_handler(my_model_handler, **parameters)
+    exercise_strategy_handler(my_strategy_handler, **parameters)
 
-    my_al_benchmark.set_dataset_handler(my_dataset_handler)
-    assert my_al_benchmark.get_dataset_handler() is my_dataset_handler
-    my_al_benchmark.clear_dataset_handler()
-    assert my_al_benchmark.get_dataset_handler() is None
-    my_al_benchmark.set_dataset_handler(my_dataset_handler)
-    assert my_al_benchmark.get_dataset_handler() is my_dataset_handler
 
-    my_al_benchmark.set_strategy_handler(my_strategy_handler)
-    assert my_al_benchmark.get_strategy_handler() is my_strategy_handler
-    my_al_benchmark.clear_strategy_handler()
-    assert my_al_benchmark.get_strategy_handler() is None
-    my_al_benchmark.set_strategy_handler(my_strategy_handler)
-    assert my_al_benchmark.get_strategy_handler() is my_strategy_handler
+def test_active_learning():
+    """
+    Keys supported by the `parameters` dict
+    ---------------------------------------
+    number_of_superpixels: int
+        For example 10000 superpixels in our dataset to learn from and predict for.
+    number_of_features: int
+        For example, 64 or 2048 floats per superpixel to describe it.
+    number_of_categories_by_label: list of int
+        Often there is only one label per feature vector but we support multiple labels.
+        For a feature vector, each label can either be "Unknown" or one of the specified
+        number of known categories.  With multiple labels, use, e.g., [5,7] when one
+        label has 5 categories and a second label has 7 categories:
+    label_to_test: int
+        The index into number_of_categories_by_label and into my_labels that specifies
+        the label that we will test.
+    """
 
-    #!!! my_strategy_handler.set_scoring_metric()
-    #!!! my_strategy_handler.set_diversity_metric()
+    import al_bench as alb
 
-    ## Exercise the DatasetHandler
+    # Specify some testing parameters
+    parameters = dict(
+        number_of_superpixels=100,
+        number_of_features=64,
+        number_of_categories_by_label=[3],
+        label_to_test=0,
+    )
+
+    # Create some inputs
+    my_features, my_label_definitions, my_labels = create_dataset(**parameters)
+    tensorflow_model = create_tensorflow_model(**parameters)
+
+    ## Create the three top-level handlers and the main tool
+    my_dataset_handler = alb.dataset.BasicDatasetHandler()
+    my_model_handler = alb.model.TensorFlowModelHandler()
+    my_strategy_handler = alb.strategy.ToyStrategyHandler()
+
+    # Tell components about each other
     my_dataset_handler.set_all_features(my_features)
-    assert my_dataset_handler.get_all_features() is my_features
-    my_dataset_handler.clear_all_features()
-    assert my_dataset_handler.get_all_features() is None
-    my_dataset_handler.set_all_features(my_features)
-    assert my_dataset_handler.get_all_features() is my_features
-    assert my_al_benchmark.get_dataset_handler().get_all_features() is my_features
-
-    #!!! my_dataset_handler.read_all_features_from_h5py()
-    #!!! my_dataset_handler.set_some_features()
-
-    my_dataset_handler.set_all_labels(my_labels[:, 0])
-    assert (my_dataset_handler.get_all_labels() == my_labels[:, 0]).all()
-    my_dataset_handler.clear_all_labels()
-    assert my_dataset_handler.get_all_labels() is None
     my_dataset_handler.set_all_labels(my_labels)
-    assert my_dataset_handler.get_all_labels() is my_labels
-
-    #!!! my_dataset_handler.read_all_labels_from_h5py()
-    #!!! my_dataset_handler.set_some_features()
-
-    #!!! my_dataset_handler.set_all_dictionaries()
-    #!!! my_dataset_handler.set_some_dictionaries()
-
     my_dataset_handler.set_all_label_definitions(my_label_definitions)
+    my_model_handler.set_model(tensorflow_model)
+    my_strategy_handler.set_dataset_handler(my_dataset_handler)
+    my_strategy_handler.set_model_handler(my_model_handler)
 
-    my_dataset_handler.check_data_consistency()
-
-    ## Exercise the ModelHandler
-    my_model_handler.set_model(
-        create_tensorflow_model(number_of_features, number_of_labels)
+    number_iterations = 5
+    my_strategy_handler.set_learning_parameters(
+        maximum_iterations=number_iterations,
+        label_of_interest=parameters["label_to_test"],
+        number_to_select_per_iteration=int(
+            parameters["number_of_superpixels"] // (number_iterations + 1)
+        ),
     )
-    #!!! my_model_handler.desired_outputs()
-    #!!! my_model_handler.training_parameters()
-    #!!! my_model_handler.all_labels()
-    #!!! my_model_handler.some_labels()
-    #!!! my_model_handler.train()
-    #!!! my_model_handler.predict()
+
+    # Start with nothing labeled yet
+    currently_labeled_examples = set()
+    my_strategy_handler.run(currently_labeled_examples)
 
 
 """
@@ -119,30 +113,50 @@ Create a toy set of features
 """
 
 
-def create_dataset(number_of_superpixels, number_of_features):
+def create_dataset(
+    number_of_superpixels,
+    number_of_features,
+    number_of_categories_by_label,
+    **kwargs,
+):
     import numpy as np
 
     my_features = np.random.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
     )
 
-    # Create labels: Unknown=0. Known=1, ..., number_of_labels.  (Note that we could
-    # instead use different numbers, or strings, etc.)
-    labels_per_superpixel = 1  # May need more if a GAN, etc.
-    number_of_labels = 3
-    label_names = ["Unknown"] + [
-        "Label" + str(i) for i in range(1, number_of_labels + 1)
+    if not isinstance(number_of_categories_by_label, (list, tuple)):
+        number_of_categories_by_label = [number_of_categories_by_label]
+
+    ## Note that apparently TensorFlow requires that the labels be consecutive integers
+    ## starting with zero.  So, we will use -1 for "unknown".
+    my_label_definitions = [
+        {
+            -1: {"description": f"Label{label_index}Unknown"},
+            **{
+                category_index: {
+                    "description": f"Label{label_index}Category{category_index}"
+                }
+                for category_index in range(number_of_categories)
+            },
+        }
+        for label_index, number_of_categories in enumerate(
+            number_of_categories_by_label
+        )
     ]
-    my_label_definitions = {
-        idx: {"description": name} for idx, name in enumerate(label_names)
-    }
-    # Create a random label for each superpixel
-    my_labels = np.random.randint(
-        1,
-        number_of_labels + 1,
-        size=(number_of_superpixels, labels_per_superpixel),
-    )
-    return number_of_labels, my_features, my_label_definitions, my_labels
+
+    # Create a random label for each superpixel.  Avoid -1, which we are using for
+    # "unknown".
+    my_labels = [
+        np.array(np.clip(np.floor(my_features[:, 0:1] ** 2 * count + 1), 0, count - 1), dtype=int)
+        for count in number_of_categories_by_label
+    ]
+    if len(my_labels) == 1:
+        my_labels = my_labels[0]
+    else:
+        my_labels = np.append(*my_labels, 1)
+
+    return my_features, my_label_definitions, my_labels
 
 
 """
@@ -150,19 +164,110 @@ Create a toy TensorFlow model that has the right shape for inputs and outputs
 """
 
 
-def create_tensorflow_model(number_of_features, number_of_labels):
+def create_tensorflow_model(
+    number_of_features, number_of_categories_by_label, label_to_test, **kwargs
+):
     import tensorflow as tf
 
+    number_of_categories = number_of_categories_by_label[label_to_test]
     model = tf.keras.models.Sequential(
         [
             tf.keras.Input(shape=(number_of_features,)),
-            tf.keras.layers.Dense(number_of_labels, activation="relu"),
+            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dense(number_of_categories),
         ],
-        name=f"{number_of_labels}_labels_from_{number_of_features}_features",
+        name=f"{number_of_categories}_labels_from_{number_of_features}_features",
     )
     return model
+
+
+def exercise_database_handler(
+    my_dataset_handler,
+    number_of_superpixels,
+    number_of_features,
+    number_of_categories_by_label,
+    label_to_test,
+    **kwargs,
+):
+    # Write me!!! to test read_all_features_from_h5py(self, filename, data_name="features"):
+    # Write me!!! to test write_all_features_to_h5py(self, filename, data_name="features"):
+    # Write me!!! to test set_some_features(self, feature_indices, features):
+    # Write me!!! to test get_some_features(self, feature_indices):
+    # Write me!!! to test read_all_labels_from_h5py(self, filename, data_name="labels"):
+    # Write me!!! to test write_all_labels_to_h5py(self, filename, data_name="labels"):
+    # Write me!!! to test set_some_labels(self, label_indices, labels):
+    # Write me!!! to test get_some_labels(self, label_indices):
+    # Write me!!! to test set_all_dictionaries(self, dictionaries):
+    # Write me!!! to test get_all_dictionaries(self):
+    # Write me!!! to test clear_all_dictionaries(self):
+    # Write me!!! to test set_some_dictionaries(self, dictionary_indices, dictionaries):
+    # Write me!!! to test get_some_dictionaries(self, dictionary_indices):
+    # Write me!!! to test get_all_label_definitions(self):
+
+    # raise NotImplementedError("Not implemented")
+    assert my_dataset_handler.get_all_features() is None
+    assert my_dataset_handler.get_all_labels() is None
+
+    # Create random feature vectors
+    my_features, my_label_definitions, my_labels = create_dataset(
+        number_of_superpixels, number_of_features, number_of_categories_by_label
+    )
+
+    my_dataset_handler.set_all_features(my_features)
+    assert my_dataset_handler.get_all_features() is my_features
+    my_dataset_handler.clear_all_features()
+    assert my_dataset_handler.get_all_features() is None
+
+    my_dataset_handler.set_all_labels(my_labels)
+    assert my_dataset_handler.get_all_labels() is my_labels
+    my_dataset_handler.set_all_labels(my_labels[label_to_test])
+    assert (my_dataset_handler.get_all_labels() == my_labels[label_to_test]).all()
+    my_dataset_handler.clear_all_labels()
+    assert my_dataset_handler.get_all_labels() is None
+
+    my_dataset_handler.set_all_features(my_features)
+    my_dataset_handler.set_all_labels(my_labels)
+    my_dataset_handler.set_all_label_definitions(my_label_definitions)
+    my_dataset_handler.check_data_consistency()
+
+
+def exercise_model_handler(
+    my_model_handler,
+    number_of_features,
+    number_of_categories_by_label,
+    label_to_test,
+    **kwargs,
+):
+    # Write me!!! to test set_dataset_handler(self, dataset_handler):
+    # Write me!!! to test set_training_parameters(self):
+    # Write me!!! to test train(self):
+    # Write me!!! to test predict(self):
+
+    tensorflow_model = create_tensorflow_model(
+        number_of_features, number_of_categories_by_label, label_to_test
+    )
+    my_model_handler.set_model(tensorflow_model)
+    pass
+
+
+def exercise_strategy_handler(my_strategy_handler, **kwargs):
+    # Write me!!! to test set_dataset_handler(self, dataset_handler):
+    # Write me!!! to test get_dataset_handler(self):
+    # Write me!!! to test set_model_handler(self, model_handler):
+    # Write me!!! to test get_model_handler(self):
+    # Write me!!! to test set_desired_outputs(self):
+    # Write me!!! to test set_scoring_metric(self, scoring_metric):
+    # Write me!!! to test get_scoring_metric(self):
+    # Write me!!! to test clear_scoring_metric(self):
+    # Write me!!! to test set_diversity_metric(self, diversity_metric):
+    # Write me!!! to test get_diversity_metric(self):
+    # Write me!!! to test clear_diversity_metric(self):
+    # Write me!!! to test select_next_examples(self, currently_labeled_examples):
+
+    pass
 
 
 if __name__ == "__main__":
     test_imports()
     test_high_level()
+    test_active_learning()
