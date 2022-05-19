@@ -6,7 +6,7 @@
 #   you may not use this file except in compliance with the License.
 #   You may obtain a copy of the License at
 #
-#          http://www.apache.org/licenses/LICENSE-2.0.txt
+#          https://www.apache.org/licenses/LICENSE-2.0.txt
 #
 #   Unless required by applicable law or agreed to in writing, software
 #   distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ def test_imports():
     import h5py as h5
     import numpy as np
     import tensorflow as tf
+    import torch
 
 
 def test_high_level():
@@ -32,7 +33,8 @@ def test_high_level():
 
     ## Create the three top-level handlers and the main tool
     my_dataset_handler = alb.dataset.BasicDatasetHandler()
-    my_model_handler = alb.model.TensorFlowModelHandler()
+    my_tensorflow_model_handler = alb.model.TensorFlowModelHandler()
+    my_pytorch_model_handler = alb.model.PyTorchModelHandler()
     my_strategy_handler = alb.strategy.ToyStrategyHandler()
 
     # Specify some testing parameters
@@ -45,11 +47,12 @@ def test_high_level():
 
     ## Try trivial exercises on the handler interfaces
     exercise_database_handler(my_dataset_handler, **parameters)
-    exercise_model_handler(my_model_handler, **parameters)
+    exercise_model_handler(my_tensorflow_model_handler, **parameters)
+    exercise_model_handler(my_pytorch_model_handler, **parameters)
     exercise_strategy_handler(my_strategy_handler, **parameters)
 
 
-def test_active_learning():
+def test_tensorflow_toy():
     """
     Keys supported by the `parameters` dict
     ---------------------------------------
@@ -71,7 +74,7 @@ def test_active_learning():
 
     # Specify some testing parameters
     parameters = dict(
-        number_of_superpixels=100,
+        number_of_superpixels=1000,
         number_of_features=64,
         number_of_categories_by_label=[3],
         label_to_test=0,
@@ -83,16 +86,16 @@ def test_active_learning():
 
     ## Create the three top-level handlers and the main tool
     my_dataset_handler = alb.dataset.BasicDatasetHandler()
-    my_model_handler = alb.model.TensorFlowModelHandler()
+    my_tensorflow_model_handler = alb.model.TensorFlowModelHandler()
     my_strategy_handler = alb.strategy.ToyStrategyHandler()
 
     # Tell components about each other
     my_dataset_handler.set_all_features(my_features)
     my_dataset_handler.set_all_labels(my_labels)
     my_dataset_handler.set_all_label_definitions(my_label_definitions)
-    my_model_handler.set_model(tensorflow_model)
+    my_tensorflow_model_handler.set_model(tensorflow_model)
     my_strategy_handler.set_dataset_handler(my_dataset_handler)
-    my_strategy_handler.set_model_handler(my_model_handler)
+    my_strategy_handler.set_model_handler(my_tensorflow_model_handler)
 
     number_iterations = 5
     my_strategy_handler.set_learning_parameters(
@@ -108,9 +111,63 @@ def test_active_learning():
     my_strategy_handler.run(currently_labeled_examples)
 
 
-"""
-Create a toy set of features
-"""
+def test_pytorch_toy():
+    """
+    Keys supported by the `parameters` dict
+    ---------------------------------------
+    number_of_superpixels: int
+        For example 10000 superpixels in our dataset to learn from and predict for.
+    number_of_features: int
+        For example, 64 or 2048 floats per superpixel to describe it.
+    number_of_categories_by_label: list of int
+        Often there is only one label per feature vector but we support multiple labels.
+        For a feature vector, each label can either be "Unknown" or one of the specified
+        number of known categories.  With multiple labels, use, e.g., [5,7] when one
+        label has 5 categories and a second label has 7 categories:
+    label_to_test: int
+        The index into number_of_categories_by_label and into my_labels that specifies
+        the label that we will test.
+    """
+
+    import al_bench as alb
+
+    # Specify some testing parameters
+    parameters = dict(
+        number_of_superpixels=1000,
+        number_of_features=64,
+        number_of_categories_by_label=[3],
+        label_to_test=0,
+    )
+
+    # Create some inputs
+    my_features, my_label_definitions, my_labels = create_dataset(**parameters)
+    pytorch_model = create_pytorch_model(**parameters)
+
+    ## Create the three top-level handlers and the main tool
+    my_dataset_handler = alb.dataset.BasicDatasetHandler()
+    my_pytorch_model_handler = alb.model.PyTorchModelHandler()
+    my_strategy_handler = alb.strategy.ToyStrategyHandler()
+
+    # Tell components about each other
+    my_dataset_handler.set_all_features(my_features)
+    my_dataset_handler.set_all_labels(my_labels)
+    my_dataset_handler.set_all_label_definitions(my_label_definitions)
+    my_pytorch_model_handler.set_model(pytorch_model)
+    my_strategy_handler.set_dataset_handler(my_dataset_handler)
+    my_strategy_handler.set_model_handler(my_pytorch_model_handler)
+
+    number_iterations = 5
+    my_strategy_handler.set_learning_parameters(
+        maximum_iterations=number_iterations,
+        label_of_interest=parameters["label_to_test"],
+        number_to_select_per_iteration=int(
+            parameters["number_of_superpixels"] // (number_iterations + 1)
+        ),
+    )
+
+    # Start with nothing labeled yet
+    currently_labeled_examples = set()
+    my_strategy_handler.run(currently_labeled_examples)
 
 
 def create_dataset(
@@ -119,11 +176,15 @@ def create_dataset(
     number_of_categories_by_label,
     **kwargs,
 ):
+    """
+    Create a toy set of features
+    """
     import numpy as np
 
-    my_features = np.random.normal(
+    rng = np.random.default_rng()
+    my_features = rng.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
-    )
+    ).astype(np.float32)
 
     if not isinstance(number_of_categories_by_label, (list, tuple)):
         number_of_categories_by_label = [number_of_categories_by_label]
@@ -148,7 +209,10 @@ def create_dataset(
     # Create a random label for each superpixel.  Avoid -1, which we are using for
     # "unknown".
     my_labels = [
-        np.array(np.clip(np.floor(my_features[:, 0:1] ** 2 * count + 1), 0, count - 1), dtype=int)
+        np.array(
+            np.clip(np.floor(my_features[:, 0:1] ** 2 * count + 1), 0, count - 1),
+            dtype=int,
+        )
         for count in number_of_categories_by_label
     ]
     if len(my_labels) == 1:
@@ -159,14 +223,12 @@ def create_dataset(
     return my_features, my_label_definitions, my_labels
 
 
-"""
-Create a toy TensorFlow model that has the right shape for inputs and outputs
-"""
-
-
 def create_tensorflow_model(
     number_of_features, number_of_categories_by_label, label_to_test, **kwargs
 ):
+    """
+    Create a toy TensorFlow model that has the right shape for inputs and outputs
+    """
     import tensorflow as tf
 
     number_of_categories = number_of_categories_by_label[label_to_test]
@@ -178,6 +240,32 @@ def create_tensorflow_model(
         ],
         name=f"{number_of_categories}_labels_from_{number_of_features}_features",
     )
+    return model
+
+
+def create_pytorch_model(
+    number_of_features, number_of_categories_by_label, label_to_test, **kwargs
+):
+    """
+    Create a toy PyTorch model that has the right shape for inputs and outputs
+    """
+    import torch
+
+    class TorchToy(torch.nn.modules.module.Module):
+        def __init__(self, number_of_features, number_of_categories):
+            super(TorchToy, self).__init__()
+            self.fc1 = torch.nn.Linear(number_of_features, 128)
+            self.relu1 = torch.nn.ReLU()
+            self.fc2 = torch.nn.Linear(128, number_of_categories)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            x = self.relu1(x)
+            x = self.fc2(x)
+            return x
+
+    number_of_categories = number_of_categories_by_label[label_to_test]
+    model = TorchToy(number_of_features, number_of_categories)
     return model
 
 
@@ -238,15 +326,22 @@ def exercise_model_handler(
     label_to_test,
     **kwargs,
 ):
+    import al_bench as alb
+
     # Write me!!! to test set_dataset_handler(self, dataset_handler):
     # Write me!!! to test set_training_parameters(self):
     # Write me!!! to test train(self):
     # Write me!!! to test predict(self):
 
-    tensorflow_model = create_tensorflow_model(
-        number_of_features, number_of_categories_by_label, label_to_test
-    )
-    my_model_handler.set_model(tensorflow_model)
+    if isinstance(my_model_handler, alb.model.TensorFlowModelHandler):
+        model = create_tensorflow_model(
+            number_of_features, number_of_categories_by_label, label_to_test
+        )
+    if isinstance(my_model_handler, alb.model.PyTorchModelHandler):
+        model = create_pytorch_model(
+            number_of_features, number_of_categories_by_label, label_to_test
+        )
+    my_model_handler.set_model(model)
     pass
 
 
@@ -263,11 +358,11 @@ def exercise_strategy_handler(my_strategy_handler, **kwargs):
     # Write me!!! to test get_diversity_metric(self):
     # Write me!!! to test clear_diversity_metric(self):
     # Write me!!! to test select_next_examples(self, currently_labeled_examples):
-
     pass
 
 
 if __name__ == "__main__":
     test_imports()
     test_high_level()
-    test_active_learning()
+    test_tensorflow_toy()
+    test_pytorch_toy()
