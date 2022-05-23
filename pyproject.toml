@@ -13,9 +13,12 @@ classifiers = ["License :: OSI Approved :: Apache Software License"]
 dependencies = [
     "h5py",
     "numpy",
-    "tensorflow",
 ]
 dynamic = ["version", "description"]
+
+[project.optional.dependencies]
+torch = ["torch >= 1.11"]
+tensorflow = ["tensorflow >= 2.6"]
 
 [project.urls]
 Source = "https://github.com/DigitalSlideArchive/ALBench"
