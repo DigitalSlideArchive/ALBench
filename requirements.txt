@@ -1,0 +1,4 @@
+h5py >= 3.6
+numpy >= 1.22
+tensorflow >= 2.6
+torch >= 1.11
