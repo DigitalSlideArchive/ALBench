@@ -83,8 +83,8 @@ class GenericModelHandler(AbstractModelHandler):
     GenericModelHandler handles functionality that is agnostic to the choice of the
     deep-learning framework.  GenericModelHandler is the superclass for
     TensorFlowModelHandler, PyTorchModelHandler, etc.  These subclasses handle
-    GenericModelHandler operations that are dependent upon which deep learning framework
-    is being used.
+    AbstractModelHandler operations that are dependent upon which deep learning
+    framework is being used.
     """
 
     def __init__(self):
@@ -113,7 +113,7 @@ class TensorFlowModelHandler(GenericModelHandler):
 
         self.model = None
         self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True
+            from_logits=False
         )
 
     def set_model(self, model):
@@ -175,7 +175,13 @@ class PyTorchModelHandler(GenericModelHandler):
         import torch
 
         self.model = None
-        self.criterion = torch.nn.CrossEntropyLoss()
+
+        def categorical_cross_entropy(y_pred, y_true):
+            y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
+            y_true = torch.eye(y_pred.shape[-1])[y_true]
+            return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
+
+        self.criterion = categorical_cross_entropy
 
     def set_model(self, model):
         """
@@ -277,7 +283,7 @@ class PyTorchModelHandler(GenericModelHandler):
         import torch
 
         predictions = self.model(torch.from_numpy(features))
-        return predictions
+        return predictions.detach().cpu().numpy()
 
 
 class AbstractEnsembleModelHandler(GenericModelHandler):
