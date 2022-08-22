@@ -19,12 +19,13 @@
 
 def test_imports():
     """Purpose: Test that needed packages are available"""
-
     import al_bench as alb
     import h5py as h5
     import numpy as np
     import tensorflow as tf
     import torch
+
+    pass
 
 
 def test_dataset_handler_interface():
@@ -335,11 +336,7 @@ def exercise_model_handler(
 ):
     import al_bench as alb
 
-    # Write me!!! to test set_dataset_handler(self, dataset_handler):
-    # Write me!!! to test set_training_parameters(self):
-    # Write me!!! to test train(self):
-    # Write me!!! to test predict(self):
-
+    model = None
     if isinstance(my_model_handler, alb.model.TensorFlowModelHandler):
         model = create_tensorflow_model(
             number_of_features, number_of_categories_by_label, label_to_test
@@ -349,11 +346,15 @@ def exercise_model_handler(
             number_of_features, number_of_categories_by_label, label_to_test
         )
     my_model_handler.set_model(model)
-    pass
+
+    # Write me!!! to test set_dataset_handler(self, dataset_handler):
+    # Write me!!! to test set_training_parameters(self):
+    # Write me!!! to test train(self):
+    # Write me!!! to test predict(self):
 
 
 def exercise_strategy_handler(my_strategy_handler, **kwargs):
-    print(f"exercise_strategy_handler with {type(my_strategy_handler) =}")
+    # print(f"exercise_strategy_handler with {type(my_strategy_handler) =}")
     # Write me!!! to test set_dataset_handler(self, dataset_handler):
     # Write me!!! to test get_dataset_handler(self):
     # Write me!!! to test set_model_handler(self, model_handler):

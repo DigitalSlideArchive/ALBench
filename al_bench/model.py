@@ -143,8 +143,6 @@ class TensorFlowModelHandler(GenericModelHandler):
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
-        import tensorflow as tf
-
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
 
