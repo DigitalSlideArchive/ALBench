@@ -163,7 +163,7 @@ class AbstractDatasetHandler:
         )
 
 
-class BasicDatasetHandler(AbstractDatasetHandler):
+class GenericDatasetHandler(AbstractDatasetHandler):
     def __init__(self):
         self.features = None
         self.labels = None
@@ -424,8 +424,8 @@ class BasicDatasetHandler(AbstractDatasetHandler):
             len(all_lengths) == 2 and 0 in all_lengths
         )
 
-        # Check whether among labels and label_definitions that were supplied, are
-        # they for the same number of kinds of labels?
+        # Check whether among labels and label_definitions that were supplied, are they
+        # for the same number of kinds of labels?
         labels_width = (
             0
             if self.labels is None
@@ -439,7 +439,7 @@ class BasicDatasetHandler(AbstractDatasetHandler):
         all_widths = set([labels_width, label_definitions_width])
         widths_test = len(all_widths) == 1 or (len(all_widths) == 2 and 0 in all_widths)
 
-        ## Check whether every supplied label category has a definition.
+        # Check whether every supplied label category has a definition.
         definitions_test = (
             not widths_test  # already failed previous test
             or labels_width == 0  # nothing to compare

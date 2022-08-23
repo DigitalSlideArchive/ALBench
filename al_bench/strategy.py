@@ -17,6 +17,7 @@
 # ==========================================================================
 
 import numpy as np
+import scipy.stats
 from . import dataset, model
 
 
@@ -135,12 +136,21 @@ class AbstractStrategyHandler:
         )
 
 
-class ToyStrategyHandler(AbstractStrategyHandler):
+class GenericStrategyHandler(AbstractStrategyHandler):
+    """
+    GenericStrategyHandler handles functionality that is agnostic to the choice of the
+    active learning strategy.  GenericStrategyHandler is the superclass for
+    RandomStrategyHandler, LeastConfidenceStrategyHandler, LeastMarginStrategyHandler,
+    EntropyStrategyHandler, etc.  These subclasses handle AbstractStrategyHandler
+    operations that are dependent upon which active learning strategy is being used.
+    """
+
     def __init__(self):
         self.scoring_metric = None
         self.diversity_metric = None
         self.dataset_handler = None
         self.model_handler = None
+        self.parameters = None
 
         # These parameters must be supplied to the set_learning_parameters call.
         self.required_parameters_keys = [
@@ -151,7 +161,6 @@ class ToyStrategyHandler(AbstractStrategyHandler):
         # This the exhaustive list of parameters that are valid when used with a
         # set_learning_parameters call.
         self.valid_parameters_keys = self.required_parameters_keys + list()
-        self.parameters = None
 
     def set_dataset_handler(self, dataset_handler):
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
@@ -217,8 +226,8 @@ class ToyStrategyHandler(AbstractStrategyHandler):
         """
         Supply a diversity metric that evaluates a set of feature vectors for their
         diversity.  A higher score indicates that the feature vectors are diverse.  The
-        diversity_metric will be a subclass of an abstract AbstractDiversityMetric class,
-        which supports a specified interface.
+        diversity_metric will be a subclass of an abstract AbstractDiversityMetric
+        class, which supports a specified interface.
         """
         if not isinstance(diversity_metric, AbstractDiversityMetric):
             raise ValueError(
@@ -267,49 +276,10 @@ class ToyStrategyHandler(AbstractStrategyHandler):
     def get_learning_parameters(self):
         return self.parameters
 
-    """
-    Also support using Model *and its already computed predictions* to compute scores
-    and/or to compute diversity!!!
-    """
-
     def select_next_examples(self, currently_labeled_examples):
-        """
-        Select new examples to be labeled by the expert.
-        `number_to_select_per_iteration` is the number that should be selected with each
-        iteration of the active learning strategy.  `currently_labeled_examples` is the
-        list of examples indices that have already been labeled.  `features` is the
-        feature vector for each example in the entire set of examples, both those
-        examples that have been labeled and those that could be selected for labeling.
-        """
-        number_to_select_per_iteration = self.parameters[
-            "number_to_select_per_iteration"
-        ]
-        # Useful for non-toy strategies:
-        features = self.dataset_handler.get_all_features()
-        current_labels = self.dataset_handler.get_some_labels(
-            tuple(currently_labeled_examples)
-        )
-
-        # This implementation simply selects a subset of labels from those not currently
-        # selected.
-        if (
-            number_to_select_per_iteration + len(currently_labeled_examples)
-            > features.shape[0]
-        ):
-            raise ValueError(
-                f"Cannot not select {number_to_select_per_iteration} unlabeled feature "
-                f"vectors."
-            )
-
-        import random
-
-        return random.sample(
-            [
-                example_index
-                for example_index in range(features.shape[0])
-                if example_index not in currently_labeled_examples
-            ],
-            number_to_select_per_iteration,
+        raise NotImplementedError(
+            "Abstract method GenericStrategyHandler::select_next_examples should not "
+            "be called."
         )
 
     def run(self, currently_labeled_examples):
@@ -327,6 +297,8 @@ class ToyStrategyHandler(AbstractStrategyHandler):
         label_of_interest = self.parameters["label_of_interest"]
 
         for iteration in range(maximum_iterations):
+            print(f"Predicting for {features.shape[0]} examples")
+            self.predictions = self.model_handler.predict(features)
             next_examples = self.select_next_examples(currently_labeled_examples)
             currently_labeled_examples = currently_labeled_examples.union(next_examples)
             current_indices = tuple(currently_labeled_examples)
@@ -336,7 +308,151 @@ class ToyStrategyHandler(AbstractStrategyHandler):
             self.model_handler.train(
                 current_features, current_labels[:, label_of_interest]
             )
-            print(f"Predicting for {features.shape[0]} examples")
-            predictions = self.model_handler.predict(features)
 
+        print(f"Predicting for {features.shape[0]} examples")
+        self.predictions = self.model_handler.predict(features)
         self.labeled_examples = currently_labeled_examples
+
+
+class RandomStrategyHandler(GenericStrategyHandler):
+    def __init__(self):
+        super().__init__()
+
+    def select_next_examples(self, currently_labeled_examples):
+        """
+        Select new examples to be labeled by the expert.
+        `number_to_select_per_iteration` is the number that should be selected with each
+        iteration of the active learning strategy.  `currently_labeled_examples` is the
+        list of examples indices that have already been labeled.  `features` is the
+        feature vector for each example in the entire set of examples, including both
+        those examples that have been labeled and those that could be selected for
+        labeling.
+        """
+        number_to_select = self.parameters["number_to_select_per_iteration"]
+        features = self.dataset_handler.get_all_features()
+
+        # Make sure the pool to select from is large enough
+        if number_to_select + len(currently_labeled_examples) > features.shape[0]:
+            raise ValueError(
+                f"Cannot not select {number_to_select} unlabeled feature vectors; "
+                f"only {features.shape[0] - len(currently_labeled_examples)} remain."
+            )
+
+        # This implementation simply selects a random subset of labels from those not
+        # currently selected.
+        import random
+
+        return random.sample(
+            [
+                example_index
+                for example_index in range(features.shape[0])
+                if example_index not in currently_labeled_examples
+            ],
+            number_to_select,
+        )
+
+
+class LeastConfidenceStrategyHandler(GenericStrategyHandler):
+    def __init__(self):
+        super().__init__()
+
+    def select_next_examples(self, currently_labeled_examples):
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples with the smallest maximum score.
+        """
+        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_of_features = self.dataset_handler.get_all_features().shape[0]
+
+        # Make sure the pool to select from is large enough
+        if number_to_select + len(currently_labeled_examples) > number_of_features:
+            raise ValueError(
+                f"Cannot not select {number_to_select} unlabeled feature vectors; "
+                f"only {number_of_features - len(currently_labeled_examples)} remain."
+            )
+
+        predictions = self.predictions
+        # We assume that via "softmax" or similar, the values are already non-negative
+        # and sum to 1.0.
+        #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
+        # For each example, how strong is the best category's score?
+        predict_score = np.amax(predictions, axis=-1)
+        # Make the currently labeled examples look good, so that they won't be selected
+        if len(currently_labeled_examples):
+            predict_score[np.array(list(currently_labeled_examples))] = 2
+        # Find the lowest scoring examples
+        predict_order = np.argsort(predict_score)[0:number_to_select]
+        return predict_order
+
+
+class LeastMarginStrategyHandler(GenericStrategyHandler):
+    def __init__(self):
+        super().__init__()
+
+    def select_next_examples(self, currently_labeled_examples):
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples with the smallest gap between highest and second-highest score.
+        """
+        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_of_features = self.dataset_handler.get_all_features().shape[0]
+
+        # Make sure the pool to select from is large enough
+        if number_to_select + len(currently_labeled_examples) > number_of_features:
+            raise ValueError(
+                f"Cannot not select {number_to_select} unlabeled feature vectors; "
+                f"only {number_of_features - len(currently_labeled_examples)} remain."
+            )
+
+        predictions = self.predictions
+        # We assume that via "softmax" or similar, the values are already non-negative
+        # and sum to 1.0.
+        #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
+        # Find the largest and second largest values, and compute their difference
+        predict_indices = np.arange(len(predictions))
+        predict_argsort = np.argsort(predictions, axis=-1)
+        predict_score = (
+            predictions[predict_indices, predict_argsort[:, -1]]
+            - predictions[predict_indices, predict_argsort[:, -2]]
+        )
+        # Make the currently labeled examples look good, so that they won't be selected
+        if len(currently_labeled_examples):
+            predict_score[np.array(list(currently_labeled_examples))] = 2
+        # Find the lowest scoring examples
+        predict_order = np.argsort(predict_score)[0:number_to_select]
+        return predict_order
+
+
+class EntropyStrategyHandler(GenericStrategyHandler):
+    def __init__(self):
+        super().__init__()
+
+    def select_next_examples(self, currently_labeled_examples):
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples with the highest entropy.
+        """
+        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_of_features = self.dataset_handler.get_all_features().shape[0]
+
+        # Make sure the pool to select from is large enough
+        if number_to_select + len(currently_labeled_examples) > number_of_features:
+            raise ValueError(
+                f"Cannot not select {number_to_select} unlabeled feature vectors; "
+                f"only {number_of_features - len(currently_labeled_examples)} remain."
+            )
+
+        predictions = self.predictions
+        # We assume that via "softmax" or similar, the values are already non-negative
+        # and sum to 1.0.
+        #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
+        # Scipy will (normalize row values to sum to 1 and then) compute the entropy of
+        # each row.  We negate the entropy so that the distributions that are near
+        # uniform have the smallest (i.e., most negative) values.
+        predict_score = -scipy.stats.entropy(predictions, axis=-1)
+        # Make the currently labeled examples look good, so that they won't be selected
+        if len(currently_labeled_examples):
+            predict_score[np.array(list(currently_labeled_examples))] = 2
+        # Find the lowest scoring examples
+        predict_order = np.argsort(predict_score)[0:number_to_select]
+        return predict_order

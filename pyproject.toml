@@ -13,6 +13,7 @@ classifiers = ["License :: OSI Approved :: Apache Software License"]
 dependencies = [
     "h5py",
     "numpy",
+    "scipy",
 ]
 dynamic = ["version", "description"]
 
