@@ -104,7 +104,7 @@ class GenericModelHandler(AbstractModelHandler):
 
 class TensorFlowModelHandler(GenericModelHandler):
     """
-    TensorFlowModelHandler is the class that implements framework-agnostic
+    TensorFlowModelHandler is the class that implements framework-dependent
     GenericModelHandler routines via TensorFlow.
     """
 
@@ -165,7 +165,7 @@ class TensorFlowModelHandler(GenericModelHandler):
 
 class PyTorchModelHandler(GenericModelHandler):
     """
-    PyTorchModelHandler is the class that implements framework-agnostic
+    PyTorchModelHandler is the class that implements framework-dependent
     GenericModelHandler routines via PyTorch.
     """
 
