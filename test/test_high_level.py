@@ -172,9 +172,7 @@ def test_handler_combinations():
                 my_strategy_handler.set_learning_parameters(
                     maximum_iterations=number_iterations,
                     label_of_interest=parameters["label_to_test"],
-                    number_to_select_per_iteration=int(
-                        parameters["number_of_superpixels"] // (number_iterations + 1)
-                    ),
+                    number_to_select_per_iteration=20,
                 )
 
                 # Start with nothing labeled yet
