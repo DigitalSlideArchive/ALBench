@@ -112,9 +112,9 @@ def test_handler_combinations():
 
     # Specify some testing parameters
     parameters = dict(
-        number_of_superpixels=1000,
-        number_of_features=64,
-        number_of_categories_by_label=[3],
+        number_of_superpixels=4598,
+        number_of_features=1280,
+        number_of_categories_by_label=[4],
         label_to_test=0,
     )
     number_iterations = 5
@@ -122,6 +122,10 @@ def test_handler_combinations():
     for dataset_creator, DatasetHandler in (
         (
             create_dataset,
+            alb.dataset.GenericDatasetHandler,
+        ),
+        (
+            create_dataset_4598_1280_4,
             alb.dataset.GenericDatasetHandler,
         ),
     ):
@@ -168,9 +172,7 @@ def test_handler_combinations():
                 my_strategy_handler.set_learning_parameters(
                     maximum_iterations=number_iterations,
                     label_of_interest=parameters["label_to_test"],
-                    number_to_select_per_iteration=int(
-                        parameters["number_of_superpixels"] // (number_iterations + 1)
-                    ),
+                    number_to_select_per_iteration=20,
                 )
 
                 # Start with nothing labeled yet
@@ -233,6 +235,37 @@ def create_dataset(
         my_labels = my_labels[0]
     else:
         my_labels = np.append(*my_labels, 1)
+
+    return my_features, my_label_definitions, my_labels
+
+
+def create_dataset_4598_1280_4(
+    number_of_superpixels,
+    number_of_features,
+    number_of_categories_by_label,
+    **kwargs,
+):
+    import h5py as h5
+    import numpy as np
+
+    """Use the dataset from test/TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"""
+    filename = "TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"
+    with h5.File(filename) as ds:
+        my_features = np.array(ds["features"])
+        my_labels = np.array(ds["labels"])
+    my_label_definitions = [
+        {
+            0: {"description": "other"},
+            1: {"description": "tumor"},
+            2: {"description": "stroma"},
+            3: {"description": "infiltrate"},
+        }
+    ]
+    assert number_of_superpixels == my_features.shape[0]
+    assert number_of_features == my_features.shape[1]
+    assert isinstance(number_of_categories_by_label, list)
+    assert len(number_of_categories_by_label) == len(my_label_definitions)
+    assert number_of_categories_by_label[0] == len(my_label_definitions[0])
 
     return my_features, my_label_definitions, my_labels
 

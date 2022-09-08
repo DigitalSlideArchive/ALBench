@@ -300,9 +300,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         dimension but the latter does not.  That is, use of label_indices=5 returns
         [3,1,4] but use of label_indices=[5] returns [[3,1,4]].
         """
-        return self.labels[
-            label_indices,
-        ]
+        return self.labels[label_indices]
 
     """
     Handle the dictionary of supplemental information for each stored entity.
@@ -317,16 +315,14 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         them.  If this functionality is needed then supply `list(dictionaries)` to this
         function.
         """
-        if (
-            isinstance(dictionaries, (tuple, list))
-            and len(dictionaries) > 0
-            and isinstance(dictionaries[0], dict)
+        if isinstance(dictionaries, list) and all(
+            [isinstance(e, dict) for e in dictionaries]
         ):
             self.dictionaries = dictionaries
         else:
             raise ValueError(
-                "The argument to set_all_dictionaries must be a non-empty list or "
-                "tuple of dictionaries."
+                "The argument to set_all_dictionaries must be a list of Python "
+                "dict objects"
             )
 
     def get_all_dictionaries(self):
@@ -429,9 +425,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         labels_width = (
             0
             if self.labels is None
-            else 1
-            if len(self.labels.shape) == 1
-            else self.labels.shape[1]
+            else (1 if len(self.labels.shape) == 1 else self.labels.shape[1])
         )
         label_definitions_width = (
             0 if self.label_definitions is None else len(self.label_definitions)
