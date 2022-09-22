@@ -16,8 +16,27 @@
 #
 # ==========================================================================
 
+from datetime import datetime
+import enum
 import numpy as np
 from . import dataset
+
+
+class ModelStep(enum.Enum):
+    ON_TRAIN_BEGIN = 100
+    ON_TRAIN_END = 105
+    ON_TRAIN_EPOCH_BEGIN = 120
+    ON_TRAIN_EPOCH_END = 125
+    ON_TRAIN_BATCH_BEGIN = 140
+    ON_TRAIN_BATCH_END = 145
+    ON_TEST_BEGIN = 200
+    ON_TEST_END = 205
+    ON_TEST_BATCH_BEGIN = 240
+    ON_TEST_BATCH_END = 245
+    ON_PREDICT_BEGIN = 300
+    ON_PREDICT_END = 305
+    ON_PREDICT_BATCH_BEGIN = 340
+    ON_PREDICT_BATCH_END = 345
 
 
 class AbstractModelHandler:
@@ -108,6 +127,138 @@ class TensorFlowModelHandler(GenericModelHandler):
     GenericModelHandler routines via TensorFlow.
     """
 
+    import keras
+
+    class CustomCallback(keras.callbacks.Callback):
+        def __init__(self):
+            self.reset_log()
+
+        def reset_log(self):
+            self.log = list()
+
+        def get_log(self):
+            return self.log
+
+        def on_train_begin(self, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(), model_step=ModelStep.ON_TRAIN_BEGIN, logs=logs
+                )
+            )
+
+        def on_train_end(self, logs=None):
+            self.log.append(
+                dict(utcnow=datetime.utcnow(), model_step=ModelStep.ON_TRAIN_END, logs=logs)
+            )
+
+        def on_epoch_begin(self, epoch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TRAIN_EPOCH_BEGIN,
+                    epoch=epoch,
+                    logs=logs,
+                )
+            )
+
+        def on_epoch_end(self, epoch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TRAIN_EPOCH_END,
+                    epoch=epoch,
+                    logs=logs,
+                )
+            )
+
+        def on_train_batch_begin(self, batch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TRAIN_BATCH_BEGIN,
+                    batch=batch,
+                    logs=logs,
+                )
+            )
+
+        def on_train_batch_end(self, batch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TRAIN_BATCH_END,
+                    batch=batch,
+                    logs=logs,
+                )
+            )
+
+        def on_test_begin(self, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(), model_step=ModelStep.ON_TEST_BEGIN, logs=logs
+                )
+            )
+
+        def on_test_end(self, logs=None):
+            self.log.append(
+                dict(utcnow=datetime.utcnow(), model_step=ModelStep.ON_TEST_END, logs=logs)
+            )
+
+        def on_test_batch_begin(self, batch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TEST_BATCH_BEGIN,
+                    batch=batch,
+                    logs=logs,
+                )
+            )
+
+        def on_test_batch_end(self, batch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TEST_BATCH_END,
+                    batch=batch,
+                    logs=logs,
+                )
+            )
+
+        def on_predict_begin(self, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_PREDICT_BEGIN,
+                    logs=logs,
+                )
+            )
+
+        def on_predict_end(self, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(), model_step=ModelStep.ON_PREDICT_END, logs=logs
+                )
+            )
+
+        def on_predict_batch_begin(self, batch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_PREDICT_BATCH_BEGIN,
+                    batch=batch,
+                    logs=logs,
+                )
+            )
+
+        def on_predict_batch_end(self, batch, logs=None):
+            self.log.append(
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_PREDICT_BATCH_END,
+                    batch=batch,
+                    logs=logs,
+                )
+            )
+
     def __init__(self):
         import tensorflow as tf
 
@@ -115,6 +266,13 @@ class TensorFlowModelHandler(GenericModelHandler):
         self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits=False
         )
+        self.custom_callback = TensorFlowModelHandler.CustomCallback()
+
+    def reset_log(self):
+        self.custom_callback.reset_log()
+
+    def get_log(self):
+        return self.custom_callback.get_log()
 
     def set_model(self, model):
         """
@@ -150,7 +308,16 @@ class TensorFlowModelHandler(GenericModelHandler):
             optimizer="adam", loss=self.loss_function, metrics=["accuracy"]
         )
         # Get `epochs` from training parameters!!!
-        self.model.fit(train_features, train_labels, epochs=10)
+        # Add validation_data=(x, y,) to the self.model.fit call!!!
+
+        self.model.fit(
+            train_features,
+            train_labels,
+            epochs=10,
+            verbose=0,
+            callbacks=[self.custom_callback],
+        )
+        # print(f"{repr(self.custom_callback.get_log()) = }")
 
     def predict(self, features):
         """
@@ -159,7 +326,10 @@ class TensorFlowModelHandler(GenericModelHandler):
         Parameters include which examples should be predicted.
         """
 
-        predictions = self.model.predict(features)
+        predictions = self.model.predict(
+            features, verbose=0, callbacks=[self.custom_callback]
+        )
+        # print(f"{repr(self.custom_callback.get_log()) = }")
         return predictions
 
 

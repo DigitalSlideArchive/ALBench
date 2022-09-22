@@ -282,6 +282,12 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             "be called."
         )
 
+    def reset_log(self):
+        self.model_handler.reset_log()
+
+    def get_log(self):
+        return self.model_handler.get_log()
+
     def run(self, currently_labeled_examples):
         """
         Run the strategy, start to finish.
