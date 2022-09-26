@@ -146,6 +146,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     """
 
     def __init__(self):
+        # super(GenericStrategyHandler, self).__init__()
         self.scoring_metric = None
         self.diversity_metric = None
         self.dataset_handler = None
@@ -322,7 +323,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
 
 class RandomStrategyHandler(GenericStrategyHandler):
     def __init__(self):
-        super().__init__()
+        super(RandomStrategyHandler, self).__init__()
 
     def select_next_examples(self, currently_labeled_examples):
         """
@@ -360,7 +361,7 @@ class RandomStrategyHandler(GenericStrategyHandler):
 
 class LeastConfidenceStrategyHandler(GenericStrategyHandler):
     def __init__(self):
-        super().__init__()
+        super(LeastConfidenceStrategyHandler, self).__init__()
 
     def select_next_examples(self, currently_labeled_examples):
         """
@@ -393,7 +394,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
 
 class LeastMarginStrategyHandler(GenericStrategyHandler):
     def __init__(self):
-        super().__init__()
+        super(LeastMarginStrategyHandler, self).__init__()
 
     def select_next_examples(self, currently_labeled_examples):
         """
@@ -431,7 +432,7 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
 
 class EntropyStrategyHandler(GenericStrategyHandler):
     def __init__(self):
-        super().__init__()
+        super(EntropyStrategyHandler, self).__init__()
 
     def select_next_examples(self, currently_labeled_examples):
         """

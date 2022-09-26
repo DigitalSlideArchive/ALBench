@@ -107,7 +107,15 @@ class GenericModelHandler(AbstractModelHandler):
     """
 
     def __init__(self):
+        super(GenericModelHandler, self).__init__()
         self.dataset_handler = None
+        self.custom_callback = GenericModelHandler.CustomCallback()
+
+    def reset_log(self):
+        self.custom_callback.reset_log()
+
+    def get_log(self):
+        return self.custom_callback.get_log()
 
     def set_dataset_handler(self, dataset_handler):
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
@@ -120,17 +128,11 @@ class GenericModelHandler(AbstractModelHandler):
     def get_dataset_handler(self):
         return self.dataset_handler
 
-
-class TensorFlowModelHandler(GenericModelHandler):
-    """
-    TensorFlowModelHandler is the class that implements framework-dependent
-    GenericModelHandler routines via TensorFlow.
-    """
-
     import keras
 
     class CustomCallback(keras.callbacks.Callback):
         def __init__(self):
+            super(GenericModelHandler.CustomCallback, self).__init__()
             self.reset_log()
 
         def reset_log(self):
@@ -142,13 +144,19 @@ class TensorFlowModelHandler(GenericModelHandler):
         def on_train_begin(self, logs=None):
             self.log.append(
                 dict(
-                    utcnow=datetime.utcnow(), model_step=ModelStep.ON_TRAIN_BEGIN, logs=logs
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TRAIN_BEGIN,
+                    logs=logs,
                 )
             )
 
         def on_train_end(self, logs=None):
             self.log.append(
-                dict(utcnow=datetime.utcnow(), model_step=ModelStep.ON_TRAIN_END, logs=logs)
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TRAIN_END,
+                    logs=logs,
+                )
             )
 
         def on_epoch_begin(self, epoch, logs=None):
@@ -182,6 +190,7 @@ class TensorFlowModelHandler(GenericModelHandler):
             )
 
         def on_train_batch_end(self, batch, logs=None):
+            # For tensorflow, logs.keys() == ["loss", "accuracy"]
             self.log.append(
                 dict(
                     utcnow=datetime.utcnow(),
@@ -194,13 +203,19 @@ class TensorFlowModelHandler(GenericModelHandler):
         def on_test_begin(self, logs=None):
             self.log.append(
                 dict(
-                    utcnow=datetime.utcnow(), model_step=ModelStep.ON_TEST_BEGIN, logs=logs
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TEST_BEGIN,
+                    logs=logs,
                 )
             )
 
         def on_test_end(self, logs=None):
             self.log.append(
-                dict(utcnow=datetime.utcnow(), model_step=ModelStep.ON_TEST_END, logs=logs)
+                dict(
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_TEST_END,
+                    logs=logs,
+                )
             )
 
         def on_test_batch_begin(self, batch, logs=None):
@@ -235,7 +250,9 @@ class TensorFlowModelHandler(GenericModelHandler):
         def on_predict_end(self, logs=None):
             self.log.append(
                 dict(
-                    utcnow=datetime.utcnow(), model_step=ModelStep.ON_PREDICT_END, logs=logs
+                    utcnow=datetime.utcnow(),
+                    model_step=ModelStep.ON_PREDICT_END,
+                    logs=logs,
                 )
             )
 
@@ -250,6 +267,7 @@ class TensorFlowModelHandler(GenericModelHandler):
             )
 
         def on_predict_batch_end(self, batch, logs=None):
+            # For tensorflow, logs.keys() == ["outputs"]
             self.log.append(
                 dict(
                     utcnow=datetime.utcnow(),
@@ -259,20 +277,21 @@ class TensorFlowModelHandler(GenericModelHandler):
                 )
             )
 
+
+class TensorFlowModelHandler(GenericModelHandler):
+    """
+    TensorFlowModelHandler is the class that implements framework-dependent
+    GenericModelHandler routines via TensorFlow.
+    """
+
     def __init__(self):
         import tensorflow as tf
 
+        super(TensorFlowModelHandler, self).__init__()
         self.model = None
         self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits=False
         )
-        self.custom_callback = TensorFlowModelHandler.CustomCallback()
-
-    def reset_log(self):
-        self.custom_callback.reset_log()
-
-    def get_log(self):
-        return self.custom_callback.get_log()
 
     def set_model(self, model):
         """
@@ -342,6 +361,7 @@ class PyTorchModelHandler(GenericModelHandler):
     def __init__(self):
         import torch
 
+        super(PyTorchModelHandler, self).__init__()
         self.model = None
 
         def categorical_cross_entropy(y_pred, y_true):
@@ -391,12 +411,15 @@ class PyTorchModelHandler(GenericModelHandler):
         # more detailed training loop example, see
         # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
 
+        self.custom_callback.on_train_begin()
+
         # Get `epochs` from training parameters!!!
         number_of_epochs = 3
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
         class ZipDataset(torch.utils.data.Dataset):
             def __init__(self, train_features, train_labels):
+                super(ZipDataset, self).__init__()
                 self.train_features = torch.from_numpy(train_features)
                 self.train_labels = torch.from_numpy(train_labels)
 
@@ -416,11 +439,12 @@ class PyTorchModelHandler(GenericModelHandler):
 
         print_interval = -int(-len(my_data_loader) // 4)
         for epoch in range(number_of_epochs):  # loop over the dataset multiple times
-            print(f"Epoch {epoch + 1}/{number_of_epochs}")
+            self.custom_callback.on_epoch_begin(epoch)
             running_loss = 0.0
             running_size = 0
             running_correct = 0.0
             for i, data in enumerate(my_data_loader):
+                self.custom_callback.on_train_batch_begin(i)
                 inputs, labels = data
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -430,17 +454,23 @@ class PyTorchModelHandler(GenericModelHandler):
                 loss = self.criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
-                running_size += inputs.size(0)
-                running_loss += loss.item() * inputs.size(0)
-                running_correct += (
-                    (torch.argmax(outputs, dim=1) == labels).float().sum()
+                new_size = inputs.size(0)
+                running_size += new_size
+                new_loss = loss.item() * inputs.size(0)
+                running_loss += new_loss
+                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                running_correct += new_correct
+                logs = dict(
+                    loss=new_loss / new_size,
+                    accuracy=(new_correct / new_size).detach().cpu().numpy(),
                 )
-                if (len(my_data_loader) - i - 1) % print_interval == 0:
-                    print(
-                        f"  Iteration {i+1}"
-                        f" - loss: {running_loss/running_size:.3f}"
-                        f" - accuracy: {running_correct/running_size:.3f}"
-                    )
+                self.custom_callback.on_train_batch_end(i, logs)
+            logs = dict(
+                loss=running_loss / running_size,
+                accuracy=(running_correct / running_size).detach().cpu().numpy(),
+            )
+            self.custom_callback.on_epoch_end(epoch, logs)
+        self.custom_callback.on_train_end(logs)  # `logs` is from the last epoch
 
     def predict(self, features):
         """
@@ -450,8 +480,12 @@ class PyTorchModelHandler(GenericModelHandler):
         """
         import torch
 
+        self.custom_callback.on_predict_begin()
         predictions = self.model(torch.from_numpy(features))
-        return predictions.detach().cpu().numpy()
+        predictions = predictions.detach().cpu().numpy()
+        logs = dict(outputs=predictions)
+        self.custom_callback.on_predict_end(logs)
+        return predictions
 
 
 class AbstractEnsembleModelHandler(GenericModelHandler):
@@ -462,7 +496,9 @@ class AbstractEnsembleModelHandler(GenericModelHandler):
     """
 
     def __init__(self):
-        raise NotImplementedError("Not implemented")
+        # super(AbstractEnsembleModelHandler, self).__init__()
+        # raise NotImplementedError("Not implemented")
+        pass
 
     def set_model(self, model):
         """
@@ -504,7 +540,8 @@ class ExampleEnsembleModelHandler(AbstractEnsembleModelHandler):
     """
 
     def __init__(self):
-        raise NotImplementedError("Not implemented")
+        super(ExampleEnsembleModelHandler, self).__init__()
+        # raise NotImplementedError("Not implemented")
 
     def set_model(self, model):
         """

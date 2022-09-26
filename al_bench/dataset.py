@@ -165,6 +165,7 @@ class AbstractDatasetHandler:
 
 class GenericDatasetHandler(AbstractDatasetHandler):
     def __init__(self):
+        # super(GenericDatasetHandler, self).__init__()
         self.features = None
         self.labels = None
         self.dictionaries = None
