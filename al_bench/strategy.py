@@ -124,7 +124,7 @@ class AbstractStrategyHandler:
             "should not be called."
         )
 
-    def select_next_examples(self, currently_labeled_examples):
+    def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::select_next_examples "
             "should not be called."
@@ -277,7 +277,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     def get_learning_parameters(self):
         return self.parameters
 
-    def select_next_examples(self, currently_labeled_examples):
+    def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         raise NotImplementedError(
             "Abstract method GenericStrategyHandler::select_next_examples should not "
             "be called."
@@ -293,31 +293,49 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         """
         Run the strategy, start to finish.
         """
-        if not isinstance(currently_labeled_examples, set):
-            currently_labeled_examples = set(currently_labeled_examples)
-        features = self.dataset_handler.get_all_features()
+        currently_labeled_examples = set(currently_labeled_examples)
+        feature_vectors = self.dataset_handler.get_all_feature_vectors()
         labels = self.dataset_handler.get_all_labels()
         if len(labels.shape) == 1:
             labels = labels[:, np.newaxis]
+
+        validation_indices = self.dataset_handler.get_validation_indices()
+        validation_feature_vectors = (
+            self.dataset_handler.get_validation_feature_vectors()
+        )
+        validation_labels = self.dataset_handler.get_validation_labels()
+        assert (validation_indices is None) == (validation_feature_vectors is None)
+        assert (validation_indices is None) == (validation_labels is None)
+        if validation_labels is not None and len(validation_labels.shape) == 1:
+            validation_labels = validation_labels[:, np.newaxis]
+        validation_args = (
+            list()
+            if validation_feature_vectors is None
+            else [validation_feature_vectors, validation_labels]
+        )
 
         maximum_iterations = self.parameters["maximum_iterations"]
         label_of_interest = self.parameters["label_of_interest"]
 
         for iteration in range(maximum_iterations):
-            print(f"Predicting for {features.shape[0]} examples")
-            self.predictions = self.model_handler.predict(features)
-            next_examples = self.select_next_examples(currently_labeled_examples)
+            print(f"Predicting for {feature_vectors.shape[0]} examples")
+            self.predictions = self.model_handler.predict(feature_vectors)
+            next_examples = self.select_next_examples(
+                currently_labeled_examples, validation_indices
+            )
             currently_labeled_examples = currently_labeled_examples.union(next_examples)
             current_indices = tuple(currently_labeled_examples)
-            current_features = features[current_indices, :]
+            current_feature_vectors = feature_vectors[current_indices, :]
             current_labels = labels[current_indices, :]
-            print(f"Training with {current_features.shape[0]} examples")
+            print(f"Training with {current_feature_vectors.shape[0]} examples")
             self.model_handler.train(
-                current_features, current_labels[:, label_of_interest]
+                current_feature_vectors,
+                current_labels[:, label_of_interest],
+                *validation_args,
             )
 
-        print(f"Predicting for {features.shape[0]} examples")
-        self.predictions = self.model_handler.predict(features)
+        print(f"Predicting for {feature_vectors.shape[0]} examples")
+        self.predictions = self.model_handler.predict(feature_vectors)
         self.labeled_examples = currently_labeled_examples
 
 
@@ -325,24 +343,31 @@ class RandomStrategyHandler(GenericStrategyHandler):
     def __init__(self):
         super(RandomStrategyHandler, self).__init__()
 
-    def select_next_examples(self, currently_labeled_examples):
+    def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         """
         Select new examples to be labeled by the expert.
         `number_to_select_per_iteration` is the number that should be selected with each
         iteration of the active learning strategy.  `currently_labeled_examples` is the
-        list of examples indices that have already been labeled.  `features` is the
-        feature vector for each example in the entire set of examples, including both
-        those examples that have been labeled and those that could be selected for
+        list of examples indices that have already been labeled.  `feature_vectors` is
+        the feature vector for each example in the entire set of examples, including
+        both those examples that have been labeled and those that could be selected for
         labeling.
         """
         number_to_select = self.parameters["number_to_select_per_iteration"]
-        features = self.dataset_handler.get_all_features()
+        feature_vectors = self.dataset_handler.get_all_feature_vectors()
 
         # Make sure the pool to select from is large enough
-        if number_to_select + len(currently_labeled_examples) > features.shape[0]:
+        if validation_indices is not None:
+            currently_labeled_examples = set(currently_labeled_examples).union(
+                set(validation_indices)
+            )
+        if (
+            number_to_select + len(currently_labeled_examples)
+            > feature_vectors.shape[0]
+        ):
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; "
-                f"only {features.shape[0] - len(currently_labeled_examples)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
+                f"{feature_vectors.shape[0] - len(currently_labeled_examples)} remain."
             )
 
         # This implementation simply selects a random subset of labels from those not
@@ -352,7 +377,7 @@ class RandomStrategyHandler(GenericStrategyHandler):
         return random.sample(
             [
                 example_index
-                for example_index in range(features.shape[0])
+                for example_index in range(feature_vectors.shape[0])
                 if example_index not in currently_labeled_examples
             ],
             number_to_select,
@@ -363,19 +388,28 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
     def __init__(self):
         super(LeastConfidenceStrategyHandler, self).__init__()
 
-    def select_next_examples(self, currently_labeled_examples):
+    def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest maximum score.
         """
         number_to_select = self.parameters["number_to_select_per_iteration"]
-        number_of_features = self.dataset_handler.get_all_features().shape[0]
+        number_of_feature_vectors = (
+            self.dataset_handler.get_all_feature_vectors().shape[0]
+        )
 
         # Make sure the pool to select from is large enough
-        if number_to_select + len(currently_labeled_examples) > number_of_features:
+        if validation_indices is not None:
+            currently_labeled_examples = set(currently_labeled_examples).union(
+                set(validation_indices)
+            )
+        if (
+            number_to_select + len(currently_labeled_examples)
+            > number_of_feature_vectors
+        ):
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; "
-                f"only {number_of_features - len(currently_labeled_examples)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
+                f"{number_of_feature_vectors - len(currently_labeled_examples)} remain."
             )
 
         predictions = self.predictions
@@ -396,19 +430,28 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
     def __init__(self):
         super(LeastMarginStrategyHandler, self).__init__()
 
-    def select_next_examples(self, currently_labeled_examples):
+    def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest gap between highest and second-highest score.
         """
         number_to_select = self.parameters["number_to_select_per_iteration"]
-        number_of_features = self.dataset_handler.get_all_features().shape[0]
+        number_of_feature_vectors = (
+            self.dataset_handler.get_all_feature_vectors().shape[0]
+        )
 
         # Make sure the pool to select from is large enough
-        if number_to_select + len(currently_labeled_examples) > number_of_features:
+        if validation_indices is not None:
+            currently_labeled_examples = set(currently_labeled_examples).union(
+                set(validation_indices)
+            )
+        if (
+            number_to_select + len(currently_labeled_examples)
+            > number_of_feature_vectors
+        ):
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; "
-                f"only {number_of_features - len(currently_labeled_examples)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
+                f"{number_of_feature_vectors - len(currently_labeled_examples)} remain."
             )
 
         predictions = self.predictions
@@ -434,19 +477,28 @@ class EntropyStrategyHandler(GenericStrategyHandler):
     def __init__(self):
         super(EntropyStrategyHandler, self).__init__()
 
-    def select_next_examples(self, currently_labeled_examples):
+    def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the highest entropy.
         """
         number_to_select = self.parameters["number_to_select_per_iteration"]
-        number_of_features = self.dataset_handler.get_all_features().shape[0]
+        number_of_feature_vectors = (
+            self.dataset_handler.get_all_feature_vectors().shape[0]
+        )
 
         # Make sure the pool to select from is large enough
-        if number_to_select + len(currently_labeled_examples) > number_of_features:
+        if validation_indices is not None:
+            currently_labeled_examples = set(currently_labeled_examples).union(
+                set(validation_indices)
+            )
+        if (
+            number_to_select + len(currently_labeled_examples)
+            > number_of_feature_vectors
+        ):
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; "
-                f"only {number_of_features - len(currently_labeled_examples)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
+                f"{number_of_feature_vectors - len(currently_labeled_examples)} remain."
             )
 
         predictions = self.predictions

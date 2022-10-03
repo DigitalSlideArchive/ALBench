@@ -90,6 +90,23 @@ def test_strategy_handler_interface():
         exercise_strategy_handler(my_strategy_handler, **parameters)
 
 
+def deeply_numeric(x):
+    import numpy as np
+
+    return (
+        isinstance(
+            x,
+            (
+                int,
+                float,
+                np.float32,
+            ),
+        )
+        or (isinstance(x, np.ndarray) and len(x.shape) == 0 and deeply_numeric(x[()]))
+        or all([deeply_numeric(e) for e in x])
+    )
+
+
 def test_handler_combinations():
     """
     Keys supported by the `parameters` dict
@@ -109,6 +126,7 @@ def test_handler_combinations():
     """
 
     import al_bench as alb
+    import datetime
 
     # Specify some testing parameters
     parameters = dict(
@@ -154,11 +172,11 @@ def test_handler_combinations():
                 alb.strategy.EntropyStrategyHandler,
             ):
                 # Create fresh handlers and components
-                my_features, my_label_definitions, my_labels = dataset_creator(
+                my_feature_vectors, my_label_definitions, my_labels = dataset_creator(
                     **parameters
                 )
                 my_dataset_handler = DatasetHandler()
-                my_dataset_handler.set_all_features(my_features)
+                my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
                 my_dataset_handler.set_all_label_definitions(my_label_definitions)
                 my_dataset_handler.set_all_labels(my_labels)
 
@@ -184,6 +202,36 @@ def test_handler_combinations():
                     f"{type(my_model_handler)}, {type(my_strategy_handler)}"
                 )
                 my_strategy_handler.run(currently_labeled_examples)
+                my_log = my_strategy_handler.get_log()
+                assert (
+                    my_log is not None
+                    and isinstance(my_log, list)
+                    and all([isinstance(e, dict) for e in my_log])
+                    and all(
+                        [isinstance(e["utcnow"], datetime.datetime) for e in my_log]
+                    )
+                    and all(
+                        [
+                            isinstance(e["model_step"], alb.model.ModelStep)
+                            for e in my_log
+                        ]
+                    )
+                    and all(
+                        [
+                            isinstance(e["logs"], dict)
+                            for e in my_log
+                            if e["logs"] is not None
+                        ]
+                    )
+                    and all(
+                        [
+                            deeply_numeric(v)
+                            for e in my_log
+                            if e["logs"] is not None
+                            for v in e["logs"].values()
+                        ]
+                    )
+                )
 
 
 def create_dataset(
@@ -193,12 +241,12 @@ def create_dataset(
     **kwargs,
 ):
     """
-    Create a toy set of features
+    Create a toy set of feature vectors
     """
     import numpy as np
 
     rng = np.random.default_rng()
-    my_features = rng.normal(
+    my_feature_vectors = rng.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
     ).astype(np.float32)
 
@@ -226,7 +274,9 @@ def create_dataset(
     # "unknown".
     my_labels = [
         np.array(
-            np.clip(np.floor(my_features[:, 0:1] ** 2 * count + 1), 0, count - 1),
+            np.clip(
+                np.floor(my_feature_vectors[:, 0:1] ** 2 * count + 1), 0, count - 1
+            ),
             dtype=int,
         )
         for count in number_of_categories_by_label
@@ -236,7 +286,7 @@ def create_dataset(
     else:
         my_labels = np.append(*my_labels, 1)
 
-    return my_features, my_label_definitions, my_labels
+    return my_feature_vectors, my_label_definitions, my_labels
 
 
 def create_dataset_4598_1280_4(
@@ -251,7 +301,7 @@ def create_dataset_4598_1280_4(
     """Use the dataset from test/TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"""
     filename = "TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"
     with h5.File(filename) as ds:
-        my_features = np.array(ds["features"])
+        my_feature_vectors = np.array(ds["features"])
         my_labels = np.array(ds["labels"])
     my_label_definitions = [
         {
@@ -261,13 +311,13 @@ def create_dataset_4598_1280_4(
             3: {"description": "infiltrate"},
         }
     ]
-    assert number_of_superpixels == my_features.shape[0]
-    assert number_of_features == my_features.shape[1]
+    assert number_of_superpixels == my_feature_vectors.shape[0]
+    assert number_of_features == my_feature_vectors.shape[1]
     assert isinstance(number_of_categories_by_label, list)
     assert len(number_of_categories_by_label) == len(my_label_definitions)
     assert number_of_categories_by_label[0] == len(my_label_definitions[0])
 
-    return my_features, my_label_definitions, my_labels
+    return my_feature_vectors, my_label_definitions, my_labels
 
 
 def create_toy_tensorflow_model(
@@ -406,10 +456,10 @@ def exercise_dataset_handler(
         f"exercise_dataset_handler on type(my_dataset_handler) = "
         f"{type(my_dataset_handler)}"
     )
-    # !!! Test read_all_features_from_h5py(self, filename, data_name="features"):
-    # !!! Test write_all_features_to_h5py(self, filename, data_name="features"):
-    # !!! Test set_some_features(self, feature_indices, features):
-    # !!! Test get_some_features(self, feature_indices):
+    # !!! Test read_all_feature_vectors_from_h5py(self, filename, data_name="features"):
+    # !!! Test write_all_feature_vectors_to_h5py(self, filename, data_name="features"):
+    # !!! Test set_some_feature_vectors(self, feature_vector_indices, feature_vectors):
+    # !!! Test get_some_feature_vectors(self, feature_vector_indices):
     # !!! Test read_all_labels_from_h5py(self, filename, data_name="labels"):
     # !!! Test write_all_labels_to_h5py(self, filename, data_name="labels"):
     # !!! Test set_some_labels(self, label_indices, labels):
@@ -420,20 +470,23 @@ def exercise_dataset_handler(
     # !!! Test set_some_dictionaries(self, dictionary_indices, dictionaries):
     # !!! Test get_some_dictionaries(self, dictionary_indices):
     # !!! Test get_all_label_definitions(self):
+    # !!! Test set_validation_indices(self, validation_indices):
+    # !!! Test get_validation_indices(self):
+    # !!! Test clear_validation_indices(self):
 
     # raise NotImplementedError("Not implemented")
-    assert my_dataset_handler.get_all_features() is None
+    assert my_dataset_handler.get_all_feature_vectors() is None
     assert my_dataset_handler.get_all_labels() is None
 
     # Create random feature vectors
-    my_features, my_label_definitions, my_labels = create_dataset(
+    my_feature_vectors, my_label_definitions, my_labels = create_dataset(
         number_of_superpixels, number_of_features, number_of_categories_by_label
     )
 
-    my_dataset_handler.set_all_features(my_features)
-    assert my_dataset_handler.get_all_features() is my_features
-    my_dataset_handler.clear_all_features()
-    assert my_dataset_handler.get_all_features() is None
+    my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
+    assert my_dataset_handler.get_all_feature_vectors() is my_feature_vectors
+    my_dataset_handler.clear_all_feature_vectors()
+    assert my_dataset_handler.get_all_feature_vectors() is None
 
     my_dataset_handler.set_all_labels(my_labels)
     assert my_dataset_handler.get_all_labels() is my_labels
@@ -442,7 +495,7 @@ def exercise_dataset_handler(
     my_dataset_handler.clear_all_labels()
     assert my_dataset_handler.get_all_labels() is None
 
-    my_dataset_handler.set_all_features(my_features)
+    my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
     my_dataset_handler.set_all_labels(my_labels)
     my_dataset_handler.set_all_label_definitions(my_label_definitions)
     my_dataset_handler.check_data_consistency()

@@ -30,45 +30,58 @@ class AbstractDatasetHandler:
             "Abstract method AbstractDatasetHandler::__init__ should not be called."
         )
 
-    def read_all_features_from_h5py(self, filename, data_name="features"):
+    def read_all_feature_vectors_from_h5py(self, filename, data_name="features"):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::read_all_features_from_h5py "
+            "Abstract method "
+            "AbstractDatasetHandler::read_all_feature_vectors_from_h5py should not be "
+            "called."
+        )
+
+    def write_all_feature_vectors_to_h5py(self, filename, data_name="features"):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::write_all_feature_vectors_to_h5py "
             "should not be called."
         )
 
-    def write_all_features_to_h5py(self, filename, data_name="features"):
+    def set_all_feature_vectors(self, feature_vectors):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::write_all_features_to_h5py "
+            "Abstract method AbstractDatasetHandler::set_all_feature_vectors "
             "should not be called."
         )
 
-    def set_all_features(self, features):
+    def get_all_feature_vectors(self):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_all_features "
+            "Abstract method AbstractDatasetHandler::get_all_feature_vectors "
             "should not be called."
         )
 
-    def get_all_features(self):
+    def clear_all_feature_vectors(self):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_all_features "
+            "Abstract method AbstractDatasetHandler::clear_all_feature_vectors "
             "should not be called."
         )
 
-    def clear_all_features(self):
+    def set_some_feature_vectors(self, feature_vector_indices, feature_vectors):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::clear_all_features "
+            "Abstract method AbstractDatasetHandler::set_some_feature_vectors "
             "should not be called."
         )
 
-    def set_some_features(self, feature_indices, features):
+    def get_some_feature_vectors(self, feature_vector_indices):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_some_features "
+            "Abstract method AbstractDatasetHandler::get_some_feature_vectors "
             "should not be called."
         )
 
-    def get_some_features(self, feature_indices):
+    def get_training_feature_vectors(self):
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_some_features "
+            "Abstract method AbstractDatasetHandler::get_training_feature_vectors "
+            "should not be called."
+        )
+
+    def get_validation_feature_vectors(self):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::get_validation_feature_vectors "
             "should not be called."
         )
 
@@ -114,6 +127,18 @@ class AbstractDatasetHandler:
             "should not be called."
         )
 
+    def get_training_labels(self):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::get_training_labels "
+            "should not be called."
+        )
+
+    def get_validation_labels(self):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::get_validation_labels "
+            "should not be called."
+        )
+
     def set_all_dictionaries(self, dictionaries):
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_dictionaries "
@@ -144,6 +169,24 @@ class AbstractDatasetHandler:
             "should not be called."
         )
 
+    def set_validation_indices(self, validation_indices):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::set_validation_indices "
+            "should not be called."
+        )
+
+    def get_validation_indices(self):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::get_validation_indices "
+            "should not be called."
+        )
+
+    def clear_validation_indices(self):
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::clear_validation_indices "
+            "should not be called."
+        )
+
     def set_all_label_definitions(self, label_definitions):
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_label_definitions "
@@ -166,76 +209,100 @@ class AbstractDatasetHandler:
 class GenericDatasetHandler(AbstractDatasetHandler):
     def __init__(self):
         # super(GenericDatasetHandler, self).__init__()
-        self.features = None
+        self.feature_vectors = None
         self.labels = None
         self.dictionaries = None
         self.label_definitions = None
+        self.validation_indices = None
 
     """
     Handle the vector of features for each stored entity.
     """
 
-    def read_all_features_from_h5py(self, filename, data_name="features"):
+    def read_all_feature_vectors_from_h5py(self, filename, data_name="features"):
         """
         Read the entire database of features from a supplied h5py file.
         """
         with h5.File(filename) as ds:
-            self.features = np.array(ds[data_name])
+            self.feature_vectors = np.array(ds[data_name])
 
-    def write_all_features_to_h5py(self, filename, data_name="features"):
+    def write_all_feature_vectors_to_h5py(self, filename, data_name="features"):
         """
         Write the entire database of features to a h5py file.
         """
         with h5.File(filename, "w") as f:
-            f.create_dataset(data_name, self.features.shape, data=self.features)
+            f.create_dataset(
+                data_name, self.feature_vectors.shape, data=self.feature_vectors
+            )
 
-    def set_all_features(self, features):
+    def set_all_feature_vectors(self, feature_vectors):
         """
-        Set the entire database of features from a supplied numpy array.
+        Set the entire database of feature vectors from a supplied numpy array.
         """
-        if isinstance(features, np.ndarray) and len(features.shape) == 2:
-            self.features = features
+        if isinstance(feature_vectors, np.ndarray) and len(feature_vectors.shape) == 2:
+            self.feature_vectors = feature_vectors
         else:
             raise ValueError(
-                "The argument to set_all_features must be a 2-dimensional numpy "
+                "The argument to set_all_feature_vectors must be a 2-dimensional numpy "
                 "ndarray."
             )
 
-    def get_all_features(self):
+    def get_all_feature_vectors(self):
         """
-        Get the entire database of features as a numpy array.
+        Get the entire database of feature vectors as a numpy array.
         """
-        return self.features
+        return self.feature_vectors
 
-    def clear_all_features(self):
+    def clear_all_feature_vectors(self):
         """
-        Remove all features from the database
+        Remove all feature vectors from the database
         """
-        self.features = None
+        self.feature_vectors = None
 
-    def set_some_features(self, feature_indices, features):
+    def set_some_feature_vectors(self, feature_vector_indices, feature_vectors):
         """
-        This overwrites existing features.  It does not (yet) handle insert, delete, or
-        append.
+        This overwrites existing feature vectors.  It does not (yet) handle insert,
+        delete, or append.
 
-        N.B. as with numpy arrays in general, a single feature index and a list with one
-        feature index will have different behaviors, in that the former drops an array
-        dimension but the latter does not.  That is, when changing one feature use
-        feature_indices=5, features=[3,1.2,4] OR use feature_indices=[5],
-        features=[[3,1.2,4]].
+        N.B. as with numpy arrays in general, a single feature vector index and a list
+        with one feature vector index will have different behaviors, in that the former
+        drops an array dimension but the latter does not.  That is, when changing one
+        feature vector use feature_vector_indices=5, feature_vectors=[3,1.2,4] OR use
+        feature_vector_indices=[5], feature_vectors=[[3,1.2,4]].
         """
-        self.features[feature_indices] = features
+        self.feature_vectors[feature_vector_indices] = feature_vectors
 
-    def get_some_features(self, feature_indices):
+    def get_some_feature_vectors(self, feature_vector_indices):
         """
-        This fetches a subset of existing features.
+        This fetches a subset of existing feature_vectors.
 
-        N.B. as with numpy arrays in general, a single feature index and a list with one
-        feature index will have different behaviors, in that the former drops an array
-        dimension but the latter does not.  That is, use of feature_indices=5 returns
-        [3,1.2,4] but use of feature_indices=[5] returns [[3,1.2,4]].
+        N.B. as with numpy arrays in general, a single feature vector index and a list
+        with one feature vector index will have different behaviors, in that the former
+        drops an array dimension but the latter does not.  That is, use of
+        feature_vector_indices=5 returns [3,1.2,4] but use of feature_vector_indices=[5]
+        returns [[3,1.2,4]].
         """
-        return self.features[feature_indices]
+        return self.feature_vectors[feature_vector_indices]
+
+    def get_training_feature_vectors(self):
+        return (
+            self.get_all_feature_vectors()
+            if self.validation_indices is None
+            else self.get_some_feature_vectors(
+                list(
+                    set(range(self.feature_vectors.shape[0])).difference(
+                        set(self.validation_indices)
+                    )
+                )
+            )
+        )
+
+    def get_validation_feature_vectors(self):
+        return (
+            None
+            if self.validation_indices is None
+            else self.get_some_feature_vectors(self.validation_indices)
+        )
 
     """
     Handle the label(s) for each stored entity.
@@ -303,6 +370,26 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         return self.labels[label_indices]
 
+    def get_training_labels(self):
+        return (
+            self.get_all_labels()
+            if self.validation_indices is None
+            else self.get_some_labels(
+                list(
+                    set(range(self.labels.shape[0])).difference(
+                        set(self.validation_indices)
+                    )
+                )
+            )
+        )
+
+    def get_validation_labels(self):
+        return (
+            None
+            if self.validation_indices is None
+            else self.get_some_labels(self.validation_indices)
+        )
+
     """
     Handle the dictionary of supplemental information for each stored entity.
     """
@@ -338,6 +425,34 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         Remove all dictionaries from the database
         """
         self.dictionaries = None
+
+    def set_validation_indices(self, validation_indices):
+        """
+        Mark which feature vectors are reserved for validation, and should not
+        participate in training.
+        """
+        if isinstance(validation_indices, (list, tuple)) and all(
+            isinstance(e, int) for e in validation_indices
+        ):
+            self.validation_indices = validation_indices
+        else:
+            raise ValueError(
+                "The argument to set_validation_indices must be a tuple or list of "
+                "integers"
+            )
+
+    def get_validation_indices(self):
+        """
+        Retrieve the indices of those feature vectors that are reserved for validation,
+        and should not participate in training.
+        """
+        return self.validation_indices
+
+    def clear_validation_indices(self):
+        """
+        Indicate that no feature vectors are reserved for validation.
+        """
+        self.validation_indices = None
 
     def set_some_dictionaries(self, dictionary_indices, dictionaries):
         """
@@ -410,13 +525,15 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         return self.label_definitions
 
     def check_data_consistency(self):
-        # Check whether among features, labels, and dictionaries that were supplied, are
-        # they for the same number of entities?
-        features_length = 0 if self.features is None else self.features.shape[0]
+        # Check whether among feature vectors, labels, and dictionaries that were
+        # supplied, are they for the same number of entities?
+        feature_vectors_length = (
+            0 if self.feature_vectors is None else self.feature_vectors.shape[0]
+        )
         labels_length = 0 if self.labels is None else self.labels.shape[0]
         dictionaries_length = 0 if self.dictionaries is None else len(self.dictionaries)
         # Eliminate duplicates
-        all_lengths = set([features_length, labels_length, dictionaries_length])
+        all_lengths = set([feature_vectors_length, labels_length, dictionaries_length])
         lengths_test = len(all_lengths) == 1 or (
             len(all_lengths) == 2 and 0 in all_lengths
         )
@@ -465,7 +582,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         mesgs = list()
         if not lengths_test:
             mesgs += [
-                f"height(features) = {features_length}, "
+                f"height(feature_vectors) = {feature_vectors_length}, "
                 f"height(labels) = {labels_length}, and "
                 f"height(dictionaries) = {dictionaries_length} do not match."
             ]
