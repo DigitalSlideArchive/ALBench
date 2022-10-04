@@ -77,7 +77,13 @@ class AbstractModelHandler:
             "should not be called."
         )
 
-    def train(self, train_features, train_labels):
+    def train(
+        self,
+        train_features,
+        train_labels,
+        validation_features=None,
+        validation_labels=None,
+    ):
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
@@ -315,26 +321,43 @@ class TensorFlowModelHandler(GenericModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
-    def train(self, train_features, train_labels):
+    def train(
+        self,
+        train_features,
+        train_labels,
+        validation_features=None,
+        validation_labels=None,
+    ):
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
+        assert (validation_features is None) == (validation_labels is None)
 
         self.model.compile(
             optimizer="adam", loss=self.loss_function, metrics=["accuracy"]
         )
-        # Get `epochs` from training parameters!!!
-        # Add validation_data=(x, y,) to the self.model.fit call!!!
 
+        validation_args = (
+            dict()
+            if validation_features is None
+            else dict(
+                validation_data=(
+                    validation_features,
+                    validation_labels,
+                )
+            )
+        )
+        # Get `epochs` from training parameters!!!
         self.model.fit(
             train_features,
             train_labels,
             epochs=10,
             verbose=0,
             callbacks=[self.custom_callback],
+            **validation_args,
         )
         # print(f"{repr(self.custom_callback.get_log()) = }")
 
@@ -396,7 +419,13 @@ class PyTorchModelHandler(GenericModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
-    def train(self, train_features, train_labels):
+    def train(
+        self,
+        train_features,
+        train_labels,
+        validation_features=None,
+        validation_labels=None,
+    ):
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
@@ -405,6 +434,8 @@ class PyTorchModelHandler(GenericModelHandler):
 
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
+        assert (validation_features is None) == (validation_labels is None)
+        do_validation = validation_features is not None
 
         # This code heavily mimics
         # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
@@ -429,21 +460,29 @@ class PyTorchModelHandler(GenericModelHandler):
             def __getitem__(self, index):
                 return self.train_features[index, :], self.train_labels[index]
 
-        features_labels = ZipDataset(train_features, train_labels)
+        train_features_labels = ZipDataset(train_features, train_labels)
         # Instead, get `batch_size` from somewhere!!!
         batch_size = 1
         # DataLoader has additional parameters that we may wish to use!!!
-        my_data_loader = torch.utils.data.DataLoader(
-            features_labels, batch_size=batch_size
+        my_train_data_loader = torch.utils.data.DataLoader(
+            train_features_labels, batch_size=batch_size
         )
 
-        print_interval = -int(-len(my_data_loader) // 4)
+        if do_validation:
+            validation_features_labels = ZipDataset(
+                validation_features, validation_labels
+            )
+            # DataLoader has additional parameters that we may wish to use!!!
+            my_validation_data_loader = torch.utils.data.DataLoader(
+                validation_features_labels, batch_size=batch_size
+            )
+
         for epoch in range(number_of_epochs):  # loop over the dataset multiple times
             self.custom_callback.on_epoch_begin(epoch)
-            running_loss = 0.0
-            running_size = 0
-            running_correct = 0.0
-            for i, data in enumerate(my_data_loader):
+            train_loss = 0.0
+            train_size = 0
+            train_correct = 0.0
+            for i, data in enumerate(my_train_data_loader):
                 self.custom_callback.on_train_batch_begin(i)
                 inputs, labels = data
                 # zero the parameter gradients
@@ -455,20 +494,42 @@ class PyTorchModelHandler(GenericModelHandler):
                 loss.backward()
                 optimizer.step()
                 new_size = inputs.size(0)
-                running_size += new_size
+                train_size += new_size
                 new_loss = loss.item() * inputs.size(0)
-                running_loss += new_loss
+                train_loss += new_loss
                 new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
-                running_correct += new_correct
-                logs = dict(
-                    loss=new_loss / new_size,
-                    accuracy=(new_correct / new_size).detach().cpu().numpy(),
-                )
+                train_correct += new_correct
+                loss = new_loss / new_size
+                accuracy = (new_correct / new_size).detach().cpu().numpy()
+                if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                    accuracy = accuracy[()]
+                logs = dict(loss=loss, accuracy=accuracy)
                 self.custom_callback.on_train_batch_end(i, logs)
-            logs = dict(
-                loss=running_loss / running_size,
-                accuracy=(running_correct / running_size).detach().cpu().numpy(),
-            )
+            loss = train_loss / train_size
+            accuracy = (train_correct / train_size).detach().cpu().numpy()
+            if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                accuracy = accuracy[()]
+            logs = dict(loss=loss, accuracy=accuracy)
+            if do_validation:
+                validation_loss = 0.0
+                validation_size = 0
+                validation_correct = 0.0
+                for i, data in enumerate(my_validation_data_loader):
+                    inputs, labels = data
+                    outputs = self.model(inputs)
+                    loss = self.criterion(outputs, labels)
+                    new_size = inputs.size(0)
+                    validation_size += new_size
+                    new_loss = loss.item() * inputs.size(0)
+                    validation_loss += new_loss
+                    new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                    validation_correct += new_correct
+                val_loss = validation_loss / validation_size
+                val_accuracy = (
+                    (validation_correct / validation_size).detach().cpu().numpy()[()]
+                )
+                more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
+                logs = {**logs, **more_logs}
             self.custom_callback.on_epoch_end(epoch, logs)
         self.custom_callback.on_train_end(logs)  # `logs` is from the last epoch
 
@@ -515,7 +576,13 @@ class AbstractEnsembleModelHandler(GenericModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
-    def train(self, train_features, train_labels):
+    def train(
+        self,
+        train_features,
+        train_labels,
+        validation_features=None,
+        validation_labels=None,
+    ):
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
@@ -558,7 +625,13 @@ class ExampleEnsembleModelHandler(AbstractEnsembleModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
-    def train(self, train_features, train_labels):
+    def train(
+        self,
+        train_features,
+        train_labels,
+        validation_features=None,
+        validation_labels=None,
+    ):
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
