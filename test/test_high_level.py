@@ -22,6 +22,8 @@ def test_imports():
     import al_bench as alb
     import h5py as h5
     import numpy as np
+    import os
+    import re
     import tensorflow as tf
     import torch
 
@@ -127,6 +129,8 @@ def test_handler_combinations():
 
     import al_bench as alb
     import datetime
+    import os
+    import re
 
     # Specify some testing parameters
     parameters = dict(
@@ -135,8 +139,10 @@ def test_handler_combinations():
         number_of_categories_by_label=[4],
         label_to_test=0,
     )
-    number_iterations = 5
+    number_iterations = 20
+    number_per_iteration = 5
 
+    combination_index = 0
     for dataset_creator, DatasetHandler in (
         (
             create_dataset,
@@ -179,6 +185,9 @@ def test_handler_combinations():
                 my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
                 my_dataset_handler.set_all_label_definitions(my_label_definitions)
                 my_dataset_handler.set_all_labels(my_labels)
+                my_dataset_handler.set_validation_indices(
+                    list(range(my_feature_vectors.shape[0] // 10))
+                )
 
                 my_model = model_creator(**parameters)
                 my_model_handler = ModelHandler()
@@ -190,17 +199,33 @@ def test_handler_combinations():
                 my_strategy_handler.set_learning_parameters(
                     maximum_iterations=number_iterations,
                     label_of_interest=parameters["label_to_test"],
-                    number_to_select_per_iteration=20,
+                    number_to_select_per_iteration=number_per_iteration,
                 )
 
                 # Start with nothing labeled yet
                 currently_labeled_examples = set()
 
                 # Go!
-                print(
-                    f"Combination: {type(my_dataset_handler)}, "
-                    f"{type(my_model_handler)}, {type(my_strategy_handler)}"
+                combination_name = "-".join(
+                    [
+                        re.search(
+                            r"<class 'al_bench\.dataset\.(.*)'>",
+                            f"{type(my_dataset_handler)}",
+                        ).group(1),
+                        re.search(
+                            r"<class 'al_bench\.model\.(.*)'>",
+                            f"{type(my_model_handler)}",
+                        ).group(1),
+                        re.search(
+                            r"<class 'al_bench\.strategy\.(.*)'>",
+                            f"{type(my_strategy_handler)}",
+                        ).group(1),
+                        datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f"),
+                        f"{combination_index:06d}",
+                    ]
                 )
+                print(f"Exercise combination: {combination_name}")
+                combination_index += 1
                 my_strategy_handler.run(currently_labeled_examples)
                 my_log = my_strategy_handler.get_log()
                 assert (
@@ -232,7 +257,9 @@ def test_handler_combinations():
                         ]
                     )
                 )
-                my_strategy_handler.write_epoch_log_to_tensorboard_file()
+                my_strategy_handler.write_epoch_log_to_tensorboard_file(
+                    log_dir=os.path.join("runs", combination_name)
+                )
 
 
 def create_dataset(

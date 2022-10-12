@@ -162,6 +162,12 @@ class GenericModelHandler(AbstractModelHandler):
 
             if self.log is None:
                 return False
+            translate = dict(
+                loss="Loss/train",
+                val_loss="Loss/test",
+                accuracy="Accuracy/train",
+                val_accuracy="Accuracy/test",
+            )
             with SummaryWriter(*args, **kwargs) as writer:
                 beginning = datetime.utcfromtimestamp(0)
                 for entry in self.log:
@@ -172,54 +178,19 @@ class GenericModelHandler(AbstractModelHandler):
                         continue
                     utc_seconds = (entry["utcnow"] - beginning).total_seconds()
                     epoch = entry["epoch"]
-                    if "loss" in logs.keys():
-                        loss = logs["loss"]
-                        # print(
-                        #     f'Invoking writer.add_scalar("Loss/train", {loss}, {epoch}, walltime={utc_seconds}, new_style=True)'
-                        # )
-                        writer.add_scalar(
-                            "Loss/train",
-                            loss,
-                            epoch,
-                            walltime=utc_seconds,
-                            new_style=True,
-                        )
-                    if "val_loss" in logs.keys():
-                        val_loss = logs["val_loss"]
-                        # print(
-                        #     f'Invoking writer.add_scalar("Loss/test", {val_loss}, {epoch}, walltime={utc_seconds}, new_style=True)'
-                        # )
-                        writer.add_scalar(
-                            "Loss/test",
-                            val_loss,
-                            epoch,
-                            walltime=utc_seconds,
-                            new_style=True,
-                        )
-                    if "accuracy" in logs.keys():
-                        accuracy = logs["accuracy"]
-                        # print(
-                        #     f'Invoking writer.add_scalar("Accuracy/train", {accuracy}, {epoch}, walltime={utc_seconds}, new_style=True)'
-                        # )
-                        writer.add_scalar(
-                            "Accuracy/train",
-                            accuracy,
-                            epoch,
-                            walltime=utc_seconds,
-                            new_style=True,
-                        )
-                    if "val_accuracy" in logs.keys():
-                        val_accuracy = logs["val_accuracy"]
-                        # print(
-                        #     f'Invoking writer.add_scalar("Accuracy/test", {val_accuracy}, {epoch}, walltime={utc_seconds}, new_style=True)'
-                        # )
-                        writer.add_scalar(
-                            "Accuracy/test",
-                            val_accuracy,
-                            epoch,
-                            walltime=utc_seconds,
-                            new_style=True,
-                        )
+                    for key in translate.keys():
+                        if key in logs.keys():
+                            value = logs[key]
+                            # print(
+                            #     f"Invoking writer.add_scalar({translate[key]}, {value}, {epoch}, walltime={utc_seconds}, new_style=True)"
+                            # )
+                            writer.add_scalar(
+                                translate[key],
+                                value,
+                                epoch,
+                                walltime=utc_seconds,
+                                new_style=True,
+                            )
             return True
 
         def on_train_begin(self, logs=None):
@@ -520,7 +491,7 @@ class PyTorchModelHandler(GenericModelHandler):
         self.custom_callback.on_train_begin()
 
         # Get `epochs` from training parameters!!!
-        number_of_epochs = 3
+        number_of_epochs = 10
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
         class ZipDataset(torch.utils.data.Dataset):
