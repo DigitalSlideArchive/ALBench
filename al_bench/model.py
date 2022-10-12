@@ -123,6 +123,9 @@ class GenericModelHandler(AbstractModelHandler):
     def get_log(self):
         return self.custom_callback.get_log()
 
+    def write_epoch_log_to_tensorboard_file(self, *args, **kwargs):
+        return self.custom_callback.write_epoch_log_to_tensorboard_file(*args, **kwargs)
+
     def set_dataset_handler(self, dataset_handler):
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
             raise ValueError(
@@ -136,6 +139,13 @@ class GenericModelHandler(AbstractModelHandler):
 
     import keras
 
+    # Does it matter that this GenericModelHandler code requires `import tensorflow`
+    # because of the superclass of GenericModelHandler.CustomCallback?!!!
+
+    # Does it matter that this GenericModelHandler code requires `import torch`` because
+    # of the use of torch.utils.tensorboard.SummaryWriter in
+    # GenericModelHandler.CustomCallback.write_epoch_log_to_tensorboard_file?!!!
+
     class CustomCallback(keras.callbacks.Callback):
         def __init__(self):
             super(GenericModelHandler.CustomCallback, self).__init__()
@@ -146,6 +156,71 @@ class GenericModelHandler(AbstractModelHandler):
 
         def get_log(self):
             return self.log
+
+        def write_epoch_log_to_tensorboard_file(self, *args, **kwargs):
+            from torch.utils.tensorboard import SummaryWriter
+
+            if self.log is None:
+                return False
+            with SummaryWriter(*args, **kwargs) as writer:
+                beginning = datetime.utcfromtimestamp(0)
+                for entry in self.log:
+                    if entry["model_step"] != ModelStep.ON_TRAIN_EPOCH_END:
+                        continue
+                    logs = entry["logs"]
+                    if logs is None:
+                        continue
+                    utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                    epoch = entry["epoch"]
+                    if "loss" in logs.keys():
+                        loss = logs["loss"]
+                        # print(
+                        #     f'Invoking writer.add_scalar("Loss/train", {loss}, {epoch}, walltime={utc_seconds}, new_style=True)'
+                        # )
+                        writer.add_scalar(
+                            "Loss/train",
+                            loss,
+                            epoch,
+                            walltime=utc_seconds,
+                            new_style=True,
+                        )
+                    if "val_loss" in logs.keys():
+                        val_loss = logs["val_loss"]
+                        # print(
+                        #     f'Invoking writer.add_scalar("Loss/test", {val_loss}, {epoch}, walltime={utc_seconds}, new_style=True)'
+                        # )
+                        writer.add_scalar(
+                            "Loss/test",
+                            val_loss,
+                            epoch,
+                            walltime=utc_seconds,
+                            new_style=True,
+                        )
+                    if "accuracy" in logs.keys():
+                        accuracy = logs["accuracy"]
+                        # print(
+                        #     f'Invoking writer.add_scalar("Accuracy/train", {accuracy}, {epoch}, walltime={utc_seconds}, new_style=True)'
+                        # )
+                        writer.add_scalar(
+                            "Accuracy/train",
+                            accuracy,
+                            epoch,
+                            walltime=utc_seconds,
+                            new_style=True,
+                        )
+                    if "val_accuracy" in logs.keys():
+                        val_accuracy = logs["val_accuracy"]
+                        # print(
+                        #     f'Invoking writer.add_scalar("Accuracy/test", {val_accuracy}, {epoch}, walltime={utc_seconds}, new_style=True)'
+                        # )
+                        writer.add_scalar(
+                            "Accuracy/test",
+                            val_accuracy,
+                            epoch,
+                            walltime=utc_seconds,
+                            new_style=True,
+                        )
+            return True
 
         def on_train_begin(self, logs=None):
             self.log.append(

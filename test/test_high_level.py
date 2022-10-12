@@ -232,6 +232,7 @@ def test_handler_combinations():
                         ]
                     )
                 )
+                my_strategy_handler.write_epoch_log_to_tensorboard_file()
 
 
 def create_dataset(
