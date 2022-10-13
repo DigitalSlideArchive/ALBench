@@ -197,9 +197,9 @@ class GenericModelHandler(AbstractModelHandler):
             model_step = ModelStep.ON_TRAIN_END
             y_dictionary = dict(
                 loss="Loss/train",
-                val_loss="Loss/test",
+                val_loss="Loss/validation",
                 accuracy="Accuracy/train",
-                val_accuracy="Accuracy/test",
+                val_accuracy="Accuracy/validation",
             )
             x_key = "training_size"
             return self.write_some_log_for_tensorboard(

@@ -141,29 +141,29 @@ def test_handler_combinations():
         number_of_categories_by_label=[4],
         label_to_test=0,
     )
-    number_iterations = 20
-    number_per_iteration = 5
+    number_iterations = 10
+    number_per_iteration = 10
 
     combination_index = 0
     for dataset_creator, DatasetHandler in (
-        (
-            create_dataset,
-            alb.dataset.GenericDatasetHandler,
-        ),
+        # (
+        #     create_dataset,
+        #     alb.dataset.GenericDatasetHandler,
+        # ),
         (
             create_dataset_4598_1280_4,
             alb.dataset.GenericDatasetHandler,
         ),
     ):
         for model_creator, ModelHandler in (
-            (
-                create_toy_tensorflow_model,
-                alb.model.TensorFlowModelHandler,
-            ),
-            (
-                create_toy_pytorch_model,
-                alb.model.PyTorchModelHandler,
-            ),
+            # (
+            #     create_toy_tensorflow_model,
+            #     alb.model.TensorFlowModelHandler,
+            # ),
+            # (
+            #     create_toy_pytorch_model,
+            #     alb.model.PyTorchModelHandler,
+            # ),
             (
                 create_tensorflow_model_with_dropout,
                 alb.model.TensorFlowModelHandler,
@@ -213,10 +213,10 @@ def test_handler_combinations():
                 # Go!
                 combination_name = "-".join(
                     [
-                        re.search(
-                            r"<class 'al_bench\.dataset\.(.*)'>",
-                            f"{type(my_dataset_handler)}",
-                        ).group(1),
+                        # re.search(
+                        #     r"<class 'al_bench\.dataset\.(.*)'>",
+                        #     f"{type(my_dataset_handler)}",
+                        # ).group(1),
                         re.search(
                             r"<class 'al_bench\.model\.(.*)'>",
                             f"{type(my_model_handler)}",
