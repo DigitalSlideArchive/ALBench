@@ -257,7 +257,7 @@ def test_handler_combinations():
                         ]
                     )
                 )
-                my_strategy_handler.write_epoch_log_to_tensorboard_file(
+                my_strategy_handler.write_train_log_to_tensorboard_file(
                     log_dir=os.path.join("runs", combination_name)
                 )
 
