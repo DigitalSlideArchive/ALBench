@@ -289,11 +289,11 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     def get_log(self):
         return self.model_handler.get_log()
 
-    def write_train_log_to_tensorboard_file(self, *args, **kwargs):
-        return self.model_handler.write_train_log_to_tensorboard_file(*args, **kwargs)
+    def write_train_log_for_tensorboard(self, *args, **kwargs):
+        return self.model_handler.write_train_log_for_tensorboard(*args, **kwargs)
 
-    def write_epoch_log_to_tensorboard_file(self, *args, **kwargs):
-        return self.model_handler.write_epoch_log_to_tensorboard_file(*args, **kwargs)
+    def write_epoch_log_for_tensorboard(self, *args, **kwargs):
+        return self.model_handler.write_epoch_log_for_tensorboard(*args, **kwargs)
 
     def run(self, currently_labeled_examples):
         """

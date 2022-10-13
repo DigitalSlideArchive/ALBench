@@ -123,11 +123,11 @@ class GenericModelHandler(AbstractModelHandler):
     def get_log(self):
         return self.custom_callback.get_log()
 
-    def write_train_log_to_tensorboard_file(self, *args, **kwargs):
-        return self.custom_callback.write_train_log_to_tensorboard_file(*args, **kwargs)
+    def write_train_log_for_tensorboard(self, *args, **kwargs):
+        return self.custom_callback.write_train_log_for_tensorboard(*args, **kwargs)
 
-    def write_epoch_log_to_tensorboard_file(self, *args, **kwargs):
-        return self.custom_callback.write_epoch_log_to_tensorboard_file(*args, **kwargs)
+    def write_epoch_log_for_tensorboard(self, *args, **kwargs):
+        return self.custom_callback.write_epoch_log_for_tensorboard(*args, **kwargs)
 
     def set_dataset_handler(self, dataset_handler):
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
@@ -147,7 +147,7 @@ class GenericModelHandler(AbstractModelHandler):
 
     # Does it matter that this GenericModelHandler code requires `import torch`` because
     # of the use of torch.utils.tensorboard.SummaryWriter in
-    # GenericModelHandler.CustomCallback.write_some_log_to_tensorboard_file?!!!
+    # GenericModelHandler.CustomCallback.write_some_log_for_tensorboard?!!!
 
     class CustomCallback(keras.callbacks.Callback):
         def __init__(self):
@@ -161,7 +161,7 @@ class GenericModelHandler(AbstractModelHandler):
         def get_log(self):
             return self.log
 
-        def write_some_log_to_tensorboard_file(
+        def write_some_log_for_tensorboard(
             self, model_step, y_dictionary, x_key, *args, **kwargs
         ):
             from torch.utils.tensorboard import SummaryWriter
@@ -193,7 +193,7 @@ class GenericModelHandler(AbstractModelHandler):
                             )
             return True
 
-        def write_train_log_to_tensorboard_file(self, *args, **kwargs):
+        def write_train_log_for_tensorboard(self, *args, **kwargs):
             model_step = ModelStep.ON_TRAIN_END
             y_dictionary = dict(
                 loss="Loss/train",
@@ -202,11 +202,11 @@ class GenericModelHandler(AbstractModelHandler):
                 val_accuracy="Accuracy/test",
             )
             x_key = "training_size"
-            return self.write_some_log_to_tensorboard_file(
+            return self.write_some_log_for_tensorboard(
                 model_step, y_dictionary, x_key, *args, **kwargs
             )
 
-        def write_epoch_log_to_tensorboard_file(self, *args, **kwargs):
+        def write_epoch_log_for_tensorboard(self, *args, **kwargs):
             model_step = ModelStep.ON_TRAIN_EPOCH_END
             y_dictionary = dict(
                 loss="Loss/train",
@@ -215,7 +215,7 @@ class GenericModelHandler(AbstractModelHandler):
                 val_accuracy="Accuracy/test",
             )
             x_key = "epoch"
-            return self.write_some_log_to_tensorboard_file(
+            return self.write_some_log_for_tensorboard(
                 model_step, y_dictionary, x_key, *args, **kwargs
             )
 
