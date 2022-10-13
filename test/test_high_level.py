@@ -23,6 +23,7 @@ def test_imports():
     import h5py as h5
     import numpy as np
     import os
+    import random
     import re
     import tensorflow as tf
     import torch
@@ -130,6 +131,7 @@ def test_handler_combinations():
     import al_bench as alb
     import datetime
     import os
+    import random
     import re
 
     # Specify some testing parameters
@@ -186,7 +188,10 @@ def test_handler_combinations():
                 my_dataset_handler.set_all_label_definitions(my_label_definitions)
                 my_dataset_handler.set_all_labels(my_labels)
                 my_dataset_handler.set_validation_indices(
-                    list(range(my_feature_vectors.shape[0] // 10))
+                    random.sample(
+                        range(my_feature_vectors.shape[0]),
+                        my_feature_vectors.shape[0] // 10,
+                    )
                 )
 
                 my_model = model_creator(**parameters)
