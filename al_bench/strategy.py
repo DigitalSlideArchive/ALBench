@@ -261,13 +261,13 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 f"Python dict but is of type {type(parameters)}"
             )
 
-        missing_keys = set(self.required_parameters_keys).difference(parameters.keys())
+        missing_keys = set(self.required_parameters_keys).difference(parameters)
         if len(missing_keys) > 0:
             raise ValueError(
                 f"set_learning_parameters missing required key(s): {missing_keys}"
             )
 
-        invalid_keys = set(parameters.keys()).difference(self.valid_parameters_keys)
+        invalid_keys = set(parameters).difference(self.valid_parameters_keys)
         if len(invalid_keys) > 0:
             raise ValueError(
                 f"set_learning_parameters given invalid key(s): {invalid_keys}"

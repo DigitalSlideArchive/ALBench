@@ -178,8 +178,8 @@ class GenericModelHandler(AbstractModelHandler):
                         continue
                     utc_seconds = (entry["utcnow"] - beginning).total_seconds()
                     x_value = entry[x_key]
-                    for key in y_dictionary.keys():
-                        if key in logs.keys():
+                    for key in y_dictionary:
+                        if key in logs:
                             y_value = logs[key]
                             # print(
                             #     f"Invoking writer.add_scalar({y_dictionary[key]}, {y_value}, {x_value}, walltime={utc_seconds}, new_style=True)"
