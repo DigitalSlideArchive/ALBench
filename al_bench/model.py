@@ -123,6 +123,12 @@ class GenericModelHandler(AbstractModelHandler):
     def get_log(self):
         return self.custom_callback.get_log()
 
+    def write_train_log_for_tensorboard(self, *args, **kwargs):
+        return self.custom_callback.write_train_log_for_tensorboard(*args, **kwargs)
+
+    def write_epoch_log_for_tensorboard(self, *args, **kwargs):
+        return self.custom_callback.write_epoch_log_for_tensorboard(*args, **kwargs)
+
     def set_dataset_handler(self, dataset_handler):
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
             raise ValueError(
@@ -136,10 +142,18 @@ class GenericModelHandler(AbstractModelHandler):
 
     import keras
 
+    # Does it matter that this GenericModelHandler code requires `import tensorflow`
+    # because of the superclass of GenericModelHandler.CustomCallback?!!!
+
+    # Does it matter that this GenericModelHandler code requires `import torch`` because
+    # of the use of torch.utils.tensorboard.SummaryWriter in
+    # GenericModelHandler.CustomCallback.write_some_log_for_tensorboard?!!!
+
     class CustomCallback(keras.callbacks.Callback):
         def __init__(self):
             super(GenericModelHandler.CustomCallback, self).__init__()
             self.reset_log()
+            self.training_size = 0
 
         def reset_log(self):
             self.log = list()
@@ -147,20 +161,88 @@ class GenericModelHandler(AbstractModelHandler):
         def get_log(self):
             return self.log
 
+        def write_some_log_for_tensorboard(
+            self, model_step, y_dictionary, x_key, *args, **kwargs
+        ):
+            from torch.utils.tensorboard import SummaryWriter
+
+            if self.log is None:
+                return False
+            with SummaryWriter(*args, **kwargs) as writer:
+                beginning = datetime.utcfromtimestamp(0)
+                for entry in self.log:
+                    if entry["model_step"] != model_step:
+                        continue
+                    logs = entry["logs"]
+                    if logs is None:
+                        continue
+                    utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                    x_value = entry[x_key]
+                    for key in y_dictionary:
+                        if key in logs:
+                            y_value = logs[key]
+                            # print(
+                            #     f"Invoking writer.add_scalar({y_dictionary[key]}, {y_value}, {x_value}, walltime={utc_seconds}, new_style=True)"
+                            # )
+                            writer.add_scalar(
+                                y_dictionary[key],
+                                y_value,
+                                x_value,
+                                walltime=utc_seconds,
+                                new_style=True,
+                            )
+            return True
+
+        def write_train_log_for_tensorboard(self, *args, **kwargs):
+            model_step = ModelStep.ON_TRAIN_END
+            y_dictionary = dict(
+                loss="Loss/train",
+                val_loss="Loss/validation",
+                accuracy="Accuracy/train",
+                val_accuracy="Accuracy/validation",
+            )
+            x_key = "training_size"
+            return self.write_some_log_for_tensorboard(
+                model_step, y_dictionary, x_key, *args, **kwargs
+            )
+
+        def write_epoch_log_for_tensorboard(self, *args, **kwargs):
+            model_step = ModelStep.ON_TRAIN_EPOCH_END
+            y_dictionary = dict(
+                loss="Loss/train",
+                val_loss="Loss/test",
+                accuracy="Accuracy/train",
+                val_accuracy="Accuracy/test",
+            )
+            x_key = "epoch"
+            return self.write_some_log_for_tensorboard(
+                model_step, y_dictionary, x_key, *args, **kwargs
+            )
+
         def on_train_begin(self, logs=None):
+            # Because tensorflow defines the interface for on_train_begin for us and
+            # invokes it for us, we cannot simply supply training_size through this
+            # interface.  Instead we grab it from self.training_size and require that
+            # the user has already set that to something reasonable.
             self.log.append(
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TRAIN_BEGIN,
+                    training_size=self.training_size,
                     logs=logs,
                 )
             )
 
         def on_train_end(self, logs=None):
+            # Because tensorflow defines the interface for on_train_end for us and
+            # invokes it for us, we cannot simply supply training_size through this
+            # interface.  Instead we grab it from self.training_size and require that
+            # the user has already set that to something reasonable.
             self.log.append(
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TRAIN_END,
+                    training_size=self.training_size,
                     logs=logs,
                 )
             )
@@ -351,6 +433,7 @@ class TensorFlowModelHandler(GenericModelHandler):
             )
         )
         # Get `epochs` from training parameters!!!
+        self.custom_callback.training_size = train_features.shape[0]
         self.model.fit(
             train_features,
             train_labels,
@@ -442,10 +525,11 @@ class PyTorchModelHandler(GenericModelHandler):
         # more detailed training loop example, see
         # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
 
+        self.custom_callback.training_size = train_features.shape[0]
         self.custom_callback.on_train_begin()
 
         # Get `epochs` from training parameters!!!
-        number_of_epochs = 3
+        number_of_epochs = 10
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
         class ZipDataset(torch.utils.data.Dataset):
@@ -531,6 +615,7 @@ class PyTorchModelHandler(GenericModelHandler):
                 more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                 logs = {**logs, **more_logs}
             self.custom_callback.on_epoch_end(epoch, logs)
+
         self.custom_callback.on_train_end(logs)  # `logs` is from the last epoch
 
     def predict(self, features):

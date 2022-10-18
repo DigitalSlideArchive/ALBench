@@ -559,7 +559,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             or (
                 len(self.labels.shape) == 1  # 1-dimensional numpy array
                 and len(
-                    set(self.labels).difference(set(self.label_definitions[0].keys()))
+                    set(self.labels).difference(set(self.label_definitions[0]))
                 )
                 == 0
             )
@@ -569,7 +569,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                     [
                         len(
                             set(self.labels[:, col]).difference(
-                                set(self.label_definitions[col].keys())
+                                set(self.label_definitions[col])
                             )
                         )
                         == 0
