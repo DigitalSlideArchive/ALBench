@@ -97,14 +97,7 @@ def deeply_numeric(x):
     import numpy as np
 
     return (
-        isinstance(
-            x,
-            (
-                int,
-                float,
-                np.float32,
-            ),
-        )
+        isinstance(x, (int, float, np.float32))
         or (isinstance(x, np.ndarray) and len(x.shape) == 0 and deeply_numeric(x[()]))
         or all([deeply_numeric(e) for e in x])
     )
@@ -141,8 +134,8 @@ def test_handler_combinations():
         number_of_categories_by_label=[4],
         label_to_test=0,
     )
-    number_iterations = 10
-    number_per_iteration = 10
+    number_queries = 10
+    number_per_query = 10
 
     combination_index = 0
     for dataset_creator, DatasetHandler in (
@@ -150,10 +143,7 @@ def test_handler_combinations():
         #     create_dataset,
         #     alb.dataset.GenericDatasetHandler,
         # ),
-        (
-            create_dataset_4598_1280_4,
-            alb.dataset.GenericDatasetHandler,
-        ),
+        (create_dataset_4598_1280_4, alb.dataset.GenericDatasetHandler),
     ):
         for model_creator, ModelHandler in (
             # (
@@ -164,14 +154,8 @@ def test_handler_combinations():
             #     create_toy_pytorch_model,
             #     alb.model.PyTorchModelHandler,
             # ),
-            (
-                create_tensorflow_model_with_dropout,
-                alb.model.TensorFlowModelHandler,
-            ),
-            (
-                create_pytorch_model_with_dropout,
-                alb.model.PyTorchModelHandler,
-            ),
+            (create_tensorflow_model_with_dropout, alb.model.TensorFlowModelHandler),
+            (create_pytorch_model_with_dropout, alb.model.PyTorchModelHandler),
         ):
             for StrategyHandler in (
                 alb.strategy.RandomStrategyHandler,
@@ -202,9 +186,9 @@ def test_handler_combinations():
                 my_strategy_handler.set_dataset_handler(my_dataset_handler)
                 my_strategy_handler.set_model_handler(my_model_handler)
                 my_strategy_handler.set_learning_parameters(
-                    maximum_iterations=number_iterations,
+                    maximum_queries=number_queries,
                     label_of_interest=parameters["label_to_test"],
-                    number_to_select_per_iteration=number_per_iteration,
+                    number_to_select_per_query=number_per_query,
                 )
 
                 # Start with nothing labeled yet
@@ -268,10 +252,7 @@ def test_handler_combinations():
 
 
 def create_dataset(
-    number_of_superpixels,
-    number_of_features,
-    number_of_categories_by_label,
-    **kwargs,
+    number_of_superpixels, number_of_features, number_of_categories_by_label, **kwargs
 ):
     """
     Create a toy set of feature vectors
@@ -323,10 +304,7 @@ def create_dataset(
 
 
 def create_dataset_4598_1280_4(
-    number_of_superpixels,
-    number_of_features,
-    number_of_categories_by_label,
-    **kwargs,
+    number_of_superpixels, number_of_features, number_of_categories_by_label, **kwargs
 ):
     import h5py as h5
     import numpy as np

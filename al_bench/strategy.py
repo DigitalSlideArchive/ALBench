@@ -156,8 +156,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         # These parameters must be supplied to the set_learning_parameters call.
         self.required_parameters_keys = [
             "label_of_interest",
-            "maximum_iterations",
-            "number_to_select_per_iteration",
+            "maximum_queries",
+            "number_to_select_per_query",
         ]
         # This the exhaustive list of parameters that are valid when used with a
         # set_learning_parameters call.
@@ -320,10 +320,10 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             else [validation_feature_vectors, validation_labels]
         )
 
-        maximum_iterations = self.parameters["maximum_iterations"]
+        maximum_queries = self.parameters["maximum_queries"]
         label_of_interest = self.parameters["label_of_interest"]
 
-        for iteration in range(maximum_iterations):
+        for query in range(maximum_queries):
             print(f"Predicting for {feature_vectors.shape[0]} examples")
             self.predictions = self.model_handler.predict(feature_vectors)
             next_examples = self.select_next_examples(
@@ -352,14 +352,15 @@ class RandomStrategyHandler(GenericStrategyHandler):
     def select_next_examples(self, currently_labeled_examples, validation_indices=None):
         """
         Select new examples to be labeled by the expert.
-        `number_to_select_per_iteration` is the number that should be selected with each
-        iteration of the active learning strategy.  `currently_labeled_examples` is the
-        list of examples indices that have already been labeled.  `feature_vectors` is
-        the feature vector for each example in the entire set of examples, including
-        both those examples that have been labeled and those that could be selected for
-        labeling.
+        `number_to_select_per_query` is the number that should be selected with each
+          query of the active learning strategy.
+        `currently_labeled_examples` is the list of examples indices that have already
+          been labeled.
+        `feature_vectors` is the feature vector for each example in the entire set of
+          examples, including both those examples that have been labeled and those that
+          could be selected for labeling.
         """
-        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_to_select = self.parameters["number_to_select_per_query"]
         feature_vectors = self.dataset_handler.get_all_feature_vectors()
 
         # Make sure the pool to select from is large enough
@@ -399,7 +400,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest maximum score.
         """
-        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_to_select = self.parameters["number_to_select_per_query"]
         number_of_feature_vectors = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
@@ -441,7 +442,7 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest gap between highest and second-highest score.
         """
-        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_to_select = self.parameters["number_to_select_per_query"]
         number_of_feature_vectors = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
@@ -488,7 +489,7 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the highest entropy.
         """
-        number_to_select = self.parameters["number_to_select_per_iteration"]
+        number_to_select = self.parameters["number_to_select_per_query"]
         number_of_feature_vectors = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
