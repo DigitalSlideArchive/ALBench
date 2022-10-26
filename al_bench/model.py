@@ -162,7 +162,7 @@ class GenericModelHandler(AbstractModelHandler):
             return self.log
 
         def write_some_log_for_tensorboard(
-            self, model_step, y_dictionary, x_key, *args, **kwargs
+            self, model_steps, y_dictionary, x_key, *args, **kwargs
         ):
             from torch.utils.tensorboard import SummaryWriter
 
@@ -171,7 +171,7 @@ class GenericModelHandler(AbstractModelHandler):
             with SummaryWriter(*args, **kwargs) as writer:
                 beginning = datetime.utcfromtimestamp(0)
                 for entry in self.log:
-                    if entry["model_step"] != model_step:
+                    if entry["model_step"] not in model_steps:
                         continue
                     logs = entry["logs"]
                     if logs is None:
@@ -194,7 +194,7 @@ class GenericModelHandler(AbstractModelHandler):
             return True
 
         def write_train_log_for_tensorboard(self, *args, **kwargs):
-            model_step = ModelStep.ON_TRAIN_END
+            model_steps = (ModelStep.ON_TRAIN_END,)
             y_dictionary = dict(
                 loss="Loss/train",
                 val_loss="Loss/validation",
@@ -203,11 +203,11 @@ class GenericModelHandler(AbstractModelHandler):
             )
             x_key = "training_size"
             return self.write_some_log_for_tensorboard(
-                model_step, y_dictionary, x_key, *args, **kwargs
+                model_steps, y_dictionary, x_key, *args, **kwargs
             )
 
         def write_epoch_log_for_tensorboard(self, *args, **kwargs):
-            model_step = ModelStep.ON_TRAIN_EPOCH_END
+            model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
             y_dictionary = dict(
                 loss="Loss/train",
                 val_loss="Loss/test",
@@ -216,7 +216,7 @@ class GenericModelHandler(AbstractModelHandler):
             )
             x_key = "epoch"
             return self.write_some_log_for_tensorboard(
-                model_step, y_dictionary, x_key, *args, **kwargs
+                model_steps, y_dictionary, x_key, *args, **kwargs
             )
 
         def on_train_begin(self, logs=None):
@@ -425,12 +425,7 @@ class TensorFlowModelHandler(GenericModelHandler):
         validation_args = (
             dict()
             if validation_features is None
-            else dict(
-                validation_data=(
-                    validation_features,
-                    validation_labels,
-                )
-            )
+            else dict(validation_data=(validation_features, validation_labels))
         )
         # Get `epochs` from training parameters!!!
         self.custom_callback.training_size = train_features.shape[0]
