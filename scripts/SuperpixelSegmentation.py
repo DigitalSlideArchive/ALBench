@@ -79,7 +79,7 @@ def compute_boundary_data(
     tile_info = ts.getSingleTile(
         tile_position=tile_position,
         format=large_image.tilesource.TILE_FORMAT_NUMPY,
-        **it_kwargs
+        **it_kwargs,
     )
 
     # get global x and y positions, tile height and width
@@ -268,7 +268,7 @@ def main(args):  # noqa: C901
     print(c)
 
     dask_setup_time = time.time() - start_time
-    print("Dask setup time = {}".format(cli_utils.disp_time_hms(dask_setup_time)))
+    print(f"Dask setup time = {cli_utils.disp_time_hms(dask_setup_time)}")
 
     for i in range(len(img_paths)):
 
@@ -305,9 +305,7 @@ def main(args):  # noqa: C901
             fgnd_time = time.time() - start_time
 
             print(
-                "low-res foreground mask computation time = {}".format(
-                    cli_utils.disp_time_hms(fgnd_time)
-                )
+                f"low-res foreground mask computation time = {cli_utils.disp_time_hms(fgnd_time)}"
             )
 
             it_kwargs = {
@@ -324,7 +322,7 @@ def main(args):  # noqa: C901
 
             num_tiles = ts.getSingleTile(**it_kwargs)["iterator_range"]["position"]
 
-            print("Number of tiles = {}".format(num_tiles))
+            print(f"Number of tiles = {num_tiles}")
 
             tile_fgnd_frac_list = htk_utils.compute_tile_foreground_fraction(
                 img_paths[i], im_fgnd_mask_lres, fgnd_seg_scale, it_kwargs
@@ -337,15 +335,11 @@ def main(args):  # noqa: C901
             fgnd_frac_comp_time = time.time() - start_time
 
             print(
-                "Number of foreground tiles = {0:d} ({1:2f}%%)".format(
-                    num_fgnd_tiles, percent_fgnd_tiles
-                )
+                f"Number of foreground tiles = {num_fgnd_tiles:d} ({percent_fgnd_tiles:2f}%%)"
             )
 
             print(
-                "Tile foreground fraction computation time = {}".format(
-                    cli_utils.disp_time_hms(fgnd_frac_comp_time)
-                )
+                f"Tile foreground fraction computation time = {cli_utils.disp_time_hms(fgnd_frac_comp_time)}"
             )
 
             print("\n>> Computing reinhard color normalization stats ...\n")
@@ -359,9 +353,7 @@ def main(args):  # noqa: C901
             rstats_time = time.time() - start_time
 
             print(
-                "Reinhard stats computation time = {}".format(
-                    cli_utils.disp_time_hms(rstats_time)
-                )
+                f"Reinhard stats computation time = {cli_utils.disp_time_hms(rstats_time)}"
             )
 
             #
@@ -445,14 +437,12 @@ def main(args):  # noqa: C901
             boundary_out.close()
 
             print(
-                "Boundary and centroids detection time = {}".format(
-                    cli_utils.disp_time_hms(boundary_centroids_detection_time)
-                )
+                f"Boundary and centroids detection time = {cli_utils.disp_time_hms(boundary_centroids_detection_time)}"
             )
 
     total_time_taken = time.time() - total_start_time
 
-    print("Total analysis time = {}".format(cli_utils.disp_time_hms(total_time_taken)))
+    print(f"Total analysis time = {cli_utils.disp_time_hms(total_time_taken)}")
 
 
 if __name__ == "__main__":

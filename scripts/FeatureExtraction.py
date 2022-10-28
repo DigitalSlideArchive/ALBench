@@ -96,7 +96,7 @@ def compute_superpixel_data(
     tile_info = ts.getSingleTile(
         tile_position=tile_position,
         format=large_image.tilesource.TILE_FORMAT_NUMPY,
-        **superpixel_kwargs
+        **superpixel_kwargs,
     )
 
     im_tile = tile_info["tile"][:, :, :3]
@@ -196,7 +196,7 @@ def compute_superpixel_data_pca(
     tile_info = ts.getSingleTile(
         tile_position=tile_position,
         format=large_image.tilesource.TILE_FORMAT_NUMPY,
-        **superpixel_kwargs
+        **superpixel_kwargs,
     )
 
     im_tile = tile_info["tile"][:, :, :3]
@@ -383,7 +383,7 @@ def main(args):  # noqa: C901
                 #
                 print("\n>> Reading input image ... \n")
 
-                print("{} is processing ... \n".format(slide_name))
+                print(f"{slide_name} is processing ... \n")
 
                 ts = large_image.getTileSource(img_paths[i])
 
@@ -414,9 +414,7 @@ def main(args):  # noqa: C901
                     fgnd_time = time.time() - start_time
 
                     print(
-                        "low-res foreground mask computation time = {}".format(
-                            cli_utils.disp_time_hms(fgnd_time)
-                        )
+                        f"low-res foreground mask computation time = {cli_utils.disp_time_hms(fgnd_time)}"
                     )
 
                     it_kwargs = {
@@ -430,7 +428,7 @@ def main(args):  # noqa: C901
                         "position"
                     ]
 
-                    print("Number of tiles = {}".format(num_tiles))
+                    print(f"Number of tiles = {num_tiles}")
 
                     tile_fgnd_frac_list = htk_utils.compute_tile_foreground_fraction(
                         img_paths[i], im_fgnd_mask_lres, fgnd_seg_scale, it_kwargs
@@ -445,15 +443,11 @@ def main(args):  # noqa: C901
                     fgnd_frac_comp_time = time.time() - start_time
 
                     print(
-                        "Number of foreground tiles = {0:d} ({1:2f}%%)".format(
-                            num_fgnd_tiles, percent_fgnd_tiles
-                        )
+                        f"Number of foreground tiles = {num_fgnd_tiles:d} ({percent_fgnd_tiles:2f}%%)"
                     )
 
                     print(
-                        "Tile foreground fraction computation time = {}".format(
-                            cli_utils.disp_time_hms(fgnd_frac_comp_time)
-                        )
+                        f"Tile foreground fraction computation time = {cli_utils.disp_time_hms(fgnd_frac_comp_time)}"
                     )
 
                     print("\n>> Computing reinhard color normalization stats ...\n")
@@ -467,9 +461,7 @@ def main(args):  # noqa: C901
                     rstats_time = time.time() - start_time
 
                     print(
-                        "Reinhard stats computation time = {}".format(
-                            cli_utils.disp_time_hms(rstats_time)
-                        )
+                        f"Reinhard stats computation time = {cli_utils.disp_time_hms(rstats_time)}"
                     )
 
                     print("\n>> Detecting superpixel data ...\n")
@@ -519,7 +511,7 @@ def main(args):  # noqa: C901
                                 src_sigma_lab,
                             )
 
-                        print("tile_position = {}".format(tile_position))
+                        print(f"tile_position = {tile_position}")
 
                         if len(tile_features) > 0:
 
@@ -604,7 +596,7 @@ def main(args):  # noqa: C901
 
     total_time_taken = time.time() - total_start_time
 
-    print("Total analysis time = {}".format(cli_utils.disp_time_hms(total_time_taken)))
+    print(f"Total analysis time = {cli_utils.disp_time_hms(total_time_taken)}")
 
     print(">> Writing raw H5 data file")
     output = h5py.File(outputDataSet, "w")
