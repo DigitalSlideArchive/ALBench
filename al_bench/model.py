@@ -20,7 +20,6 @@ from datetime import datetime
 import enum
 import numpy as np
 import scipy.stats
-from . import dataset
 
 
 class ModelStep(enum.Enum):
@@ -66,18 +65,6 @@ class AbstractModelHandler:
             "should not be called."
         )
 
-    def set_dataset_handler(self, dataset_handler):
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::set_dataset_handler "
-            "should not be called."
-        )
-
-    def get_dataset_handler(self):
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::get_dataset_handler "
-            "should not be called."
-        )
-
     def train(
         self,
         train_features,
@@ -115,7 +102,6 @@ class GenericModelHandler(AbstractModelHandler):
 
     def __init__(self):
         super(GenericModelHandler, self).__init__()
-        self.dataset_handler = None
         self.custom_callback = GenericModelHandler.CustomCallback()
 
     def reset_log(self):
@@ -134,17 +120,6 @@ class GenericModelHandler(AbstractModelHandler):
         return self.custom_callback.write_confidence_log_for_tensorboard(
             *args, **kwargs
         )
-
-    def set_dataset_handler(self, dataset_handler):
-        if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
-            raise ValueError(
-                "The argument to set_dataset_handler must be a (subclass of) "
-                "AbstractDatasetHandler"
-            )
-        self.dataset_handler = dataset_handler
-
-    def get_dataset_handler(self):
-        return self.dataset_handler
 
     import keras
 
