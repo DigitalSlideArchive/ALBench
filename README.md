@@ -12,3 +12,8 @@ and dataset; or multiple models and datasets can be used to get a broader pictur
 each strategy's effectiveness in multiple contexts.  As an alternative use case,
 multiple runs of the tool with different models and datasets can be compared, evaluating
 these models and datasets for their compatibility with a given active learning strategy.
+
+![ALBench Overview](Documentation/ALBenchOverview.png)
+The top-level code creates and configures handlers for the dataset, machine learning
+model, and active learning strategy.  Then it invokes the active learning strategy
+handler to evaluate the strategy on the dataset using the model.
