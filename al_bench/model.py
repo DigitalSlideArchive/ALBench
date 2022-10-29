@@ -238,21 +238,7 @@ class GenericModelHandler(AbstractModelHandler):
                         if len(predictions_list) == 0:
                             continue
 
-                        # Combine predictions into one giant numpy array
-                        number_of_predictions = sum(
-                            (predict.shape[0] for predict in predictions_list)
-                        )
-                        predictions = np.empty(
-                            (number_of_predictions, predictions_list[0].shape[1])
-                        )
-                        current_index = 0
-                        for predict in predictions_list:
-                            assert isinstance(predict, np.ndarray)
-                            assert len(predict.shape) == 2
-                            assert predict.shape[1] == predictions_list[0].shape[1]
-                            next_index = current_index + predict.shape[0]
-                            predictions[current_index:next_index, :] = predict
-                            current_index = next_index
+                        predictions = np.concatenate(predictions_list, axis=0)
                         predictions_list = list()
 
                         # Compute several scores for each prediction.  High scores
