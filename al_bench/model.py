@@ -19,6 +19,7 @@
 from datetime import datetime
 import enum
 import numpy as np
+import scipy.stats
 from . import dataset
 
 
@@ -129,6 +130,11 @@ class GenericModelHandler(AbstractModelHandler):
     def write_epoch_log_for_tensorboard(self, *args, **kwargs):
         return self.custom_callback.write_epoch_log_for_tensorboard(*args, **kwargs)
 
+    def write_confidence_log_for_tensorboard(self, *args, **kwargs):
+        return self.custom_callback.write_confidence_log_for_tensorboard(
+            *args, **kwargs
+        )
+
     def set_dataset_handler(self, dataset_handler):
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
             raise ValueError(
@@ -162,39 +168,44 @@ class GenericModelHandler(AbstractModelHandler):
             return self.log
 
         def write_some_log_for_tensorboard(
-            self, model_step, y_dictionary, x_key, *args, **kwargs
+            self, model_steps, y_dictionary, x_key, *args, **kwargs
         ):
             from torch.utils.tensorboard import SummaryWriter
 
             if self.log is None:
                 return False
+            beginning = datetime.utcfromtimestamp(0)
             with SummaryWriter(*args, **kwargs) as writer:
-                beginning = datetime.utcfromtimestamp(0)
                 for entry in self.log:
-                    if entry["model_step"] != model_step:
-                        continue
                     logs = entry["logs"]
-                    if logs is None:
+                    if entry["model_step"] not in model_steps or logs is None:
                         continue
                     utc_seconds = (entry["utcnow"] - beginning).total_seconds()
                     x_value = entry[x_key]
-                    for key in y_dictionary:
-                        if key in logs:
-                            y_value = logs[key]
-                            # print(
-                            #     f"Invoking writer.add_scalar({y_dictionary[key]}, {y_value}, {x_value}, walltime={utc_seconds}, new_style=True)"
-                            # )
-                            writer.add_scalar(
-                                y_dictionary[key],
-                                y_value,
-                                x_value,
-                                walltime=utc_seconds,
-                                new_style=True,
-                            )
+                    for key in logs.keys() & y_dictionary.keys():
+                        name = y_dictionary[key]
+                        y_value = logs[key]
+                        """
+                        print(
+                            "Invoking writer.add_scalar("
+                            f"tag={repr(name)}, "
+                            f"scalar_value={repr(y_value)}, "
+                            f"global_step={repr(x_value)}, "
+                            f"walltime={repr(utc_seconds)}, "
+                            "new_style=True)"
+                        )
+                        """
+                        writer.add_scalar(
+                            tag=name,
+                            scalar_value=y_value,
+                            global_step=x_value,
+                            walltime=utc_seconds,
+                            new_style=True,
+                        )
             return True
 
         def write_train_log_for_tensorboard(self, *args, **kwargs):
-            model_step = ModelStep.ON_TRAIN_END
+            model_steps = (ModelStep.ON_TRAIN_END,)
             y_dictionary = dict(
                 loss="Loss/train",
                 val_loss="Loss/validation",
@@ -203,11 +214,11 @@ class GenericModelHandler(AbstractModelHandler):
             )
             x_key = "training_size"
             return self.write_some_log_for_tensorboard(
-                model_step, y_dictionary, x_key, *args, **kwargs
+                model_steps, y_dictionary, x_key, *args, **kwargs
             )
 
         def write_epoch_log_for_tensorboard(self, *args, **kwargs):
-            model_step = ModelStep.ON_TRAIN_EPOCH_END
+            model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
             y_dictionary = dict(
                 loss="Loss/train",
                 val_loss="Loss/test",
@@ -216,14 +227,107 @@ class GenericModelHandler(AbstractModelHandler):
             )
             x_key = "epoch"
             return self.write_some_log_for_tensorboard(
-                model_step, y_dictionary, x_key, *args, **kwargs
+                model_steps, y_dictionary, x_key, *args, **kwargs
             )
 
+        def write_confidence_log_for_tensorboard(self, *args, **kwargs):
+            if self.log is None:
+                return False
+            x_key = "training_size"
+            beginning = datetime.utcfromtimestamp(0)
+            predictions_list = list()
+
+            from torch.utils.tensorboard import SummaryWriter
+
+            with SummaryWriter(*args, **kwargs) as writer:
+                for entry in self.log:
+                    model_step = entry["model_step"]
+
+                    if model_step == ModelStep.ON_PREDICT_BEGIN:
+                        # Clear accumulated records
+                        predictions_list = list()
+
+                    if model_step in (
+                        ModelStep.ON_PREDICT_BATCH_END,
+                        ModelStep.ON_PREDICT_END,
+                    ):
+                        # Accumulate any records
+                        if (
+                            entry.get("logs") is not None
+                            and entry.get("logs").get("outputs") is not None
+                        ):
+                            predictions_list.append(entry["logs"]["outputs"])
+
+                    if model_step == ModelStep.ON_PREDICT_END:
+                        # Compute and write out statics from accumulated predictions
+                        if len(predictions_list) == 0:
+                            continue
+
+                        # Combine predictions into one giant numpy array
+                        number_of_predictions = sum(
+                            (predict.shape[0] for predict in predictions_list)
+                        )
+                        predictions = np.empty(
+                            (number_of_predictions, predictions_list[0].shape[1])
+                        )
+                        current_index = 0
+                        for predict in predictions_list:
+                            assert isinstance(predict, np.ndarray)
+                            assert len(predict.shape) == 2
+                            assert predict.shape[1] == predictions_list[0].shape[1]
+                            next_index = current_index + predict.shape[0]
+                            predictions[current_index:next_index, :] = predict
+                            current_index = next_index
+                        predictions_list = list()
+
+                        # Compute several scores for each prediction.  High scores
+                        # correspond to high confidence.
+                        entropy_score = -scipy.stats.entropy(predictions, axis=-1)
+                        prediction_indices = np.arange(len(predictions))
+                        margin_argsort = np.argsort(predictions, axis=-1)
+                        confidence_score = predictions[
+                            prediction_indices, margin_argsort[:, -1]
+                        ]
+                        margin_score = (
+                            confidence_score
+                            - predictions[prediction_indices, margin_argsort[:, -2]]
+                        )
+
+                        # Report median scores
+                        x_value = entry[x_key]
+                        utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                        for statistic_kind, source in zip(
+                            ("maximum", "margin", "entropy"),
+                            (confidence_score, margin_score, entropy_score),
+                        ):
+                            percentiles = (5, 10, 25, 50)
+                            y_values = np.percentile(source, percentiles)
+                            for percentile, y_value in zip(percentiles, y_values):
+                                name = f"Confidence/{statistic_kind}/{percentile:02d}%"
+                                """
+                                print(
+                                    "Invoking writer.add_scalar("
+                                    f"tag={repr(name)}, "
+                                    f"scalar_value={repr(y_value)}, "
+                                    f"global_step={repr(x_value)}, "
+                                    f"walltime={repr(utc_seconds)}, "
+                                    "new_style=True)"
+                                )
+                                """
+                                writer.add_scalar(
+                                    tag=name,
+                                    scalar_value=y_value,
+                                    global_step=x_value,
+                                    walltime=utc_seconds,
+                                    new_style=True,
+                                )
+            return True
+
+        # Because tensorflow defines the interface for on_train_begin, etc. for us and
+        # invokes it for us, we cannot simply supply training_size through this
+        # interface.  Instead we grab it from self.training_size and require that the
+        # user has already set that to something reasonable.
         def on_train_begin(self, logs=None):
-            # Because tensorflow defines the interface for on_train_begin for us and
-            # invokes it for us, we cannot simply supply training_size through this
-            # interface.  Instead we grab it from self.training_size and require that
-            # the user has already set that to something reasonable.
             self.log.append(
                 dict(
                     utcnow=datetime.utcnow(),
@@ -234,10 +338,6 @@ class GenericModelHandler(AbstractModelHandler):
             )
 
         def on_train_end(self, logs=None):
-            # Because tensorflow defines the interface for on_train_end for us and
-            # invokes it for us, we cannot simply supply training_size through this
-            # interface.  Instead we grab it from self.training_size and require that
-            # the user has already set that to something reasonable.
             self.log.append(
                 dict(
                     utcnow=datetime.utcnow(),
@@ -252,6 +352,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TRAIN_EPOCH_BEGIN,
+                    training_size=self.training_size,
                     epoch=epoch,
                     logs=logs,
                 )
@@ -262,6 +363,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TRAIN_EPOCH_END,
+                    training_size=self.training_size,
                     epoch=epoch,
                     logs=logs,
                 )
@@ -272,6 +374,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TRAIN_BATCH_BEGIN,
+                    training_size=self.training_size,
                     batch=batch,
                     logs=logs,
                 )
@@ -283,6 +386,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TRAIN_BATCH_END,
+                    training_size=self.training_size,
                     batch=batch,
                     logs=logs,
                 )
@@ -293,6 +397,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TEST_BEGIN,
+                    training_size=self.training_size,
                     logs=logs,
                 )
             )
@@ -302,6 +407,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TEST_END,
+                    training_size=self.training_size,
                     logs=logs,
                 )
             )
@@ -311,6 +417,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TEST_BATCH_BEGIN,
+                    training_size=self.training_size,
                     batch=batch,
                     logs=logs,
                 )
@@ -321,6 +428,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_TEST_BATCH_END,
+                    training_size=self.training_size,
                     batch=batch,
                     logs=logs,
                 )
@@ -331,6 +439,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_PREDICT_BEGIN,
+                    training_size=self.training_size,
                     logs=logs,
                 )
             )
@@ -340,6 +449,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_PREDICT_END,
+                    training_size=self.training_size,
                     logs=logs,
                 )
             )
@@ -349,6 +459,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_PREDICT_BATCH_BEGIN,
+                    training_size=self.training_size,
                     batch=batch,
                     logs=logs,
                 )
@@ -360,6 +471,7 @@ class GenericModelHandler(AbstractModelHandler):
                 dict(
                     utcnow=datetime.utcnow(),
                     model_step=ModelStep.ON_PREDICT_BATCH_END,
+                    training_size=self.training_size,
                     batch=batch,
                     logs=logs,
                 )
@@ -425,12 +537,7 @@ class TensorFlowModelHandler(GenericModelHandler):
         validation_args = (
             dict()
             if validation_features is None
-            else dict(
-                validation_data=(
-                    validation_features,
-                    validation_labels,
-                )
-            )
+            else dict(validation_data=(validation_features, validation_labels))
         )
         # Get `epochs` from training parameters!!!
         self.custom_callback.training_size = train_features.shape[0]

@@ -249,6 +249,9 @@ def test_handler_combinations():
                 my_strategy_handler.write_train_log_for_tensorboard(
                     log_dir=os.path.join("runs", combination_name)
                 )
+                my_strategy_handler.write_confidence_log_for_tensorboard(
+                    log_dir=os.path.join("runs", combination_name)
+                )
 
 
 def create_dataset(

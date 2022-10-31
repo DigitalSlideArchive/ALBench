@@ -295,6 +295,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     def write_epoch_log_for_tensorboard(self, *args, **kwargs):
         return self.model_handler.write_epoch_log_for_tensorboard(*args, **kwargs)
 
+    def write_confidence_log_for_tensorboard(self, *args, **kwargs):
+        return self.model_handler.write_confidence_log_for_tensorboard(*args, **kwargs)
+
     def run(self, currently_labeled_examples):
         """
         Run the strategy, start to finish.
@@ -332,12 +335,10 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             currently_labeled_examples = currently_labeled_examples.union(next_examples)
             current_indices = tuple(currently_labeled_examples)
             current_feature_vectors = feature_vectors[current_indices, :]
-            current_labels = labels[current_indices, :]
+            current_labels = labels[current_indices, label_of_interest]
             print(f"Training with {current_feature_vectors.shape[0]} examples")
             self.model_handler.train(
-                current_feature_vectors,
-                current_labels[:, label_of_interest],
-                *validation_args,
+                current_feature_vectors, current_labels, *validation_args
             )
 
         print(f"Predicting for {feature_vectors.shape[0]} examples")
