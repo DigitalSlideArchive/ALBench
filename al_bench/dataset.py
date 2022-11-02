@@ -558,9 +558,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             or label_definitions_width == 0  # nothing to compare
             or (
                 len(self.labels.shape) == 1  # 1-dimensional numpy array
-                and len(
-                    set(self.labels).difference(set(self.label_definitions[0]))
-                )
+                and len(set(self.labels).difference(set(self.label_definitions[0])))
                 == 0
             )
             or (
