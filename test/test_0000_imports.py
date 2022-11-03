@@ -19,39 +19,39 @@
 
 def test_0000_imports():
     """Purpose: Test that needed parts of needed packages are available"""
-    from al_bench import dataset
-    from al_bench import model
-    from al_bench import strategy
-    from al_bench.dataset import GenericDatasetHandler
-    from al_bench.model import ModelStep
-    from al_bench.model import PyTorchModelHandler
-    from al_bench.model import TensorFlowModelHandler
-    from al_bench.strategy import EntropyStrategyHandler
-    from al_bench.strategy import LeastConfidenceStrategyHandler
-    from al_bench.strategy import LeastMarginStrategyHandler
-    from al_bench.strategy import RandomStrategyHandler
-    from datetime import datetime
-    from h5py import File
-    from numpy import append
-    from numpy import array
-    from numpy import clip
-    from numpy import float32
-    from numpy import float64
-    from numpy import floor
-    from numpy import ndarray
-    from numpy.random import default_rng
-    from os.path import join
-    from random import sample
-    from re import search
-    from tensorflow.keras import Input
-    from tensorflow.keras.layers import Dense
-    from tensorflow.keras.layers import Dropout
-    from tensorflow.keras.models import Sequential
-    from torch.nn import Dropout
-    from torch.nn import Linear
-    from torch.nn import ReLU
-    from torch.nn import Softmax
-    from torch.nn.modules.module import Module
+    from al_bench import dataset  # noqa F401
+    from al_bench import model  # noqa F401
+    from al_bench import strategy  # noqa F401
+    from al_bench.dataset import GenericDatasetHandler  # noqa F401
+    from al_bench.model import ModelStep  # noqa F401
+    from al_bench.model import PyTorchModelHandler  # noqa F401
+    from al_bench.model import TensorFlowModelHandler  # noqa F401
+    from al_bench.strategy import EntropyStrategyHandler  # noqa F401
+    from al_bench.strategy import LeastConfidenceStrategyHandler  # noqa F401
+    from al_bench.strategy import LeastMarginStrategyHandler  # noqa F401
+    from al_bench.strategy import RandomStrategyHandler  # noqa F401
+    from datetime import datetime  # noqa F401
+    from h5py import File  # noqa F401
+    from numpy import append  # noqa F401
+    from numpy import array  # noqa F401
+    from numpy import clip  # noqa F401
+    from numpy import float32  # noqa F401
+    from numpy import float64  # noqa F401
+    from numpy import floor  # noqa F401
+    from numpy import ndarray  # noqa F401
+    from numpy.random import default_rng  # noqa F401
+    from os.path import join  # noqa F401
+    from random import sample  # noqa F401
+    from re import search  # noqa F401
+    from tensorflow.keras import Input  # noqa F401
+    from tensorflow.keras.layers import Dense  # noqa F401
+    from tensorflow.keras.layers import Dropout  # noqa F401
+    from tensorflow.keras.models import Sequential  # noqa F401
+    from torch.nn import Dropout  # noqa F401
+    from torch.nn import Linear  # noqa F401
+    from torch.nn import ReLU  # noqa F401
+    from torch.nn import Softmax  # noqa F401
+    from torch.nn.modules.module import Module  # noqa F401
 
     pass
 

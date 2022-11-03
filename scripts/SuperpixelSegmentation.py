@@ -5,7 +5,8 @@
 
 # Install memcached if it is not already installed.
 for package in memcached; do
-    if [ $(dpkg-query -W -f='${Status}' "${package}" 2>/dev/null | grep -c "ok installed") -eq 0 ]; then
+    if [ $(dpkg-query -W -f='${Status}' "${package}" 2>/dev/null \
+         | grep -c "ok installed") -eq 0 ]; then
         sudo apt install "${package}"
         # Note: If "sudo apt install memcached" gives "invoke-rc.d: policy-rc.d denied
         # execution of start." then update /usr/sbin/policy-rc.d with
@@ -21,7 +22,8 @@ source ~/venv/superpixel/bin/activate
 pip install -U pip setuptools wheel
 
 # Install packages into our Python virtual environment.
-pip install histomicstk 'large-image[openslide,ometiff,openjpeg,bioformats]' h5py --find-links https://girder.github.io/large_image_wheels
+pip install histomicstk 'large-image[openslide,ometiff,openjpeg,bioformats]' h5py \
+    --find-links https://girder.github.io/large_image_wheels
 
 # Note: We also need to have the configuration file SuperpixelSegmentation.xml in the
 # same directory as the present executable file, SuperpixelSegmentation.py.
@@ -35,7 +37,8 @@ pip install histomicstk 'large-image[openslide,ometiff,openjpeg,bioformats]' h5p
 # image that we want superpixels for.  The centroid and boundary subdirectories have the
 # output.
 
-python SuperpixelSegmentation.py --projectName path/to/myproject --superpixelSize 64 --patchSize 128
+python SuperpixelSegmentation.py --projectName path/to/myproject --superpixelSize 64 \
+    --patchSize 128
 
 """
 
@@ -305,7 +308,8 @@ def main(args):  # noqa: C901
             fgnd_time = time.time() - start_time
 
             print(
-                f"low-res foreground mask computation time = {cli_utils.disp_time_hms(fgnd_time)}"
+                "low-res foreground mask computation time = "
+                f"{cli_utils.disp_time_hms(fgnd_time)}"
             )
 
             it_kwargs = {
@@ -335,11 +339,13 @@ def main(args):  # noqa: C901
             fgnd_frac_comp_time = time.time() - start_time
 
             print(
-                f"Number of foreground tiles = {num_fgnd_tiles:d} ({percent_fgnd_tiles:2f}%%)"
+                "Number of foreground tiles = "
+                f"{num_fgnd_tiles:d} ({percent_fgnd_tiles:2f}%%)"
             )
 
             print(
-                f"Tile foreground fraction computation time = {cli_utils.disp_time_hms(fgnd_frac_comp_time)}"
+                "Tile foreground fraction computation time = "
+                f"{cli_utils.disp_time_hms(fgnd_frac_comp_time)}"
             )
 
             print("\n>> Computing reinhard color normalization stats ...\n")
@@ -353,7 +359,8 @@ def main(args):  # noqa: C901
             rstats_time = time.time() - start_time
 
             print(
-                f"Reinhard stats computation time = {cli_utils.disp_time_hms(rstats_time)}"
+                "Reinhard stats computation time = "
+                f"{cli_utils.disp_time_hms(rstats_time)}"
             )
 
             #
@@ -437,7 +444,8 @@ def main(args):  # noqa: C901
             boundary_out.close()
 
             print(
-                f"Boundary and centroids detection time = {cli_utils.disp_time_hms(boundary_centroids_detection_time)}"
+                "Boundary and centroids detection time = "
+                f"{cli_utils.disp_time_hms(boundary_centroids_detection_time)}"
             )
 
     total_time_taken = time.time() - total_start_time
