@@ -16,6 +16,11 @@
 #
 # ==========================================================================
 
+import al_bench as alb
+import datetime
+import os
+import random
+import re
 from check import check_deeply_numeric
 from create import create_dataset_4598_1280_4
 from create import create_pytorch_model_with_dropout
@@ -39,12 +44,6 @@ def test_0100_handler_combinations():
         The index into number_of_categories_by_label and into my_labels that specifies
         the label that we will test.
     """
-
-    import al_bench as alb
-    import datetime
-    import os
-    import random
-    import re
 
     # Specify some testing parameters
     parameters = dict(

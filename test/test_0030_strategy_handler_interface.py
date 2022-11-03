@@ -16,12 +16,12 @@
 #
 # ==========================================================================
 
+import al_bench as alb
 from exercise import exercise_strategy_handler
 
 
 def test_0030_strategy_handler_interfac():
     """Purpose: Test that high-level operations work"""
-    import al_bench as alb
 
     # Specify some testing parameters
     parameters = dict(

@@ -16,12 +16,12 @@
 #
 # ==========================================================================
 
+import al_bench as alb
 from exercise import exercise_dataset_handler
 
 
 def test_0010_dataset_handler_interface():
     """Purpose: Test that high-level operations work"""
-    import al_bench as alb
 
     # Specify some testing parameters
     parameters = dict(

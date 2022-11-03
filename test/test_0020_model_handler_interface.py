@@ -16,12 +16,12 @@
 #
 # ==========================================================================
 
+import al_bench as alb
 from exercise import exercise_model_handler
 
 
 def test_0020_model_handler_interface():
     """Purpose: Test that high-level operations work"""
-    import al_bench as alb
 
     # Specify some testing parameters
     parameters = dict(
