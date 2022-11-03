@@ -32,16 +32,16 @@ python Predict.py -h
 #   Make some predictions.
 #
 #   positional arguments:
-#     features     h5py file containing a "features" (S, F)-array of the F feature values
-#                  for S superpixels
-#     labels       h5py file containing a "labels" (L, 2)-array, which is the index (into
-#                  "features") and label for each of L labeled superpixels
+#     features     h5py file containing a "features" (S, F)-array of the F feature
+#                  values for S superpixels
+#     labels       h5py file containing a "labels" (L, 2)-array, which is the index
+#                  (into "features") and label for each of L labeled superpixels
 #     predict      h5py file containing a "predict" (P,)-array, which is the index (into
 #                  "features") for each of P superpixels to make predictions for
 #     classifier   ./checkpoints/classifier.h5 is the h5py file to write the model to
-#     predictions  h5py file to write out, containing a "predictions" (P, 2)-array, which
-#                  is the index (into "features") and label for each of P predicted
-#                  superpixels
+#     predictions  h5py file to write out, containing a "predictions" (P, 2)-array,
+#                  which is the index (into "features") and label for each of P
+#                  predicted superpixels
 #
 #   optional arguments:
 #     -h, --help   show this help message and exit
@@ -62,21 +62,24 @@ def main():
         metavar="features",
         type=str,
         nargs=1,
-        help='h5py file containing a "features" (S, F)-array of the F feature values for S superpixels',
+        help='h5py file containing a "features" (S, F)-array of the F feature values '
+        "for S superpixels",
     )
     parser.add_argument(
         "labels",
         metavar="labels",
         type=str,
         nargs=1,
-        help='h5py file containing a "labels" (L, 2)-array, which is the index (into "features") and label for each of L labeled superpixels',
+        help='h5py file containing a "labels" (L, 2)-array, which is the index (into '
+        '"features") and label for each of L labeled superpixels',
     )
     parser.add_argument(
         "predict",
         metavar="predict",
         type=str,
         nargs=1,
-        help='h5py file containing a "predict" (P,)-array, which is the index (into "features") for each of P superpixels to make predictions for',
+        help='h5py file containing a "predict" (P,)-array, which is the index (into '
+        '"features") for each of P superpixels to make predictions for',
     )
     parser.add_argument(
         "classifier",
@@ -90,7 +93,8 @@ def main():
         metavar="predictions",
         type=str,
         nargs=1,
-        help='h5py file to write out, containing a "predictions" (P, 2)-array, which is the index (into "features") and label for each of P predicted superpixels',
+        help='h5py file to write out, containing a "predictions" (P, 2)-array, which '
+        'is the index (into "features") and label for each of P predicted superpixels',
     )
 
     # Use parser to load inputs
@@ -104,7 +108,8 @@ def main():
     with h5.File(args.features[0]) as ds:
         features = np.array(ds["features"])
         if False:
-            # If `features` is an np.array of shape (N, 64) then it can be written to file with:
+            # If `features` is an np.array of shape (N, 64) then it can be written to
+            # file with:
             with h5.File("features.h5", "w") as f:
                 f.create_dataset("features", features.shape, data=features)
 
@@ -113,7 +118,8 @@ def main():
     with h5.File(args.labels[0]) as ds:
         labels = np.array(ds["labels"])
         if False:
-            # If `labels` is an np.array of shape (N, 2) then it can be written to file with:
+            # If `labels` is an np.array of shape (N, 2) then it can be written to file
+            # with:
             with h5.File("labels.h5", "w") as f:
                 f.create_dataset("labels", labels.shape, data=labels)
 
@@ -121,7 +127,8 @@ def main():
     with h5.File(args.predict[0]) as ds:
         predict = np.array(ds["predict"])
         if False:
-            # If `predict` is an np.array of shape (N,) then it can be written to file with:
+            # If `predict` is an np.array of shape (N,) then it can be written to file
+            # with:
             with h5.File("predict.h5", "w") as f:
                 f.create_dataset("predict", predict.shape, data=predict)
 

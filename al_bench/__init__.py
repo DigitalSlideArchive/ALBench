@@ -34,4 +34,4 @@ multiple runs of the tool with different models and datasets can be compared, ev
 these models and datasets for their compatibility with a given active learning strategy.
 
 """
-from . import dataset, model, strategy
+from . import dataset, model, strategy  # noqa F401

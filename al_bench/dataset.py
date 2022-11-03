@@ -590,7 +590,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 f"width(label_definitions) = {label_definitions_width} do not match."
             ]
         if not definitions_test:
-            mesgs += [f"Some labels have categories without definitions."]
+            mesgs += ["Some labels have categories without definitions."]
         if len(mesgs) > 0:
             raise ValueError("\n".join(mesgs))
 

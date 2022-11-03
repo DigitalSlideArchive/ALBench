@@ -1,14 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.optimizers import (
-    Adam,
-    RMSprop,
-    Adadelta,
-    SGD,
-    Adagrad,
-    Adamax,
-    Nadam,
-)
 
 """
 Network class
@@ -41,7 +32,8 @@ class Network:
         self.classifier = None
 
     """
-    Network.set_params requires that exactly five parameters be supplied, as a dict or list.
+    Network.set_params requires that exactly five parameters be supplied, as a dict or
+    list.
     """
 
     def set_params(self, q):
