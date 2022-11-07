@@ -24,12 +24,12 @@ def test_0010_dataset_handler_interface():
     """Purpose: Test that high-level operations work"""
 
     # Specify some testing parameters
-    parameters = dict(
-        number_of_superpixels=1000,
-        number_of_features=2048,
-        number_of_categories_by_label=[5, 7],
-        label_to_test=0,
-    )
+    parameters = {
+        "number_of_superpixels": 1000,
+        "number_of_features": 2048,
+        "number_of_categories_by_label": [5, 7],
+        "label_to_test": 0,
+    }
 
     # Try trivial exercises on the handler interface
     for DatasetHandler in (alb.dataset.GenericDatasetHandler,):

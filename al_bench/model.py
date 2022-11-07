@@ -102,12 +102,12 @@ class Logger(keras.callbacks.Callback):
 
     def write_train_log_for_tensorboard(self, *args, **kwargs):
         model_steps = (ModelStep.ON_TRAIN_END,)
-        y_dictionary = dict(
-            loss="Loss/train",
-            val_loss="Loss/validation",
-            accuracy="Accuracy/train",
-            val_accuracy="Accuracy/validation",
-        )
+        y_dictionary = {
+            "loss": "Loss/train",
+            "val_loss": "Loss/validation",
+            "accuracy": "Accuracy/train",
+            "val_accuracy": "Accuracy/validation",
+        }
         x_key = "training_size"
         return self.write_some_log_for_tensorboard(
             model_steps, y_dictionary, x_key, *args, **kwargs
@@ -115,12 +115,12 @@ class Logger(keras.callbacks.Callback):
 
     def write_epoch_log_for_tensorboard(self, *args, **kwargs):
         model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
-        y_dictionary = dict(
-            loss="Loss/train",
-            val_loss="Loss/test",
-            accuracy="Accuracy/train",
-            val_accuracy="Accuracy/test",
-        )
+        y_dictionary = {
+            "loss": "Loss/train",
+            "val_loss": "Loss/test",
+            "accuracy": "Accuracy/train",
+            "val_accuracy": "Accuracy/test",
+        }
         x_key = "epoch"
         return self.write_some_log_for_tensorboard(
             model_steps, y_dictionary, x_key, *args, **kwargs
@@ -196,152 +196,152 @@ class Logger(keras.callbacks.Callback):
     # user has already set that to something reasonable.
     def on_train_begin(self, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TRAIN_BEGIN,
-                training_size=self.training_size,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TRAIN_BEGIN,
+                "training_size": self.training_size,
+                "logs": logs,
+            }
         )
 
     def on_train_end(self, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TRAIN_END,
-                training_size=self.training_size,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TRAIN_END,
+                "training_size": self.training_size,
+                "logs": logs,
+            }
         )
 
     def on_epoch_begin(self, epoch, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TRAIN_EPOCH_BEGIN,
-                training_size=self.training_size,
-                epoch=epoch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TRAIN_EPOCH_BEGIN,
+                "training_size": self.training_size,
+                "epoch": epoch,
+                "logs": logs,
+            }
         )
 
     def on_epoch_end(self, epoch, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TRAIN_EPOCH_END,
-                training_size=self.training_size,
-                epoch=epoch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TRAIN_EPOCH_END,
+                "training_size": self.training_size,
+                "epoch": epoch,
+                "logs": logs,
+            }
         )
 
     def on_train_batch_begin(self, batch, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TRAIN_BATCH_BEGIN,
-                training_size=self.training_size,
-                batch=batch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TRAIN_BATCH_BEGIN,
+                "training_size": self.training_size,
+                "batch": batch,
+                "logs": logs,
+            }
         )
 
     def on_train_batch_end(self, batch, logs=None):
         # For tensorflow, logs.keys() == ["loss", "accuracy"]
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TRAIN_BATCH_END,
-                training_size=self.training_size,
-                batch=batch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TRAIN_BATCH_END,
+                "training_size": self.training_size,
+                "batch": batch,
+                "logs": logs,
+            }
         )
 
     def on_test_begin(self, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TEST_BEGIN,
-                training_size=self.training_size,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TEST_BEGIN,
+                "training_size": self.training_size,
+                "logs": logs,
+            }
         )
 
     def on_test_end(self, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TEST_END,
-                training_size=self.training_size,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TEST_END,
+                "training_size": self.training_size,
+                "logs": logs,
+            }
         )
 
     def on_test_batch_begin(self, batch, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TEST_BATCH_BEGIN,
-                training_size=self.training_size,
-                batch=batch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TEST_BATCH_BEGIN,
+                "training_size": self.training_size,
+                "batch": batch,
+                "logs": logs,
+            }
         )
 
     def on_test_batch_end(self, batch, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_TEST_BATCH_END,
-                training_size=self.training_size,
-                batch=batch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_TEST_BATCH_END,
+                "training_size": self.training_size,
+                "batch": batch,
+                "logs": logs,
+            }
         )
 
     def on_predict_begin(self, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_PREDICT_BEGIN,
-                training_size=self.training_size,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_PREDICT_BEGIN,
+                "training_size": self.training_size,
+                "logs": logs,
+            }
         )
 
     def on_predict_end(self, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_PREDICT_END,
-                training_size=self.training_size,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_PREDICT_END,
+                "training_size": self.training_size,
+                "logs": logs,
+            }
         )
 
     def on_predict_batch_begin(self, batch, logs=None):
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_PREDICT_BATCH_BEGIN,
-                training_size=self.training_size,
-                batch=batch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_PREDICT_BATCH_BEGIN,
+                "training_size": self.training_size,
+                "batch": batch,
+                "logs": logs,
+            }
         )
 
     def on_predict_batch_end(self, batch, logs=None):
         # For tensorflow, logs.keys() == ["outputs"]
         self.log.append(
-            dict(
-                utcnow=datetime.utcnow(),
-                model_step=ModelStep.ON_PREDICT_BATCH_END,
-                training_size=self.training_size,
-                batch=batch,
-                logs=logs,
-            )
+            {
+                "utcnow": datetime.utcnow(),
+                "model_step": ModelStep.ON_PREDICT_BATCH_END,
+                "training_size": self.training_size,
+                "batch": batch,
+                "logs": logs,
+            }
         )
 
 
@@ -386,7 +386,7 @@ class AbstractModelHandler:
             "Abstract method AbstractModelHandler::train should not be called."
         )
 
-    def predict(self, features):
+    def predict(self, features, log_it):
         """
         Ask the model to make predictions.  This is generally called after training so
         that the strategy can show the user the new predictions and ask for corrections.
@@ -519,7 +519,7 @@ class TensorFlowModelHandler(GenericModelHandler):
         validation_args = (
             dict()
             if validation_features is None
-            else dict(validation_data=(validation_features, validation_labels))
+            else {"validation_data": (validation_features, validation_labels)}
         )
         # Get `epochs` from training parameters!!!
         self.logger.training_size = train_features.shape[0]
@@ -533,14 +533,19 @@ class TensorFlowModelHandler(GenericModelHandler):
         )
         # print(f"{repr(self.logger.get_log()) = }")
 
-    def predict(self, features):
+    def predict(self, features, log_it):
         """
         Ask the model to make predictions.  This is generally called after training so
         that the strategy can show the user the new predictions and ask for corrections.
         Parameters include which examples should be predicted.
         """
 
-        predictions = self.model.predict(features, verbose=0, callbacks=[self.logger])
+        if log_it:
+            predictions = self.model.predict(
+                features, verbose=0, callbacks=[self.logger]
+            )
+        else:
+            predictions = self.model.predict(features, verbose=0)
         # print(f"{repr(self.logger.get_log()) = }")
         return predictions
 
@@ -674,13 +679,13 @@ class PyTorchModelHandler(GenericModelHandler):
                 accuracy = (new_correct / new_size).detach().cpu().numpy()
                 if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                     accuracy = accuracy[()]
-                logs = dict(loss=loss, accuracy=accuracy)
+                logs = {"loss": loss, "accuracy": accuracy}
                 self.logger.on_train_batch_end(i, logs)
             loss = train_loss / train_size
             accuracy = (train_correct / train_size).detach().cpu().numpy()
             if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                 accuracy = accuracy[()]
-            logs = dict(loss=loss, accuracy=accuracy)
+            logs = {"loss": loss, "accuracy": accuracy}
             if do_validation:
                 validation_loss = 0.0
                 validation_size = 0
@@ -699,13 +704,13 @@ class PyTorchModelHandler(GenericModelHandler):
                 val_accuracy = (
                     (validation_correct / validation_size).detach().cpu().numpy()[()]
                 )
-                more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
+                more_logs = {"val_loss": val_loss, "val_accuracy": val_accuracy}
                 logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 
         self.logger.on_train_end(logs)  # `logs` is from the last epoch
 
-    def predict(self, features):
+    def predict(self, features, log_it):
         """
         Ask the model to make predictions.  This is generally called after training so
         that the strategy can show the user the new predictions and ask for corrections.
@@ -713,11 +718,12 @@ class PyTorchModelHandler(GenericModelHandler):
         """
         import torch
 
-        self.logger.on_predict_begin()
+        if log_it:
+            self.logger.on_predict_begin()
         predictions = self.model(torch.from_numpy(features))
         predictions = predictions.detach().cpu().numpy()
-        logs = dict(outputs=predictions)
-        self.logger.on_predict_end(logs)
+        if log_it:
+            self.logger.on_predict_end({"outputs": predictions})
         return predictions
 
 
@@ -761,7 +767,7 @@ class AbstractEnsembleModelHandler(GenericModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
-    def predict(self, features):
+    def predict(self, features, log_it):
         """
         Ask the model to make predictions.  This is generally called after training so
         that the strategy can show the user the new predictions and ask for corrections.
@@ -810,7 +816,7 @@ class ExampleEnsembleModelHandler(AbstractEnsembleModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
-    def predict(self, features):
+    def predict(self, features, log_it):
         """
         Ask the model to make predictions.  This is generally called after training so
         that the strategy can show the user the new predictions and ask for corrections.

@@ -290,9 +290,8 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             if self.validation_indices is None
             else self.get_some_feature_vectors(
                 list(
-                    set(range(self.feature_vectors.shape[0])).difference(
-                        set(self.validation_indices)
-                    )
+                    set(range(self.feature_vectors.shape[0]))
+                    - set(self.validation_indices)
                 )
             )
         )
@@ -375,11 +374,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.get_all_labels()
             if self.validation_indices is None
             else self.get_some_labels(
-                list(
-                    set(range(self.labels.shape[0])).difference(
-                        set(self.validation_indices)
-                    )
-                )
+                list(set(range(self.labels.shape[0])) - set(self.validation_indices))
             )
         )
 
@@ -558,18 +553,13 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             or label_definitions_width == 0  # nothing to compare
             or (
                 len(self.labels.shape) == 1  # 1-dimensional numpy array
-                and len(set(self.labels).difference(set(self.label_definitions[0])))
-                == 0
+                and len(set(self.labels) - set(self.label_definitions[0])) == 0
             )
             or (
                 len(self.labels.shape) == 2  # 2-dimensional numpy array
                 and all(
                     [
-                        len(
-                            set(self.labels[:, col]).difference(
-                                set(self.label_definitions[col])
-                            )
-                        )
+                        len(set(self.labels[:, col]) - set(self.label_definitions[col]))
                         == 0
                         for col in range(self.labels.shape[1])
                     ]

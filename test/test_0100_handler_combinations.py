@@ -46,12 +46,12 @@ def test_0100_handler_combinations():
     """
 
     # Specify some testing parameters
-    parameters = dict(
-        number_of_superpixels=4598,
-        number_of_features=1280,
-        number_of_categories_by_label=[4],
-        label_to_test=0,
-    )
+    parameters = {
+        "number_of_superpixels": 4598,
+        "number_of_features": 1280,
+        "number_of_categories_by_label": [4],
+        "label_to_test": 0,
+    }
     number_queries = 10
     number_per_query = 10
 
