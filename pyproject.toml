@@ -14,12 +14,14 @@ dependencies = [
     "h5py",
     "numpy",
     "scipy",
+    "tensorflow",
+    "torch",
 ]
 dynamic = ["version", "description"]
 
-[project.optional.dependencies]
-torch = ["torch >= 1.11"]
-tensorflow = ["tensorflow >= 2.6"]
+# [project.optional-dependencies]
+# torch = ["torch >= 1.11"]
+# tensorflow = ["tensorflow >= 2.6"]
 
 [project.urls]
 Source = "https://github.com/DigitalSlideArchive/ALBench"

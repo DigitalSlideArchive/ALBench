@@ -16,8 +16,11 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import h5py as h5
 import numpy as np
+from numpy.typing import NDArray
+from typing import Iterable, List, MutableMapping
 
 
 class AbstractDatasetHandler:
@@ -25,181 +28,197 @@ class AbstractDatasetHandler:
     Abstract base class for dataset handlers.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::__init__ should not be called."
         )
 
-    def read_all_feature_vectors_from_h5py(self, filename, data_name="features"):
+    def read_all_feature_vectors_from_h5py(
+        self, filename: str, data_name: str = "features"
+    ) -> None:
         raise NotImplementedError(
             "Abstract method "
             "AbstractDatasetHandler::read_all_feature_vectors_from_h5py should not be "
             "called."
         )
 
-    def write_all_feature_vectors_to_h5py(self, filename, data_name="features"):
+    def write_all_feature_vectors_to_h5py(
+        self, filename: str, data_name: str = "features"
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::write_all_feature_vectors_to_h5py "
             "should not be called."
         )
 
-    def set_all_feature_vectors(self, feature_vectors):
+    def set_all_feature_vectors(self, feature_vectors: NDArray) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_feature_vectors "
             "should not be called."
         )
 
-    def get_all_feature_vectors(self):
+    def get_all_feature_vectors(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_feature_vectors "
             "should not be called."
         )
 
-    def clear_all_feature_vectors(self):
+    def clear_all_feature_vectors(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::clear_all_feature_vectors "
             "should not be called."
         )
 
-    def set_some_feature_vectors(self, feature_vector_indices, feature_vectors):
+    def set_some_feature_vectors(
+        self, feature_vector_indices: NDArray, feature_vectors: NDArray
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_feature_vectors "
             "should not be called."
         )
 
-    def get_some_feature_vectors(self, feature_vector_indices):
+    def get_some_feature_vectors(self, feature_vector_indices: NDArray) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_feature_vectors "
             "should not be called."
         )
 
-    def get_training_feature_vectors(self):
+    def get_training_feature_vectors(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_training_feature_vectors "
             "should not be called."
         )
 
-    def get_validation_feature_vectors(self):
+    def get_validation_feature_vectors(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_validation_feature_vectors "
             "should not be called."
         )
 
-    def read_all_labels_from_h5py(self, filename, data_name="labels"):
+    def read_all_labels_from_h5py(
+        self, filename: str, data_name: str = "labels"
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::read_all_labels_from_h5py "
             "should not be called."
         )
 
-    def write_all_labels_to_h5py(self, filename, data_name="labels"):
+    def write_all_labels_to_h5py(
+        self, filename: str, data_name: str = "labels"
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::write_all_labels_to_h5py "
             "should not be called."
         )
 
-    def set_all_labels(self, labels):
+    def set_all_labels(self, labels: NDArray) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_labels "
             "should not be called."
         )
 
-    def get_all_labels(self):
+    def get_all_labels(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_labels "
             "should not be called."
         )
 
-    def clear_all_labels(self):
+    def clear_all_labels(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::clear_all_labels "
             "should not be called."
         )
 
-    def set_some_labels(self, label_indices, labels):
+    def set_some_labels(self, label_indices: NDArray, labels: NDArray) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_labels "
             "should not be called."
         )
 
-    def get_some_labels(self, label_indices):
+    def get_some_labels(self, label_indices: NDArray) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_labels "
             "should not be called."
         )
 
-    def get_training_labels(self):
+    def get_training_labels(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_training_labels "
             "should not be called."
         )
 
-    def get_validation_labels(self):
+    def get_validation_labels(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_validation_labels "
             "should not be called."
         )
 
-    def set_all_dictionaries(self, dictionaries):
+    def set_all_dictionaries(self, dictionaries: Iterable[MutableMapping]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_dictionaries "
             "should not be called."
         )
 
-    def get_all_dictionaries(self):
+    def get_all_dictionaries(self) -> Iterable[MutableMapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_dictionaries "
             "should not be called."
         )
 
-    def clear_all_dictionaries(self):
+    def clear_all_dictionaries(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::clear_all_dictionaries "
             "should not be called."
         )
 
-    def set_some_dictionaries(self, dictionary_indices, dictionaries):
+    def set_some_dictionaries(
+        self, dictionary_indices: NDArray, dictionaries: Iterable[MutableMapping]
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_dictionaries "
             "should not be called."
         )
 
-    def get_some_dictionaries(self, dictionary_indices):
+    def get_some_dictionaries(
+        self, dictionary_indices: NDArray
+    ) -> Iterable[MutableMapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_dictionaries "
             "should not be called."
         )
 
-    def set_validation_indices(self, validation_indices):
+    def set_validation_indices(self, validation_indices: NDArray) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_validation_indices "
             "should not be called."
         )
 
-    def get_validation_indices(self):
+    def get_validation_indices(self) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_validation_indices "
             "should not be called."
         )
 
-    def clear_validation_indices(self):
+    def clear_validation_indices(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::clear_validation_indices "
             "should not be called."
         )
 
-    def set_all_label_definitions(self, label_definitions):
+    def set_all_label_definitions(
+        self, label_definitions: Iterable[MutableMapping]
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_label_definitions "
             "should not be called."
         )
 
-    def get_all_label_definitions(self):
+    def get_all_label_definitions(self) -> Iterable[MutableMapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_label_definitions "
             "should not be called."
         )
 
-    def check_data_consistency(self):
+    def check_data_consistency(self) -> bool:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::check_data_consistency "
             "should not be called."
@@ -209,24 +228,24 @@ class AbstractDatasetHandler:
 class GenericDatasetHandler(AbstractDatasetHandler):
     def __init__(self):
         # super(GenericDatasetHandler, self).__init__()
-        self.feature_vectors = None
-        self.labels = None
-        self.dictionaries = None
-        self.label_definitions = None
-        self.validation_indices = None
+        pass
 
     """
     Handle the vector of features for each stored entity.
     """
 
-    def read_all_feature_vectors_from_h5py(self, filename, data_name="features"):
+    def read_all_feature_vectors_from_h5py(
+        self, filename: str, data_name: str = "features"
+    ) -> None:
         """
         Read the entire database of features from a supplied h5py file.
         """
         with h5.File(filename) as ds:
-            self.feature_vectors = np.array(ds[data_name])
+            self.feature_vectors: NDArray = np.array(ds[data_name])
 
-    def write_all_feature_vectors_to_h5py(self, filename, data_name="features"):
+    def write_all_feature_vectors_to_h5py(
+        self, filename: str, data_name: str = "features"
+    ) -> None:
         """
         Write the entire database of features to a h5py file.
         """
@@ -235,7 +254,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 data_name, self.feature_vectors.shape, data=self.feature_vectors
             )
 
-    def set_all_feature_vectors(self, feature_vectors):
+    def set_all_feature_vectors(self, feature_vectors: NDArray) -> None:
         """
         Set the entire database of feature vectors from a supplied numpy array.
         """
@@ -247,19 +266,23 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 "ndarray."
             )
 
-    def get_all_feature_vectors(self):
+    def get_all_feature_vectors(self) -> NDArray:
         """
         Get the entire database of feature vectors as a numpy array.
         """
-        return self.feature_vectors
+        return (
+            self.feature_vectors if hasattr(self, "feature_vectors") else np.zeros(())
+        )
 
-    def clear_all_feature_vectors(self):
+    def clear_all_feature_vectors(self) -> None:
         """
         Remove all feature vectors from the database
         """
-        self.feature_vectors = None
+        del self.feature_vectors
 
-    def set_some_feature_vectors(self, feature_vector_indices, feature_vectors):
+    def set_some_feature_vectors(
+        self, feature_vector_indices: NDArray, feature_vectors: NDArray
+    ) -> None:
         """
         This overwrites existing feature vectors.  It does not (yet) handle insert,
         delete, or append.
@@ -272,7 +295,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         self.feature_vectors[feature_vector_indices] = feature_vectors
 
-    def get_some_feature_vectors(self, feature_vector_indices):
+    def get_some_feature_vectors(self, feature_vector_indices: NDArray) -> NDArray:
         """
         This fetches a subset of existing feature_vectors.
 
@@ -284,22 +307,24 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         return self.feature_vectors[feature_vector_indices]
 
-    def get_training_feature_vectors(self):
+    def get_training_feature_vectors(self) -> NDArray:
         return (
             self.get_all_feature_vectors()
-            if self.validation_indices is None
+            if not hasattr(self, "validation_indices")
             else self.get_some_feature_vectors(
-                list(
-                    set(range(self.feature_vectors.shape[0]))
-                    - set(self.validation_indices)
+                np.array(
+                    list(
+                        set(range(self.feature_vectors.shape[0]))
+                        - set(self.validation_indices)
+                    )
                 )
             )
         )
 
-    def get_validation_feature_vectors(self):
+    def get_validation_feature_vectors(self) -> NDArray:
         return (
-            None
-            if self.validation_indices is None
+            np.zeros(())
+            if not hasattr(self, "validation_indices")
             else self.get_some_feature_vectors(self.validation_indices)
         )
 
@@ -307,21 +332,25 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     Handle the label(s) for each stored entity.
     """
 
-    def read_all_labels_from_h5py(self, filename, data_name="labels"):
+    def read_all_labels_from_h5py(
+        self, filename: str, data_name: str = "labels"
+    ) -> None:
         """
         Read the entire database of labels from a supplied h5py file.
         """
         with h5.File(filename) as ds:
-            self.labels = np.array(ds[data_name])
+            self.labels: NDArray = np.array(ds[data_name])
 
-    def write_all_labels_to_h5py(self, filename, data_name="labels"):
+    def write_all_labels_to_h5py(
+        self, filename: str, data_name: str = "labels"
+    ) -> None:
         """
         Write the entire database of labels to a h5py file.
         """
         with h5.File(filename, "w") as f:
             f.create_dataset(data_name, self.labels.shape, data=self.labels)
 
-    def set_all_labels(self, labels):
+    def set_all_labels(self, labels: NDArray) -> None:
         """
         Set the entire database of labels from a supplied numpy array.
         """
@@ -333,19 +362,19 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 "2-dimensional numpy ndarray."
             )
 
-    def get_all_labels(self):
+    def get_all_labels(self) -> NDArray:
         """
         Get the entire database of labels as a numpy array.
         """
-        return self.labels
+        return self.labels if hasattr(self, "labels") else np.zeros(())
 
-    def clear_all_labels(self):
+    def clear_all_labels(self) -> None:
         """
         Remove all labels from the database
         """
-        self.labels = None
+        del self.labels
 
-    def set_some_labels(self, label_indices, labels):
+    def set_some_labels(self, label_indices: NDArray, labels: NDArray) -> None:
         """
         This overwrites existing labels.  It does not (yet) handle insert, delete, or
         append.
@@ -358,7 +387,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         self.labels[label_indices] = labels
 
-    def get_some_labels(self, label_indices):
+    def get_some_labels(self, label_indices: NDArray) -> NDArray:
         """
         This fetches a subset of existing labels.
 
@@ -369,19 +398,23 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         return self.labels[label_indices]
 
-    def get_training_labels(self):
+    def get_training_labels(self) -> NDArray:
         return (
             self.get_all_labels()
-            if self.validation_indices is None
+            if not hasattr(self, "validation_indices")
             else self.get_some_labels(
-                list(set(range(self.labels.shape[0])) - set(self.validation_indices))
+                np.array(
+                    list(
+                        set(range(self.labels.shape[0])) - set(self.validation_indices)
+                    )
+                )
             )
         )
 
-    def get_validation_labels(self):
+    def get_validation_labels(self) -> NDArray:
         return (
-            None
-            if self.validation_indices is None
+            np.zeros(())
+            if not hasattr(self, "validation_indices")
             else self.get_some_labels(self.validation_indices)
         )
 
@@ -389,7 +422,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     Handle the dictionary of supplemental information for each stored entity.
     """
 
-    def set_all_dictionaries(self, dictionaries):
+    def set_all_dictionaries(self, dictionaries: Iterable[MutableMapping]) -> None:
         """
         Set the entire database of dictionaries -- one per feature vector -- from a
         supplied list of Python dict objects.
@@ -401,55 +434,59 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         if isinstance(dictionaries, list) and all(
             [isinstance(e, dict) for e in dictionaries]
         ):
-            self.dictionaries = dictionaries
+            self.dictionaries: List[MutableMapping] = dictionaries
         else:
             raise ValueError(
                 "The argument to set_all_dictionaries must be a list of Python "
                 "dict objects"
             )
 
-    def get_all_dictionaries(self):
+    def get_all_dictionaries(self) -> Iterable[MutableMapping]:
         """
         Get the entire database of dictionaries as a list (or tuple) of Python dict
         objects.
         """
-        return self.dictionaries
+        return self.dictionaries if hasattr(self, "dictionaries") else list()
 
-    def clear_all_dictionaries(self):
+    def clear_all_dictionaries(self) -> None:
         """
         Remove all dictionaries from the database
         """
-        self.dictionaries = None
+        del self.dictionaries
 
-    def set_validation_indices(self, validation_indices):
+    def set_validation_indices(self, validation_indices: NDArray) -> None:
         """
         Mark which feature vectors are reserved for validation, and should not
         participate in training.
         """
-        if isinstance(validation_indices, (list, tuple)) and all(
-            isinstance(e, int) for e in validation_indices
-        ):
-            self.validation_indices = validation_indices
+        if isinstance(validation_indices, np.ndarray):
+            self.validation_indices: NDArray = validation_indices
         else:
             raise ValueError(
                 "The argument to set_validation_indices must be a tuple or list of "
                 "integers"
             )
 
-    def get_validation_indices(self):
+    def get_validation_indices(self) -> NDArray:
         """
         Retrieve the indices of those feature vectors that are reserved for validation,
         and should not participate in training.
         """
-        return self.validation_indices
+        return (
+            self.validation_indices
+            if hasattr(self, "validation_indices")
+            else np.zeros(())
+        )
 
-    def clear_validation_indices(self):
+    def clear_validation_indices(self) -> None:
         """
         Indicate that no feature vectors are reserved for validation.
         """
-        self.validation_indices = None
+        del self.validation_indices
 
-    def set_some_dictionaries(self, dictionary_indices, dictionaries):
+    def set_some_dictionaries(
+        self, dictionary_indices: NDArray, dictionaries: Iterable[MutableMapping]
+    ) -> None:
         """
         This overwrites existing dictionaries.  It does not (yet) handle insert, delete,
         or append.
@@ -470,9 +507,12 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 "dictionaries are supplied in a list instead of a tuple"
             )
 
-        self.dictionaries[dictionary_indices] = dictionaries
+        for k, v in zip(dictionary_indices, dictionaries):
+            self.dictionaries[k] = v
 
-    def get_some_dictionaries(self, dictionary_indices):
+    def get_some_dictionaries(
+        self, dictionary_indices: NDArray
+    ) -> Iterable[MutableMapping]:
         """
         This fetches a subset of existing dictionaries.
 
@@ -482,14 +522,20 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         returns {'a': 1, 'b': 2} but use of dictionary_indices=[5] returns [{'a': 1,
         'b': 2}].
         """
-        return self.dictionaries[dictionary_indices]
+        return (
+            [self.dictionaries[k] for k in dictionary_indices]
+            if hasattr(self, "dictionaries")
+            else list()
+        )
 
     """
     Handle operations not specific to the feature vectors, labels, or dictionaries of
     supplemental information of each stored entity.
     """
 
-    def set_all_label_definitions(self, label_definitions):
+    def set_all_label_definitions(
+        self, label_definitions: Iterable[MutableMapping]
+    ) -> None:
         """
         Parameters
         ----------
@@ -503,30 +549,32 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         if isinstance(label_definitions, list) and all(
             [isinstance(e, dict) for e in label_definitions]
         ):
-            self.label_definitions = label_definitions
+            self.label_definitions: List[MutableMapping] = label_definitions
         else:
             raise ValueError(
                 "The argument to set_all_label_definitions must be a list of Python "
                 "dict objects"
             )
 
-    def get_all_label_definitions(self):
+    def get_all_label_definitions(self) -> Iterable[MutableMapping]:
         """
         Returns
         -------
         label_definitions: dict
             See set_all_label_definitions for the dict format.
         """
-        return self.label_definitions
+        return self.label_definitions if hasattr(self, "label_definitions") else list()
 
-    def check_data_consistency(self):
+    def check_data_consistency(self) -> bool:
         # Check whether among feature vectors, labels, and dictionaries that were
         # supplied, are they for the same number of entities?
         feature_vectors_length = (
-            0 if self.feature_vectors is None else self.feature_vectors.shape[0]
+            self.feature_vectors.shape[0] if hasattr(self, "feature_vectors") else 0
         )
-        labels_length = 0 if self.labels is None else self.labels.shape[0]
-        dictionaries_length = 0 if self.dictionaries is None else len(self.dictionaries)
+        labels_length = self.labels.shape[0] if hasattr(self, "labels") else 0
+        dictionaries_length = (
+            len(self.dictionaries) if hasattr(self, "dictionaries") else 0
+        )
         # Eliminate duplicates
         all_lengths = set([feature_vectors_length, labels_length, dictionaries_length])
         lengths_test = len(all_lengths) == 1 or (
@@ -536,12 +584,12 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         # Check whether among labels and label_definitions that were supplied, are they
         # for the same number of kinds of labels?
         labels_width = (
-            0
-            if self.labels is None
-            else (1 if len(self.labels.shape) == 1 else self.labels.shape[1])
+            (1 if len(self.labels.shape) == 1 else self.labels.shape[1])
+            if hasattr(self, "labels")
+            else 0
         )
         label_definitions_width = (
-            0 if self.label_definitions is None else len(self.label_definitions)
+            len(self.label_definitions) if hasattr(self, "label_definitions") else 0
         )
         all_widths = set([labels_width, label_definitions_width])
         widths_test = len(all_widths) == 1 or (len(all_widths) == 2 and 0 in all_widths)
@@ -567,7 +615,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             )
         )
 
-        mesgs = list()
+        mesgs: List[str] = list()
         if not lengths_test:
             mesgs += [
                 f"height(feature_vectors) = {feature_vectors_length}, "

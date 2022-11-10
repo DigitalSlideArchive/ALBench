@@ -16,10 +16,12 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import numpy as np
+from typing import Any
 
 
-def check_deeply_numeric(x):
+def check_deeply_numeric(x: Any):
     return (
         isinstance(x, (int, float, np.float32))
         or (

@@ -16,17 +16,20 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
+import numpy as np
 from create import create_dataset
 from create import create_toy_pytorch_model
 from create import create_toy_tensorflow_model
+from typing import List
 
 
 def exercise_dataset_handler(
     my_dataset_handler,
-    number_of_superpixels,
-    number_of_features,
-    number_of_categories_by_label,
-    label_to_test,
+    number_of_superpixels: int,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    label_to_test: int,
     **kwargs,
 ):
     print(
@@ -52,8 +55,8 @@ def exercise_dataset_handler(
     # !!! Test clear_validation_indices(self):
 
     # raise NotImplementedError("Not implemented")
-    assert my_dataset_handler.get_all_feature_vectors() is None
-    assert my_dataset_handler.get_all_labels() is None
+    assert np.equal(my_dataset_handler.get_all_feature_vectors(), np.zeros(())).all()
+    assert np.equal(my_dataset_handler.get_all_labels(), np.zeros(())).all()
 
     # Create random feature vectors
     my_feature_vectors, my_label_definitions, my_labels = create_dataset(
@@ -63,14 +66,14 @@ def exercise_dataset_handler(
     my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
     assert my_dataset_handler.get_all_feature_vectors() is my_feature_vectors
     my_dataset_handler.clear_all_feature_vectors()
-    assert my_dataset_handler.get_all_feature_vectors() is None
+    assert np.equal(my_dataset_handler.get_all_feature_vectors(), np.zeros(())).all()
 
     my_dataset_handler.set_all_labels(my_labels)
     assert my_dataset_handler.get_all_labels() is my_labels
     my_dataset_handler.set_all_labels(my_labels[label_to_test])
     assert (my_dataset_handler.get_all_labels() == my_labels[label_to_test]).all()
     my_dataset_handler.clear_all_labels()
-    assert my_dataset_handler.get_all_labels() is None
+    assert np.equal(my_dataset_handler.get_all_labels(), np.zeros(())).all()
 
     my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
     my_dataset_handler.set_all_labels(my_labels)
@@ -80,9 +83,9 @@ def exercise_dataset_handler(
 
 def exercise_model_handler(
     my_model_handler,
-    number_of_features,
-    number_of_categories_by_label,
-    label_to_test,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    label_to_test: int,
     **kwargs,
 ):
     import al_bench as alb

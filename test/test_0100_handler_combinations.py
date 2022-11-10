@@ -16,8 +16,10 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import al_bench as alb
 import datetime
+import numpy as np
 import os
 import random
 import re
@@ -25,9 +27,11 @@ from check import check_deeply_numeric
 from create import create_dataset_4598_1280_4
 from create import create_pytorch_model_with_dropout
 from create import create_tensorflow_model_with_dropout
+from numpy.typing import NDArray
+from typing import Any, Dict, List, Type
 
 
-def test_0100_handler_combinations():
+def test_0100_handler_combinations() -> None:
     """
     Keys supported by the `parameters` dict
     ---------------------------------------
@@ -46,16 +50,17 @@ def test_0100_handler_combinations():
     """
 
     # Specify some testing parameters
-    parameters = {
+    parameters: Dict[str, Any] = {
         "number_of_superpixels": 4598,
         "number_of_features": 1280,
         "number_of_categories_by_label": [4],
         "label_to_test": 0,
     }
-    number_queries = 10
-    number_per_query = 10
+    number_queries: int = 10
+    number_per_query: int = 10
 
-    combination_index = 0
+    combination_index: int = 0
+    DatasetHandler: Type[alb.dataset.AbstractDatasetHandler]
     for dataset_creator, DatasetHandler in (
         # (
         #     create_dataset,
@@ -63,6 +68,7 @@ def test_0100_handler_combinations():
         # ),
         (create_dataset_4598_1280_4, alb.dataset.GenericDatasetHandler),
     ):
+        ModelHandler: Type[alb.model.AbstractModelHandler]
         for model_creator, ModelHandler in (
             # (
             #     create_toy_tensorflow_model,
@@ -75,6 +81,7 @@ def test_0100_handler_combinations():
             (create_tensorflow_model_with_dropout, alb.model.TensorFlowModelHandler),
             (create_pytorch_model_with_dropout, alb.model.PyTorchModelHandler),
         ):
+            StrategyHandler: Type[alb.strategy.AbstractStrategyHandler]
             for StrategyHandler in (
                 alb.strategy.RandomStrategyHandler,
                 alb.strategy.LeastConfidenceStrategyHandler,
@@ -82,25 +89,34 @@ def test_0100_handler_combinations():
                 alb.strategy.EntropyStrategyHandler,
             ):
                 # Create fresh handlers and components
+                my_feature_vectors: NDArray
+                my_label_definitions: List[Dict]
+                my_labels: NDArray
                 my_feature_vectors, my_label_definitions, my_labels = dataset_creator(
                     **parameters
                 )
-                my_dataset_handler = DatasetHandler()
+                my_dataset_handler: alb.dataset.AbstractDatasetHandler = (
+                    DatasetHandler()
+                )
                 my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
                 my_dataset_handler.set_all_label_definitions(my_label_definitions)
                 my_dataset_handler.set_all_labels(my_labels)
                 my_dataset_handler.set_validation_indices(
-                    random.sample(
-                        range(my_feature_vectors.shape[0]),
-                        my_feature_vectors.shape[0] // 10,
+                    np.array(
+                        random.sample(
+                            range(my_feature_vectors.shape[0]),
+                            my_feature_vectors.shape[0] // 10,
+                        )
                     )
                 )
 
                 my_model = model_creator(**parameters)
-                my_model_handler = ModelHandler()
+                my_model_handler: alb.model.AbstractModelHandler = ModelHandler()
                 my_model_handler.set_model(my_model)
 
-                my_strategy_handler = StrategyHandler()
+                my_strategy_handler: alb.strategy.AbstractStrategyHandler = (
+                    StrategyHandler()
+                )
                 my_strategy_handler.set_dataset_handler(my_dataset_handler)
                 my_strategy_handler.set_model_handler(my_model_handler)
                 my_strategy_handler.set_learning_parameters(
@@ -110,10 +126,10 @@ def test_0100_handler_combinations():
                 )
 
                 # Start with nothing labeled yet
-                currently_labeled_examples = set()
+                currently_labeled_examples: NDArray = np.array(())
 
                 # Go!
-                combination_name = "-".join(
+                combination_name: str = "-".join(
                     [
                         # re.search(
                         #     r"<class 'al_bench\.dataset\.(.*)'>",
@@ -133,36 +149,23 @@ def test_0100_handler_combinations():
                 )
                 print(f"Exercise combination: {combination_name}")
                 combination_index += 1
+                ################
                 my_strategy_handler.run(currently_labeled_examples)
-                my_log = my_strategy_handler.get_log()
-                assert (
-                    my_log is not None
-                    and isinstance(my_log, list)
-                    and all([isinstance(e, dict) for e in my_log])
-                    and all(
-                        [isinstance(e["utcnow"], datetime.datetime) for e in my_log]
-                    )
-                    and all(
-                        [
-                            isinstance(e["model_step"], alb.model.ModelStep)
-                            for e in my_log
-                        ]
-                    )
-                    and all(
-                        [
-                            isinstance(e["logs"], dict)
-                            for e in my_log
-                            if e["logs"] is not None
-                        ]
-                    )
-                    and all(
-                        [
-                            check_deeply_numeric(v)
-                            for e in my_log
-                            if e["logs"] is not None
-                            for v in e["logs"].values()
-                        ]
-                    )
+                ################
+                my_log: List = my_strategy_handler.get_log()
+                assert isinstance(my_log, list)
+                assert all([isinstance(e, dict) for e in my_log])
+                assert all([isinstance(e["utcnow"], datetime.datetime) for e in my_log])
+                assert all(
+                    [isinstance(e["model_step"], alb.model.ModelStep) for e in my_log]
+                )
+                assert all([isinstance(e["logs"], dict) for e in my_log])
+                assert all(
+                    [
+                        check_deeply_numeric(v)
+                        for e in my_log
+                        for v in e["logs"].values()
+                    ]
                 )
                 my_strategy_handler.write_train_log_for_tensorboard(
                     log_dir=os.path.join("runs", combination_name)
