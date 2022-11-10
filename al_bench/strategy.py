@@ -16,20 +16,23 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import numpy as np
 import scipy.stats
+from numpy.typing import NDArray
+from typing import List, Mapping, Set, Tuple
 from . import dataset, model
 
 
 class AbstractScoringMetric:
-    def __init__(self):
+    def __init__(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractScoringMetric::__init__ should not be called."
         )
 
 
 class AbstractDiversityMetric:
-    def __init__(self):
+    def __init__(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDiversityMetric::__init__ should not be called."
         )
@@ -41,96 +44,128 @@ class AbstractStrategyHandler:
     active learning strategy.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::__init__ should not be called."
         )
 
-    def set_dataset_handler(self, dataset_handler):
+    def set_dataset_handler(
+        self, dataset_handler: dataset.AbstractDatasetHandler
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::set_dataset_handler "
             "should not be called."
         )
 
-    def get_dataset_handler(self):
+    def get_dataset_handler(self) -> dataset.AbstractDatasetHandler:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::get_dataset_handler "
             "should not be called."
         )
 
-    def set_model_handler(self, model_handler):
+    def set_model_handler(self, model_handler: model.AbstractModelHandler) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::set_model_handler "
             "should not be called."
         )
 
-    def get_model_handler(self):
+    def get_model_handler(self) -> model.AbstractModelHandler:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::get_model_handler "
             "should not be called."
         )
 
-    def set_desired_outputs(self):
+    def set_desired_outputs(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::set_desired_outputs "
             "should not be called."
         )
 
-    def set_scoring_metric(self, scoring_metric):
+    def set_scoring_metric(self, scoring_metric: AbstractScoringMetric) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::set_scoring_metric "
             "should not be called."
         )
 
-    def get_scoring_metric(self):
+    def get_scoring_metric(self) -> AbstractScoringMetric:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::get_scoring_metric "
             "should not be called."
         )
 
-    def clear_scoring_metric(self):
+    def clear_scoring_metric(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::clear_scoring_metric "
             "should not be called."
         )
 
-    def set_diversity_metric(self, diversity_metric):
+    def set_diversity_metric(self, diversity_metric: AbstractDiversityMetric) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::set_diversity_metric "
             "should not be called."
         )
 
-    def get_diversity_metric(self):
+    def get_diversity_metric(self) -> AbstractDiversityMetric:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::get_diversity_metric "
             "should not be called."
         )
 
-    def clear_diversity_metric(self):
+    def clear_diversity_metric(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::clear_diversity_metric "
             "should not be called."
         )
 
-    def set_learning_parameters(self, **parameters):
+    def set_learning_parameters(self, **parameters) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::set_learning_parameters "
             "should not be called."
         )
 
-    def get_learning_parameters(self):
+    def get_learning_parameters(self) -> Mapping:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::get_learning_parameters "
             "should not be called."
         )
 
-    def select_next_indices(self, labeled_indices, validation_indices=None):
+    def select_next_indices(
+        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+    ) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::select_next_indices "
             "should not be called."
         )
 
-    def run(self, labeled_indices):
+    def reset_log(self) -> None:
+        raise NotImplementedError(
+            "Abstract method AbstractStrategyHandler::reset_log should not be called."
+        )
+
+    def get_log(self) -> List:
+        raise NotImplementedError(
+            "Abstract method AbstractStrategyHandler::get_log should not be called."
+        )
+
+    def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        raise NotImplementedError(
+            "Abstract method AbstractStrategyHandler::write_train_log_for_tensorboard "
+            "should not be called."
+        )
+
+    def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        raise NotImplementedError(
+            "Abstract method AbstractStrategyHandler::write_epoch_log_for_tensorboard "
+            "should not be called."
+        )
+
+    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        raise NotImplementedError(
+            "Abstract method AbstractStrategyHandler::write_confidence_log_for"
+            "_tensorboard should not be called."
+        )
+
+    def run(self, labeled_indices: NDArray) -> None:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::run should not be called."
         )
@@ -145,13 +180,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     operations that are dependent upon which active learning strategy is being used.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # super(GenericStrategyHandler, self).__init__()
-        self.scoring_metric = None
-        self.diversity_metric = None
-        self.dataset_handler = None
-        self.model_handler = None
-        self.parameters = None
+        pass
 
         # These parameters must be supplied to the set_learning_parameters call.
         self.required_parameters_keys = [
@@ -163,7 +194,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         # set_learning_parameters call.
         self.valid_parameters_keys = self.required_parameters_keys + list()
 
-    def set_dataset_handler(self, dataset_handler):
+    def set_dataset_handler(
+        self, dataset_handler: dataset.AbstractDatasetHandler
+    ) -> None:
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
             raise ValueError(
                 "The argument to set_dataset_handler must be a (subclass of) "
@@ -171,10 +204,10 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             )
         self.dataset_handler = dataset_handler
 
-    def get_dataset_handler(self):
+    def get_dataset_handler(self) -> dataset.AbstractDatasetHandler:
         return self.dataset_handler
 
-    def set_model_handler(self, model_handler):
+    def set_model_handler(self, model_handler: model.AbstractModelHandler) -> None:
         if not isinstance(model_handler, model.AbstractModelHandler):
             raise ValueError(
                 "The argument to set_model_handler must be a (subclass of) "
@@ -182,10 +215,10 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             )
         self.model_handler = model_handler
 
-    def get_model_handler(self):
+    def get_model_handler(self) -> model.AbstractModelHandler:
         return self.model_handler
 
-    def set_desired_outputs(self):
+    def set_desired_outputs(self) -> None:
         """
         Choose what statistics and other outputs should be recorded during the active
         learning strategy, for use in evaluating the combination of strategy, model, and
@@ -196,7 +229,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         # fetches it.
         raise NotImplementedError("Not implemented")
 
-    def set_scoring_metric(self, scoring_metric):
+    def set_scoring_metric(self, scoring_metric: AbstractScoringMetric) -> None:
         """
         Supply a scoring metric that evaluates each unlabeled feature vector
         (individually) for how useful it would be if only its label were known.  A
@@ -211,19 +244,19 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             )
         self.scoring_metric = scoring_metric
 
-    def get_scoring_metric(self):
+    def get_scoring_metric(self) -> AbstractScoringMetric:
         """
         Retrieve a previously supplied scoring metric
         """
         return self.scoring_metric
 
-    def clear_scoring_metric(self):
+    def clear_scoring_metric(self) -> None:
         """
         Remove a previously supplied scoring metric
         """
-        self.scoring_metric = None
+        del self.scoring_metric
 
-    def set_diversity_metric(self, diversity_metric):
+    def set_diversity_metric(self, diversity_metric: AbstractDiversityMetric) -> None:
         """
         Supply a diversity metric that evaluates a set of feature vectors for their
         diversity.  A higher score indicates that the feature vectors are diverse.  The
@@ -237,19 +270,19 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             )
         self.diversity_metric = diversity_metric
 
-    def get_diversity_metric(self):
+    def get_diversity_metric(self) -> AbstractDiversityMetric:
         """
         Retrieve a previously supplied diversity metric
         """
         return self.diversity_metric
 
-    def clear_diversity_metric(self):
+    def clear_diversity_metric(self) -> None:
         """
         Remove a previously supplied diversity metric
         """
-        self.diversity_metric = None
+        del self.diversity_metric
 
-    def set_learning_parameters(self, **parameters):
+    def set_learning_parameters(self, **parameters) -> None:
         """
         If this strategy has parameters other than a scoring metric or diversity metric,
         set them here.
@@ -261,98 +294,96 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 f"Python dict but is of type {type(parameters)}"
             )
 
-        missing_keys = set(self.required_parameters_keys) - set(parameters)
+        missing_keys: Set = set(self.required_parameters_keys) - set(parameters)
         if len(missing_keys) > 0:
             raise ValueError(
                 f"set_learning_parameters missing required key(s): {missing_keys}"
             )
 
-        invalid_keys = set(parameters) - set(self.valid_parameters_keys)
+        invalid_keys: Set = set(parameters) - set(self.valid_parameters_keys)
         if len(invalid_keys) > 0:
             raise ValueError(
                 f"set_learning_parameters given invalid key(s): {invalid_keys}"
             )
         self.parameters = parameters
 
-    def get_learning_parameters(self):
+    def get_learning_parameters(self) -> Mapping:
         return self.parameters
 
-    def select_next_indices(self, labeled_indices, validation_indices=None):
+    def select_next_indices(
+        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+    ) -> NDArray:
         raise NotImplementedError(
             "Abstract method GenericStrategyHandler::select_next_indices should not "
             "be called."
         )
 
-    def reset_log(self):
+    def reset_log(self) -> None:
         self.model_handler.reset_log()
 
-    def get_log(self):
+    def get_log(self) -> List:
         return self.model_handler.get_log()
 
-    def write_train_log_for_tensorboard(self, *args, **kwargs):
+    def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
         return self.model_handler.write_train_log_for_tensorboard(*args, **kwargs)
 
-    def write_epoch_log_for_tensorboard(self, *args, **kwargs):
+    def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
         return self.model_handler.write_epoch_log_for_tensorboard(*args, **kwargs)
 
-    def write_confidence_log_for_tensorboard(self, *args, **kwargs):
+    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
         return self.model_handler.write_confidence_log_for_tensorboard(*args, **kwargs)
 
-    def run(self, labeled_indices):
+    def run(self, labeled_indices: NDArray) -> None:
         """
         Run the strategy, start to finish.
         """
         # Should we compute uncertainty for all predictions or just the predictions for
         # unlabeled examples?
-        all_p = False
+        all_p: bool = False
 
-        labeled_indices = set(labeled_indices)
-        feature_vectors = self.dataset_handler.get_all_feature_vectors()
-        labels = self.dataset_handler.get_all_labels()
+        feature_vectors: NDArray = self.dataset_handler.get_all_feature_vectors()
+        labels: NDArray = self.dataset_handler.get_all_labels()
         if len(labels.shape) == 1:
             labels = labels[:, np.newaxis]
 
-        validation_indices = self.dataset_handler.get_validation_indices()
-        validation_indices = (
-            None if validation_indices is None else set(validation_indices)
-        )
-        validation_feature_vectors = (
+        validation_indices: NDArray = self.dataset_handler.get_validation_indices()
+        validation_feature_vectors: NDArray = (
             self.dataset_handler.get_validation_feature_vectors()
         )
-        validation_labels = self.dataset_handler.get_validation_labels()
-        assert (validation_indices is None) == (validation_feature_vectors is None)
-        assert (validation_indices is None) == (validation_labels is None)
-        if validation_labels is not None and len(validation_labels.shape) == 1:
+        validation_labels: NDArray = self.dataset_handler.get_validation_labels()
+        if len(validation_labels.shape) == 1:
             validation_labels = validation_labels[:, np.newaxis]
-        validation_args = (
+        validation_args: List = (
             list()
-            if validation_feature_vectors is None
+            if len(validation_feature_vectors.shape) == 0
             else [validation_feature_vectors, validation_labels]
         )
 
-        maximum_queries = self.parameters["maximum_queries"]
-        label_of_interest = self.parameters["label_of_interest"]
+        maximum_queries: int = self.parameters["maximum_queries"]
+        label_of_interest: int = self.parameters["label_of_interest"]
 
-        all_indices = set(range(len(feature_vectors)))
+        all_indices: Set = set(range(len(feature_vectors)))
         for query in range(maximum_queries):
             # Evaluate the pool of possibilities
             print(f"Predicting for {feature_vectors.shape[0]} examples")
             self.predictions = self.model_handler.predict(feature_vectors, log_it=all_p)
             if not all_p:
                 # Log the predictions for the unlabeled examples only
-                unlabeled_indices = all_indices - labeled_indices
-                unlabeled_predictions = self.predictions[list(unlabeled_indices)]
-                self.model_handler.logger.on_predict_end(
+                unlabeled_indices: Set = all_indices - labeled_indices
+                unlabeled_predictions: NDArray = self.predictions[
+                    list(unlabeled_indices)
+                ]
+                self.model_handler.get_logger().on_predict_end(
                     {"outputs": unlabeled_predictions}
                 )
             # Find the next indices to be labeled
-            next_indices = set(
-                self.select_next_indices(labeled_indices, validation_indices)
+            next_indices: NDArray = self.select_next_indices(
+                labeled_indices, validation_indices
             )
-            labeled_indices = labeled_indices | next_indices
-            current_indices = tuple(labeled_indices)
-            current_feature_vectors = feature_vectors[current_indices, :]
-            current_labels = labels[current_indices, label_of_interest]
+            labeled_indices_set: Set = set(labeled_indices) | set(next_indices)
+            current_indices: Tuple = tuple(labeled_indices_set)
+            current_feature_vectors: NDArray = feature_vectors[current_indices, :]
+            current_labels: NDArray = labels[current_indices, label_of_interest]
             # Train with the expanded set of labeled examples
             print(f"Training with {current_feature_vectors.shape[0]} examples")
             self.model_handler.train(
@@ -363,17 +394,19 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         self.predictions = self.model_handler.predict(feature_vectors, log_it=all_p)
         if not all_p:
             # Log the predictions for the unlabeled examples only
-            unlabeled_indices = all_indices - labeled_indices
+            unlabeled_indices = all_indices - labeled_indices_set
             unlabeled_predictions = self.predictions[list(unlabeled_indices)]
             self.model_handler.logger.on_predict_end({"outputs": unlabeled_predictions})
-        self.labeled_indices = labeled_indices
+        self.labeled_indices: NDArray = np.array(labeled_indices_set)
 
 
 class RandomStrategyHandler(GenericStrategyHandler):
-    def __init__(self):
+    def __init__(self) -> None:
         super(RandomStrategyHandler, self).__init__()
 
-    def select_next_indices(self, labeled_indices, validation_indices=None):
+    def select_next_indices(
+        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+    ) -> NDArray:
         """
         Select new examples to be labeled by the expert.
         `number_to_select_per_query` is the number that should be selected with each
@@ -383,15 +416,11 @@ class RandomStrategyHandler(GenericStrategyHandler):
           examples, including both those examples that have been labeled and those that
           could be selected for labeling.
         """
-        number_to_select = self.parameters["number_to_select_per_query"]
-        feature_vectors = self.dataset_handler.get_all_feature_vectors()
+        number_to_select: int = self.parameters["number_to_select_per_query"]
+        feature_vectors: NDArray = self.dataset_handler.get_all_feature_vectors()
 
         # Make sure the pool to select from is large enough
-        excluded_indices = (
-            labeled_indices
-            if validation_indices is None
-            else labeled_indices | validation_indices
-        )
+        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > feature_vectors.shape[0]:
             raise ValueError(
                 f"Cannot not select {number_to_select} unlabeled feature vectors; only "
@@ -402,43 +431,43 @@ class RandomStrategyHandler(GenericStrategyHandler):
         # currently selected.
         import random
 
-        return random.sample(
-            [
-                example_index
-                for example_index in range(feature_vectors.shape[0])
-                if example_index not in excluded_indices
-            ],
-            number_to_select,
+        return np.array(
+            random.sample(
+                [
+                    example_index
+                    for example_index in range(feature_vectors.shape[0])
+                    if example_index not in excluded_indices
+                ],
+                number_to_select,
+            )
         )
 
 
 class LeastConfidenceStrategyHandler(GenericStrategyHandler):
-    def __init__(self):
+    def __init__(self) -> None:
         super(LeastConfidenceStrategyHandler, self).__init__()
 
-    def select_next_indices(self, labeled_indices, validation_indices=None):
+    def select_next_indices(
+        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+    ) -> NDArray:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest maximum score.
         """
-        number_to_select = self.parameters["number_to_select_per_query"]
-        number_of_feature_vectors = (
+        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_of_feature_vectors: int = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
 
         # Make sure the pool to select from is large enough
-        excluded_indices = (
-            labeled_indices
-            if validation_indices is None
-            else labeled_indices | validation_indices
-        )
+        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
                 f"Cannot not select {number_to_select} unlabeled feature vectors; only "
                 f"{number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
-        predictions = self.predictions
+        predictions: NDArray = self.predictions
         # We assume that via "softmax" or similar, the values are already non-negative
         # and sum to 1.0.
         #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
@@ -449,44 +478,42 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[list(excluded_indices)] = 2
         # Find the lowest scoring examples
-        predict_order = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
 
 
 class LeastMarginStrategyHandler(GenericStrategyHandler):
-    def __init__(self):
+    def __init__(self) -> None:
         super(LeastMarginStrategyHandler, self).__init__()
 
-    def select_next_indices(self, labeled_indices, validation_indices=None):
+    def select_next_indices(
+        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+    ) -> NDArray:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest gap between highest and second-highest score.
         """
-        number_to_select = self.parameters["number_to_select_per_query"]
-        number_of_feature_vectors = (
+        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_of_feature_vectors: int = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
 
         # Make sure the pool to select from is large enough
-        excluded_indices = (
-            labeled_indices
-            if validation_indices is None
-            else labeled_indices | validation_indices
-        )
+        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
                 f"Cannot not select {number_to_select} unlabeled feature vectors; only "
                 f"{number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
-        predictions = self.predictions
+        predictions: NDArray = self.predictions
         # We assume that via "softmax" or similar, the values are already non-negative
         # and sum to 1.0.
         #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # Find the largest and second largest values, and compute their difference
-        predict_indices = np.arange(len(predictions))
-        predict_argsort = np.argsort(predictions, axis=-1)
-        predict_score = (
+        predict_indices: NDArray = np.arange(len(predictions))
+        predict_argsort: NDArray = np.argsort(predictions, axis=-1)
+        predict_score: NDArray = (
             predictions[predict_indices, predict_argsort[:, -1]]
             - predictions[predict_indices, predict_argsort[:, -2]]
         )
@@ -495,37 +522,35 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[list(excluded_indices)] = 2
         # Find the lowest scoring examples
-        predict_order = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
 
 
 class EntropyStrategyHandler(GenericStrategyHandler):
-    def __init__(self):
+    def __init__(self) -> None:
         super(EntropyStrategyHandler, self).__init__()
 
-    def select_next_indices(self, labeled_indices, validation_indices=None):
+    def select_next_indices(
+        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+    ) -> NDArray:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the highest entropy.
         """
-        number_to_select = self.parameters["number_to_select_per_query"]
-        number_of_feature_vectors = (
+        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_of_feature_vectors: int = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
 
         # Make sure the pool to select from is large enough
-        excluded_indices = (
-            labeled_indices
-            if validation_indices is None
-            else labeled_indices | validation_indices
-        )
+        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
                 f"Cannot not select {number_to_select} unlabeled feature vectors; only "
                 f"{number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
-        predictions = self.predictions
+        predictions: NDArray = self.predictions
         # We assume that via "softmax" or similar, the values are already non-negative
         # and sum to 1.0.
         #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
@@ -538,5 +563,5 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[list(excluded_indices)] = 2
         # Find the lowest scoring examples
-        predict_order = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
