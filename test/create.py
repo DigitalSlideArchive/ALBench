@@ -16,26 +16,30 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
+from typing import Dict, List, Optional, Sequence, Tuple
+from numpy.typing import NDArray
+
 
 def create_dataset(
-    number_of_superpixels, number_of_features, number_of_categories_by_label, **kwargs
-):
+    number_of_superpixels: int,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    **kwargs,
+) -> Tuple[NDArray, List[Dict], NDArray]:
     """
     Create a toy set of feature vectors
     """
     import numpy as np
 
     rng = np.random.default_rng()
-    my_feature_vectors = rng.normal(
+    my_feature_vectors: NDArray = rng.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
     ).astype(np.float32)
 
-    if not isinstance(number_of_categories_by_label, (list, tuple)):
-        number_of_categories_by_label = [number_of_categories_by_label]
-
     # Note that apparently TensorFlow requires that the labels be consecutive integers
     # starting with zero.  So, we will use -1 for "unknown".
-    my_label_definitions = [
+    my_label_definitions: List[Dict] = [
         {
             -1: {"description": f"Label{label_index}Unknown"},
             **{
@@ -52,35 +56,37 @@ def create_dataset(
 
     # Create a random label for each superpixel.  Avoid -1, which we are using for
     # "unknown".
-    my_labels = [
-        np.array(
-            np.clip(
-                np.floor(my_feature_vectors[:, 0:1] ** 2 * count + 1), 0, count - 1
-            ),
-            dtype=int,
-        )
-        for count in number_of_categories_by_label
-    ]
-    if len(my_labels) == 1:
-        my_labels = my_labels[0]
-    else:
-        my_labels = np.append(*my_labels, 1)
+    my_labels: NDArray = np.concatenate(
+        [
+            np.array(
+                np.clip(
+                    np.floor(my_feature_vectors[:, 0:1] ** 2 * count + 1), 0, count - 1
+                ),
+                dtype=int,
+            )
+            for count in number_of_categories_by_label
+        ],
+        axis=1,
+    )
 
     return my_feature_vectors, my_label_definitions, my_labels
 
 
 def create_dataset_4598_1280_4(
-    number_of_superpixels, number_of_features, number_of_categories_by_label, **kwargs
-):
+    number_of_superpixels: int,
+    number_of_features: int,
+    number_of_categories_by_label: int,
+    **kwargs,
+) -> Tuple[NDArray, List[Dict], NDArray]:
     import h5py as h5
     import numpy as np
 
     """Use the dataset from test/TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"""
-    filename = "TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"
+    filename: str = "TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"
     with h5.File(filename) as ds:
-        my_feature_vectors = np.array(ds["features"])
-        my_labels = np.array(ds["labels"])
-    my_label_definitions = [
+        my_feature_vectors: NDArray = np.array(ds["features"])
+        my_labels: NDArray = np.array(ds["labels"])
+    my_label_definitions: List[Dict] = [
         {
             0: {"description": "other"},
             1: {"description": "tumor"},
@@ -98,10 +104,10 @@ def create_dataset_4598_1280_4(
 
 
 def create_toy_tensorflow_model(
-    number_of_features,
-    number_of_categories_by_label,
-    label_to_test,
-    hidden_units=128,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    label_to_test: int,
+    hidden_units: int = 128,
     **kwargs,
 ):
     """
@@ -109,7 +115,7 @@ def create_toy_tensorflow_model(
     """
     import tensorflow as tf
 
-    number_of_categories = number_of_categories_by_label[label_to_test]
+    number_of_categories: int = number_of_categories_by_label[label_to_test]
     model = tf.keras.models.Sequential(
         [
             tf.keras.Input(shape=(number_of_features,)),
@@ -122,13 +128,13 @@ def create_toy_tensorflow_model(
 
 
 def create_tensorflow_model_with_dropout(
-    number_of_features,
-    number_of_categories_by_label,
-    label_to_test,
-    hidden_units=32,
-    dropout=0.3,
-    noise_shape=None,
-    seed=145,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    label_to_test: int,
+    hidden_units: int = 32,
+    dropout: float = 0.3,
+    noise_shape: Optional[Sequence[int]] = None,
+    seed: int = 145,
     **kwargs,
 ):
     """
@@ -136,7 +142,7 @@ def create_tensorflow_model_with_dropout(
     """
     import tensorflow as tf
 
-    number_of_categories = number_of_categories_by_label[label_to_test]
+    number_of_categories: int = number_of_categories_by_label[label_to_test]
     model = tf.keras.models.Sequential(
         [
             tf.keras.Input(shape=(number_of_features,)),
@@ -153,10 +159,10 @@ def create_tensorflow_model_with_dropout(
 
 
 def create_toy_pytorch_model(
-    number_of_features,
-    number_of_categories_by_label,
-    label_to_test,
-    hidden_units=128,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    label_to_test: int,
+    hidden_units: int = 128,
     **kwargs,
 ):
     """
@@ -165,7 +171,7 @@ def create_toy_pytorch_model(
     import torch
 
     class TorchToy(torch.nn.modules.module.Module):
-        def __init__(self, number_of_features, number_of_categories):
+        def __init__(self, number_of_features: int, number_of_categories: int):
             super(TorchToy, self).__init__()
             self.fc1 = torch.nn.Linear(number_of_features, hidden_units)
             self.relu1 = torch.nn.ReLU()
@@ -179,19 +185,19 @@ def create_toy_pytorch_model(
             x = self.softmax1(x)
             return x
 
-    number_of_categories = number_of_categories_by_label[label_to_test]
+    number_of_categories: int = number_of_categories_by_label[label_to_test]
     model = TorchToy(number_of_features, number_of_categories)
     return model
 
 
 def create_pytorch_model_with_dropout(
-    number_of_features,
-    number_of_categories_by_label,
-    label_to_test,
-    hidden_units=32,
-    dropout=0.3,
-    noise_shape=None,
-    seed=145,
+    number_of_features: int,
+    number_of_categories_by_label: List[int],
+    label_to_test: int,
+    hidden_units: int = 32,
+    dropout: float = 0.3,
+    noise_shape: Optional[Sequence[int]] = None,
+    seed: int = 145,
     **kwargs,
 ):
     """
@@ -200,7 +206,7 @@ def create_pytorch_model_with_dropout(
     import torch
 
     class TorchToyWithDropout(torch.nn.modules.module.Module):
-        def __init__(self, number_of_features, number_of_categories):
+        def __init__(self, number_of_features: int, number_of_categories: int):
             super(TorchToyWithDropout, self).__init__()
             self.fc1 = torch.nn.Linear(number_of_features, hidden_units)
             self.relu1 = torch.nn.ReLU()
@@ -216,6 +222,6 @@ def create_pytorch_model_with_dropout(
             x = self.softmax1(x)
             return x
 
-    number_of_categories = number_of_categories_by_label[label_to_test]
+    number_of_categories: int = number_of_categories_by_label[label_to_test]
     model = TorchToyWithDropout(number_of_features, number_of_categories)
     return model

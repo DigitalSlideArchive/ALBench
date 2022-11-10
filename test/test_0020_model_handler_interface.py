@@ -16,15 +16,17 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import al_bench as alb
 from exercise import exercise_model_handler
+from typing import Any, Dict, Type
 
 
-def test_0020_model_handler_interface():
+def test_0020_model_handler_interface() -> None:
     """Purpose: Test that high-level operations work"""
 
     # Specify some testing parameters
-    parameters = {
+    parameters: Dict[str, Any] = {
         "number_of_superpixels": 1000,
         "number_of_features": 2048,
         "number_of_categories_by_label": [5, 7],
@@ -32,11 +34,12 @@ def test_0020_model_handler_interface():
     }
 
     # Try trivial exercises on the handler interface
+    ModelHandler: Type[alb.model.AbstractModelHandler]
     for ModelHandler in (
         alb.model.TensorFlowModelHandler,
         alb.model.PyTorchModelHandler,
     ):
-        my_model_handler = ModelHandler()
+        my_model_handler: alb.model.AbstractModelHandler = ModelHandler()
         exercise_model_handler(my_model_handler, **parameters)
 
 

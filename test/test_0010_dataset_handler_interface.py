@@ -16,15 +16,17 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import al_bench as alb
 from exercise import exercise_dataset_handler
+from typing import Any, Dict, Type
 
 
-def test_0010_dataset_handler_interface():
+def test_0010_dataset_handler_interface() -> None:
     """Purpose: Test that high-level operations work"""
 
     # Specify some testing parameters
-    parameters = {
+    parameters: Dict[str, Any] = {
         "number_of_superpixels": 1000,
         "number_of_features": 2048,
         "number_of_categories_by_label": [5, 7],
@@ -32,8 +34,9 @@ def test_0010_dataset_handler_interface():
     }
 
     # Try trivial exercises on the handler interface
+    DatasetHandler: Type[alb.dataset.AbstractDatasetHandler]
     for DatasetHandler in (alb.dataset.GenericDatasetHandler,):
-        my_dataset_handler = DatasetHandler()
+        my_dataset_handler: alb.dataset.AbstractDatasetHandler = DatasetHandler()
         exercise_dataset_handler(my_dataset_handler, **parameters)
 
 

@@ -16,15 +16,17 @@
 #
 # ==========================================================================
 
+from __future__ import annotations
 import al_bench as alb
 from exercise import exercise_strategy_handler
+from typing import Any, Dict, Type
 
 
-def test_0030_strategy_handler_interfac():
+def test_0030_strategy_handler_interface() -> None:
     """Purpose: Test that high-level operations work"""
 
     # Specify some testing parameters
-    parameters = {
+    parameters: Dict[str, Any] = {
         "number_of_superpixels": 1000,
         "number_of_features": 2048,
         "number_of_categories_by_label": [5, 7],
@@ -32,15 +34,16 @@ def test_0030_strategy_handler_interfac():
     }
 
     # Try trivial exercises on the handler interface
+    StrategyHandler: Type[alb.strategy.AbstractStrategyHandler]
     for StrategyHandler in (
         alb.strategy.RandomStrategyHandler,
         alb.strategy.LeastConfidenceStrategyHandler,
         alb.strategy.LeastMarginStrategyHandler,
         alb.strategy.EntropyStrategyHandler,
     ):
-        my_strategy_handler = StrategyHandler()
+        my_strategy_handler: alb.strategy.AbstractStrategyHandler = StrategyHandler()
         exercise_strategy_handler(my_strategy_handler, **parameters)
 
 
 if __name__ == "__main__":
-    test_0030_strategy_handler_interfac()
+    test_0030_strategy_handler_interface()
