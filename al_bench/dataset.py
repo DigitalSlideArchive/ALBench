@@ -463,8 +463,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.validation_indices: NDArray = validation_indices
         else:
             raise ValueError(
-                "The argument to set_validation_indices must be a tuple or list of "
-                "integers"
+                "The argument to set_validation_indices must be a numpy array"
             )
 
     def get_validation_indices(self) -> NDArray:

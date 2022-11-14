@@ -369,7 +369,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             self.predictions = self.model_handler.predict(feature_vectors, log_it=all_p)
             if not all_p:
                 # Log the predictions for the unlabeled examples only
-                unlabeled_indices: Set = all_indices - labeled_indices
+                unlabeled_indices: Set = all_indices - set(labeled_indices)
                 unlabeled_predictions: NDArray = self.predictions[
                     list(unlabeled_indices)
                 ]
@@ -380,10 +380,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             next_indices: NDArray = self.select_next_indices(
                 labeled_indices, validation_indices
             )
-            labeled_indices_set: Set = set(labeled_indices) | set(next_indices)
-            current_indices: Tuple = tuple(labeled_indices_set)
-            current_feature_vectors: NDArray = feature_vectors[current_indices, :]
-            current_labels: NDArray = labels[current_indices, label_of_interest]
+            labeled_indices = np.fromiter(set(labeled_indices) | set(next_indices), int)
+            current_feature_vectors: NDArray = feature_vectors[labeled_indices, :]
+            current_labels: NDArray = labels[labeled_indices, label_of_interest]
             # Train with the expanded set of labeled examples
             print(f"Training with {current_feature_vectors.shape[0]} examples")
             self.model_handler.train(
@@ -394,10 +393,10 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         self.predictions = self.model_handler.predict(feature_vectors, log_it=all_p)
         if not all_p:
             # Log the predictions for the unlabeled examples only
-            unlabeled_indices = all_indices - labeled_indices_set
+            unlabeled_indices = all_indices - set(labeled_indices)
             unlabeled_predictions = self.predictions[list(unlabeled_indices)]
             self.model_handler.logger.on_predict_end({"outputs": unlabeled_predictions})
-        self.labeled_indices: NDArray = np.array(labeled_indices_set)
+        self.labeled_indices: NDArray = labeled_indices
 
 
 class RandomStrategyHandler(GenericStrategyHandler):
