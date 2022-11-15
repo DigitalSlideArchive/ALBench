@@ -17,11 +17,12 @@
 # ==========================================================================
 
 from __future__ import annotations
-from datetime import datetime
+import copy
 import enum
 import numpy as np
 import scipy.stats
 import tensorflow as tf
+from datetime import datetime
 from numpy.typing import NDArray
 from typing import Dict, List, Mapping, MutableMapping, Sequence
 
@@ -414,6 +415,16 @@ class AbstractModelHandler:
             "Abstract method AbstractModelHandler::set_model should not be called."
         )
 
+    def reinitialize_weights(self: AbstractModelHandler) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::reinitialize_weights "
+            "should not be called."
+        )
+
     def set_training_parameters(self: AbstractModelHandler) -> None:
         """
         Set the training parameters needed by the underlying model.  This is generally
@@ -548,6 +559,14 @@ class TensorFlowModelHandler(GenericModelHandler):
                 "tf.keras.Model"
             )
         self.model = model
+        self.model_weights = copy.deepcopy(model.get_weights())
+
+    def reinitialize_weights(self) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
+        """
+        self.model.set_weights(copy.deepcopy(self.model_weights))
 
     def set_training_parameters(self) -> None:
         """
@@ -641,9 +660,14 @@ class PyTorchModelHandler(GenericModelHandler):
                 "torch.nn.modules.module.Module"
             )
         self.model = model
-        # Useful for another day?
-        # torch.save(self.model.state_dict(), PATH)
-        # self.model.load_state_dict(torch.load(PATH))
+        self.model_state_dict = copy.deepcopy(model.state_dict())
+
+    def reinitialize_weights(self) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
+        """
+        self.model.load_state_dict(copy.deepcopy(self.model_state_dict))
 
     def set_training_parameters(self) -> None:
         """
@@ -805,6 +829,13 @@ class AbstractEnsembleModelHandler(GenericModelHandler):
         """
         raise NotImplementedError("Not implemented")
 
+    def reinitialize_weights(self) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
+        """
+        raise NotImplementedError("Not implemented")
+
     def set_training_parameters(self) -> None:
         """
         Set the training parameters needed by the underlying model.  This is generally
@@ -851,6 +882,13 @@ class ExampleEnsembleModelHandler(AbstractEnsembleModelHandler):
         """
         Set the underlying model handled by this model handler.  This is generally
         called just once.
+        """
+        raise NotImplementedError("Not implemented")
+
+    def reinitialize_weights(self) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
         """
         raise NotImplementedError("Not implemented")
 
