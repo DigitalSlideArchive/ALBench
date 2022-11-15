@@ -126,7 +126,7 @@ def test_0100_handler_combinations() -> None:
                 )
 
                 # Start with nothing labeled yet
-                currently_labeled_examples: NDArray = np.array(())
+                currently_labeled_examples: NDArray = np.array((), dtype=np.int64)
 
                 # Go!
                 combination_name: str = "-".join(

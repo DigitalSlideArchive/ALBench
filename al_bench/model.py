@@ -440,8 +440,8 @@ class AbstractModelHandler:
         self: AbstractModelHandler,
         train_features: NDArray,
         train_labels: NDArray,
-        validation_features: NDArray = np.zeros(()),
-        validation_labels: NDArray = np.zeros(()),
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -580,8 +580,8 @@ class TensorFlowModelHandler(GenericModelHandler):
         self,
         train_features: NDArray,
         train_labels: NDArray,
-        validation_features: NDArray = np.zeros(()),
-        validation_labels: NDArray = np.zeros(()),
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -681,8 +681,8 @@ class PyTorchModelHandler(GenericModelHandler):
         self,
         train_features: NDArray,
         train_labels: NDArray,
-        validation_features: NDArray = np.zeros(()),
-        validation_labels: NDArray = np.zeros(()),
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -848,8 +848,8 @@ class AbstractEnsembleModelHandler(GenericModelHandler):
         self,
         train_features: NDArray,
         train_labels: NDArray,
-        validation_features: NDArray = np.zeros(()),
-        validation_labels: NDArray = np.zeros(()),
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
     ):
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -904,8 +904,8 @@ class ExampleEnsembleModelHandler(AbstractEnsembleModelHandler):
         self,
         train_features: NDArray,
         train_labels: NDArray,
-        validation_features: NDArray = np.zeros(()),
-        validation_labels: NDArray = np.zeros(()),
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been

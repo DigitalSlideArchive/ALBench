@@ -55,8 +55,12 @@ def exercise_dataset_handler(
     # !!! Test clear_validation_indices(self):
 
     # raise NotImplementedError("Not implemented")
-    assert np.equal(my_dataset_handler.get_all_feature_vectors(), np.zeros(())).all()
-    assert np.equal(my_dataset_handler.get_all_labels(), np.zeros(())).all()
+    assert np.equal(
+        my_dataset_handler.get_all_feature_vectors(), np.array((), dtype=np.int64)
+    ).all()
+    assert np.equal(
+        my_dataset_handler.get_all_labels(), np.array((), dtype=np.int64)
+    ).all()
 
     # Create random feature vectors
     my_feature_vectors, my_label_definitions, my_labels = create_dataset(
@@ -66,14 +70,18 @@ def exercise_dataset_handler(
     my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
     assert my_dataset_handler.get_all_feature_vectors() is my_feature_vectors
     my_dataset_handler.clear_all_feature_vectors()
-    assert np.equal(my_dataset_handler.get_all_feature_vectors(), np.zeros(())).all()
+    assert np.equal(
+        my_dataset_handler.get_all_feature_vectors(), np.array((), dtype=np.int64)
+    ).all()
 
     my_dataset_handler.set_all_labels(my_labels)
     assert my_dataset_handler.get_all_labels() is my_labels
     my_dataset_handler.set_all_labels(my_labels[label_to_test])
     assert (my_dataset_handler.get_all_labels() == my_labels[label_to_test]).all()
     my_dataset_handler.clear_all_labels()
-    assert np.equal(my_dataset_handler.get_all_labels(), np.zeros(())).all()
+    assert np.equal(
+        my_dataset_handler.get_all_labels(), np.array((), dtype=np.int64)
+    ).all()
 
     my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
     my_dataset_handler.set_all_labels(my_labels)
