@@ -385,7 +385,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 # Log the predictions for the unlabeled examples only
                 unlabeled_indices: Set = all_indices - set(labeled_indices)
                 unlabeled_predictions: NDArray = self.predictions[
-                    list(unlabeled_indices)
+                    np.fromiter(unlabeled_indices, dtype=np.int64)
                 ]
                 self.model_handler.get_logger().on_predict_end(
                     {"outputs": unlabeled_predictions}
@@ -395,7 +395,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 labeled_indices, validation_indices
             )
             # Update the list of labeled_indices
-            labeled_indices = np.fromiter(set(labeled_indices) | set(next_indices), int)
+            labeled_indices = np.fromiter(
+                set(labeled_indices) | set(next_indices), dtype=np.int64
+            )
             # Do training with the update list of labeled_indices
             current_feature_vectors = feature_vectors[labeled_indices, :]
             current_labels = labels[labeled_indices, label_of_interest]
@@ -409,7 +411,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         if not all_p:
             # Log the predictions for the unlabeled examples only
             unlabeled_indices = all_indices - set(labeled_indices)
-            unlabeled_predictions = self.predictions[list(unlabeled_indices)]
+            unlabeled_predictions = self.predictions[
+                np.fromiter(unlabeled_indices, dtype=np.int64)
+            ]
             self.model_handler.logger.on_predict_end({"outputs": unlabeled_predictions})
         self.labeled_indices: NDArray = labeled_indices
 
@@ -494,7 +498,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         # Make the currently labeled examples look confident, so that they won't be
         # selected
         if len(excluded_indices):
-            predict_score[list(excluded_indices)] = 2
+            predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
         predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
@@ -540,7 +544,7 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         # Make the currently labeled examples look confident, so that they won't be
         # selected
         if len(excluded_indices):
-            predict_score[list(excluded_indices)] = 2
+            predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
         predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
@@ -583,7 +587,7 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         # Make the currently labeled examples look confident, so that they won't be
         # selected
         if len(excluded_indices):
-            predict_score[list(excluded_indices)] = 2
+            predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
         predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order

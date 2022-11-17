@@ -314,11 +314,10 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.get_all_feature_vectors()
             if not hasattr(self, "validation_indices")
             else self.get_some_feature_vectors(
-                np.array(
-                    list(
-                        set(range(self.feature_vectors.shape[0]))
-                        - set(self.validation_indices)
-                    )
+                np.fromiter(
+                    set(range(self.feature_vectors.shape[0]))
+                    - set(self.validation_indices),
+                    dtype=np.int64,
                 )
             )
         )
@@ -405,10 +404,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.get_all_labels()
             if not hasattr(self, "validation_indices")
             else self.get_some_labels(
-                np.array(
-                    list(
-                        set(range(self.labels.shape[0])) - set(self.validation_indices)
-                    )
+                np.fromiter(
+                    set(range(self.labels.shape[0])) - set(self.validation_indices),
+                    dtype=np.int64,
                 )
             )
         )
