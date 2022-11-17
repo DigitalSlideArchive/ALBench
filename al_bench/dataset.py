@@ -152,6 +152,16 @@ class AbstractDatasetHandler:
             "should not be called."
         )
 
+    def query_oracle(self, next_indices: NDArray) -> NDArray:
+        """
+        This method queries the oracle for labels for the supplied indices.  It returns
+        all labels.  Note that in a simulation, we already have those labels and there
+        is nothing to do.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractDatasetHandler::query_oracle should not be called."
+        )
+
     def set_all_dictionaries(self, dictionaries: Iterable[MutableMapping]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_dictionaries "
@@ -417,6 +427,14 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             if not hasattr(self, "validation_indices")
             else self.get_some_labels(self.validation_indices)
         )
+
+    def query_oracle(self, next_indices: NDArray) -> NDArray:
+        """
+        This method queries the oracle for labels for the supplied indices.  It returns
+        all labels.  Note that in a simulation, we already have those labels and there
+        is nothing to do.
+        """
+        return self.labels
 
     """
     Handle the dictionary of supplemental information for each stored entity.

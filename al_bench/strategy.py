@@ -394,6 +394,11 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             next_indices: NDArray = self.select_next_indices(
                 labeled_indices, validation_indices
             )
+            # Query the oracle to get labels for the next_indices.  This call returns
+            # all available labels, old and new.
+            labels = self.dataset_handler.query_oracle(next_indices)
+            if len(labels.shape) == 1:
+                labels = labels[:, np.newaxis]
             # Update the list of labeled_indices
             labeled_indices = np.fromiter(
                 set(labeled_indices) | set(next_indices), dtype=np.int64
