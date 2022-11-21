@@ -271,7 +271,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         Get the entire database of feature vectors as a numpy array.
         """
         return (
-            self.feature_vectors if hasattr(self, "feature_vectors") else np.zeros(())
+            self.feature_vectors
+            if hasattr(self, "feature_vectors")
+            else np.array((), dtype=np.int64)
         )
 
     def clear_all_feature_vectors(self) -> None:
@@ -323,7 +325,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
 
     def get_validation_feature_vectors(self) -> NDArray:
         return (
-            np.zeros(())
+            np.array((), dtype=np.int64)
             if not hasattr(self, "validation_indices")
             else self.get_some_feature_vectors(self.validation_indices)
         )
@@ -366,7 +368,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         Get the entire database of labels as a numpy array.
         """
-        return self.labels if hasattr(self, "labels") else np.zeros(())
+        return self.labels if hasattr(self, "labels") else np.array((), dtype=np.int64)
 
     def clear_all_labels(self) -> None:
         """
@@ -413,7 +415,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
 
     def get_validation_labels(self) -> NDArray:
         return (
-            np.zeros(())
+            np.array((), dtype=np.int64)
             if not hasattr(self, "validation_indices")
             else self.get_some_labels(self.validation_indices)
         )
@@ -474,7 +476,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         return (
             self.validation_indices
             if hasattr(self, "validation_indices")
-            else np.zeros(())
+            else np.array((), dtype=np.int64)
         )
 
     def clear_validation_indices(self) -> None:

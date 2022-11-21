@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import List, Mapping, Set, Tuple
+from typing import List, Mapping, Set
 from . import dataset, model
 
 
@@ -130,7 +130,9 @@ class AbstractStrategyHandler:
         )
 
     def select_next_indices(
-        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         raise NotImplementedError(
             "Abstract method AbstractStrategyHandler::select_next_indices "
@@ -311,7 +313,9 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         return self.parameters
 
     def select_next_indices(
-        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         raise NotImplementedError(
             "Abstract method GenericStrategyHandler::select_next_indices should not "
@@ -362,6 +366,16 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         maximum_queries: int = self.parameters["maximum_queries"]
         label_of_interest: int = self.parameters["label_of_interest"]
 
+        # Do initial training
+        self.model_handler.reinitialize_weights()
+        current_feature_vectors: NDArray = feature_vectors[labeled_indices, :]
+        current_labels: NDArray = labels[labeled_indices, label_of_interest]
+        if len(current_feature_vectors) > 0:
+            print(f"Training with {current_feature_vectors.shape[0]} examples")
+            self.model_handler.train(
+                current_feature_vectors, current_labels, *validation_args
+            )
+        # Loop through the queries
         all_indices: Set = set(range(len(feature_vectors)))
         for query in range(maximum_queries):
             # Evaluate the pool of possibilities
@@ -380,10 +394,11 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             next_indices: NDArray = self.select_next_indices(
                 labeled_indices, validation_indices
             )
+            # Update the list of labeled_indices
             labeled_indices = np.fromiter(set(labeled_indices) | set(next_indices), int)
-            current_feature_vectors: NDArray = feature_vectors[labeled_indices, :]
-            current_labels: NDArray = labels[labeled_indices, label_of_interest]
-            # Train with the expanded set of labeled examples
+            # Do training with the update list of labeled_indices
+            current_feature_vectors = feature_vectors[labeled_indices, :]
+            current_labels = labels[labeled_indices, label_of_interest]
             print(f"Training with {current_feature_vectors.shape[0]} examples")
             self.model_handler.train(
                 current_feature_vectors, current_labels, *validation_args
@@ -404,7 +419,9 @@ class RandomStrategyHandler(GenericStrategyHandler):
         super(RandomStrategyHandler, self).__init__()
 
     def select_next_indices(
-        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         """
         Select new examples to be labeled by the expert.
@@ -447,7 +464,9 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         super(LeastConfidenceStrategyHandler, self).__init__()
 
     def select_next_indices(
-        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
@@ -486,7 +505,9 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         super(LeastMarginStrategyHandler, self).__init__()
 
     def select_next_indices(
-        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
@@ -530,7 +551,9 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         super(EntropyStrategyHandler, self).__init__()
 
     def select_next_indices(
-        self, labeled_indices: NDArray, validation_indices: NDArray = np.zeros(())
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
