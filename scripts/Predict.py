@@ -9,8 +9,8 @@ python -m venv ~/venv/superpixel
 source ~/venv/superpixel/bin/activate
 pip install -U pip setuptools wheel
 
-# Install h5py and tensorflow-gpu or tensorflow-cpu
-pip install h5py tensorflow-gpu
+# Install h5py and tensorflow
+pip install h5py tensorflow
 
 # Note: We also need to have the module networks.py in the same directory as the present
 # executable file, Predict.py.
