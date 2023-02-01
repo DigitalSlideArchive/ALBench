@@ -44,19 +44,20 @@ class ModelStep(enum.Enum):
     ON_PREDICT_BATCH_END = 345
 
 
-# !!! Does it matter that this model.Logger code requires `import tensorflow.keras`
-# !!! because of its required to install tensorflow.  superclass?  In particular,
-# !!! someone who is using only torch might nonetheless be
+# !!! Does it matter that the model.Logger class requires `import tensorflow.keras`
+# !!! because it has `tensorflow.keras.callbacks.Callback` as its superclass?  In
+# !!! particular, a user who would otherwise be using only torch will nonetheless be
+# !!! required to install tensorflow.
 
-# !!! Does it matter that this model.Logger code requires `import torch` because of the
+# !!! Does it matter that the model.Logger class requires `import torch` because of its
 # !!! use of torch.utils.tensorboard.SummaryWriter in
-# !!! Logger.write_some_log_for_tensorboard?  In particular, someone who is using only
-# !!! tensorflow might nonetheless be required to install torch.
+# !!! Logger.write_some_log_for_tensorboard?  In particular, a user who would otherwise
+# !!! be using only tensorflow will nonetheless be required to install torch.
 
 
 class Logger(tf.keras.callbacks.Callback):
     def __init__(self, model_handler: AbstractModelHandler) -> None:
-        super(Logger, self).__init__()
+        tf.keras.callbacks.Callback.__init__(self)
         self.reset_log()
         self.training_size: int = 0
         self.model_handler: AbstractModelHandler = model_handler
@@ -201,9 +202,9 @@ class Logger(tf.keras.callbacks.Callback):
         return True
 
     # Because tensorflow defines the interface for on_train_begin, etc. for us and
-    # invokes it for us, we cannot simply supply training_size through this
-    # interface.  Instead we grab it from self.training_size and require that the
-    # user has already set that to something reasonable.
+    # invokes it for us, we cannot simply supply training_size through this interface.
+    # Instead we grab it from self.training_size and require that the user has already
+    # set that to something reasonable.
     def on_train_begin(self, logs: Dict = dict()) -> None:
         self.log.append(
             {
@@ -355,114 +356,56 @@ class Logger(tf.keras.callbacks.Callback):
         )
 
 
-class AbstractModelHandler:
+class _AbstractCommon:
     """
-    AbstractModelHandler is an abstract class that defines the interface for a machine
-    learning model.
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _AbstractCommon is the part of the interface for AbstractModelHandler that is not
+    related to the statistics (e.g., non-Bayesian, sampling Bayesian, or variational
+    Bayesian) or platform (e.g., PyTorch or TensorFlow).
     """
 
     def __init__(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::__init__ should not be called."
+            "Abstract method _AbstractCommon::__init__ should not be called."
         )
-        self.logger: Logger
 
-    def reset_log(self: AbstractModelHandler) -> None:
+    def reset_log(self) -> None:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::reset_log should not be called."
         )
 
-    def get_log(self: AbstractModelHandler) -> List:
+    def get_log(self) -> List:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::get_log should not be called."
         )
 
-    def get_logger(self: AbstractModelHandler) -> Logger:
+    def get_logger(self) -> Logger:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::get_log should not be called."
         )
 
-    def write_train_log_for_tensorboard(
-        self: AbstractModelHandler, *args, **kwargs
-    ) -> bool:
+    def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::write_train_log_for_tensorboard "
             "should not be called."
         )
 
-    def write_epoch_log_for_tensorboard(
-        self: AbstractModelHandler, *args, **kwargs
-    ) -> bool:
+    def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::write_epoch_log_for_tensorboard "
             "should not be called."
         )
 
-    def write_confidence_log_for_tensorboard(
-        self: AbstractModelHandler, *args, **kwargs
-    ) -> bool:
+    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::write_confidence_log_for_tensorboard"
             " should not be called."
         )
 
-    def set_model(self: AbstractModelHandler, model) -> None:
-        """
-        Set the underlying model handled by this model handler.  This is generally
-        called just once.
-        """
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::set_model should not be called."
-        )
-
-    def reinitialize_weights(self: AbstractModelHandler) -> None:
-        """
-        If the model is to be re-used, clear away any weights that
-        were learned through training.
-        """
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::reinitialize_weights "
-            "should not be called."
-        )
-
-    def set_training_parameters(self: AbstractModelHandler) -> None:
-        """
-        Set the training parameters needed by the underlying model.  This is generally
-        called just once and generally includes batch size, number of epochs, loss
-        function, and stopping conditions.
-        """
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::set_training_parameters "
-            "should not be called."
-        )
-
-    def train(
-        self: AbstractModelHandler,
-        train_features: NDArray,
-        train_labels: NDArray,
-        validation_features: NDArray = np.array((), dtype=np.int64),
-        validation_labels: NDArray = np.array((), dtype=np.int64),
-    ) -> None:
-        """
-        Ask the model to train.  This is generally called each time new labels have been
-        provided.  Add training weights!!!
-        """
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::train should not be called."
-        )
-
-    def predict(self: AbstractModelHandler, features: NDArray, log_it: bool) -> NDArray:
-        """
-        Ask the model to make predictions.  This is generally called after training so
-        that the strategy can show the user the new predictions and ask for corrections.
-        Parameters include which examples should be predicted.
-        """
-        raise NotImplementedError(
-            "Abstract method AbstractModelHandler::predict should not be called."
-        )
-
     def compute_confidence_statistics(
-        self: AbstractModelHandler, predictions: NDArray, percentiles: Sequence[float]
+        self, predictions: NDArray, percentiles: Sequence[float]
     ) -> Mapping:
         """
         Ask that the model provide statistics about its confidence in the supplied
@@ -474,17 +417,107 @@ class AbstractModelHandler:
         )
 
 
-class GenericModelHandler(AbstractModelHandler):
+class _AbstractStatistics:
     """
-    GenericModelHandler handles functionality that is agnostic to the choice of the
-    deep-learning framework.  GenericModelHandler is the superclass for
-    TensorFlowModelHandler, PyTorchModelHandler, etc.  These subclasses handle
-    AbstractModelHandler operations that are dependent upon which deep learning
-    framework is being used.
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _AbstractStatistics is the part of the interface for AbstractModelHandler that is
+    related to but regardless of the statistics (e.g., non-Bayesian, sampling Bayesian,
+    or variational Bayesian).
     """
 
     def __init__(self) -> None:
-        # super(GenericModelHandler, self).__init__()
+        raise NotImplementedError(
+            "Abstract method _AbstractStatistics::__init__ " "should not be called."
+        )
+
+    # !!! Add other methods and implement them with `raise NotImplementedError`
+
+
+class _AbstractPlatform:
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _AbstractPlatform is the part of the interface for AbstractModelHandler that is
+    related to but regardless of the platform (e.g., PyTorch or TensorFlow).
+    """
+
+    def __init__(self) -> None:
+        raise NotImplementedError(
+            "Abstract method _AbstractPlatform::__init__ should not be called."
+        )
+
+    def set_model(self, model) -> None:
+        """
+        Set the underlying model handled by this model handler.  This is generally
+        called just once.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::set_model should not be called."
+        )
+
+    def reinitialize_weights(self) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::reinitialize_weights "
+            "should not be called."
+        )
+
+    def set_training_parameters(self) -> None:
+        """
+        Set the training parameters needed by the underlying model.  This is generally
+        called just once and generally includes batch size, number of epochs, loss
+        function, and stopping conditions.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::set_training_parameters "
+            "should not be called."
+        )
+
+    def train(
+        self,
+        train_features: NDArray,
+        train_labels: NDArray,
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
+    ) -> None:
+        """
+        Ask the model to train.  This is generally called each time new labels have been
+        provided.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::train should not be called."
+        )
+
+    def predict(self, features: NDArray, log_it: bool) -> NDArray:
+        """
+        Ask the model to make predictions.  This is generally called after training so
+        that the strategy can show the user the new predictions and ask for corrections.
+        Parameters include which examples should be predicted.
+        """
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::predict should not be called."
+        )
+
+
+class _Common(_AbstractCommon):
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _Common implements the _AbstractCommon part of the interface for
+    AbstractModelHandler.  That is, it implements the part that is not related to the
+    statistics (e.g., non-Bayesian, sampling Bayesian, or variational Bayesian) or
+    platform (e.g., PyTorch or TensorFlow).
+    """
+
+    def __init__(self) -> None:
+        # _AbstractCommon.__init__(self)
         self.logger: Logger = Logger(self)
 
     def reset_log(self) -> None:
@@ -536,14 +569,283 @@ class GenericModelHandler(AbstractModelHandler):
         return response
 
 
-class TensorFlowModelHandler(GenericModelHandler):
+class _NonBayesian(_AbstractStatistics):
     """
-    TensorFlowModelHandler is the class that implements framework-dependent
-    GenericModelHandler routines via TensorFlow.
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _NonBayesian implements the _AbstractStatistics part of the interface for
+    AbstractModelHandler that is related to the statistics when the model is known to be
+    non-Bayesian.  It must be agnostic to the choice of platform (e.g., PyTorch
+    vs. TensorFlow).
     """
 
     def __init__(self) -> None:
-        super(TensorFlowModelHandler, self).__init__()
+        # _AbstractStatistics.__init__(self)
+        # !!! Initialize any members
+        pass
+
+    # !!! Add other methods and implement them
+
+
+class _Bayesian(_AbstractStatistics):
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _Bayesian implements the _AbstractStatistics part of the interface for
+    AbstractModelHandler that is related to the statistics when the model is known to be
+    Bayesian.  It must be agnostic to the choice of Bayesian statistics (e.g., Sampling
+    vs. Variational) and to the choice of platform (e.g., PyTorch vs. TensorFlow).
+    """
+
+    def __init__(self) -> None:
+        # _AbstractStatistics.__init__(self)
+        # !!! Initialize any members
+        pass
+
+    # !!! Add other methods and implement them
+
+
+class _SamplingBayesian(_Bayesian):
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _SamplingBayesian implements the _AbstractStatistics part of the interface for
+    AbstractModelHandler that is related to the statistics when the model is known to be
+    SamplingBayesian.  It must be agnostic to the choice of platform (e.g., PyTorch
+    vs. TensorFlow).
+    """
+
+    def __init__(self) -> None:
+        _Bayesian.__init__(self)
+        # !!! Initialize any members
+
+    # !!! Add other methods and implement them
+
+
+class _VariationalBayesian(_Bayesian):
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _VariationalBayesian implements the _AbstractStatistics part of the interface for
+    AbstractModelHandler that is related to the statistics when the model is known to be
+    VariationalBayesian.  It must be agnostic to the choice of platform (e.g., PyTorch
+    vs. TensorFlow).
+    """
+
+    def __init__(self) -> None:
+        _Bayesian.__init__(self)
+        # !!! Initialize any members
+
+    # !!! Add other methods and implement them
+
+
+class _PyTorch(_AbstractPlatform):
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _PyTorch implements the _AbstractPlatform part of the interface for
+    AbstractModelHandler that is related to the platform when the model is known to be
+    PyTorch.  It must be agnostic to the choice of statistics (e.g., non-Bayesian,
+    sampling Bayesian, variational Bayesian)
+    """
+
+    def __init__(self) -> None:
+        import torch
+
+        # _AbstractPlatform.__init__(self)
+
+        def categorical_cross_entropy(y_pred, y_true):
+            y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
+            y_true = torch.eye(y_pred.shape[-1])[y_true]
+            return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
+
+        self.criterion = categorical_cross_entropy
+
+    def set_model(self, model) -> None:
+        """
+        Set the underlying model handled by this model handler.  This is generally
+        called just once.
+        """
+        import torch
+
+        if not isinstance(model, torch.nn.modules.module.Module):
+            raise ValueError(
+                "The parameter of PyTorchModelHandler.set_model must be of type "
+                "torch.nn.modules.module.Module"
+            )
+        self.model = model
+        self.model_state_dict = copy.deepcopy(model.state_dict())
+
+    def reinitialize_weights(self) -> None:
+        """
+        If the model is to be re-used, clear away any weights that
+        were learned through training.
+        """
+        self.model.load_state_dict(copy.deepcopy(self.model_state_dict))
+
+    def set_training_parameters(self) -> None:
+        """
+        Set the training parameters needed by the underlying model.  This is generally
+        called just once and generally includes batch size, number of epochs, loss
+        function, and stopping conditions.
+        """
+        raise NotImplementedError("Not implemented")
+
+    def train(
+        self,
+        train_features: NDArray,
+        train_labels: NDArray,
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
+    ) -> None:
+        """
+        Ask the model to train.  This is generally called each time new labels have been
+        provided.  Add training weights!!!
+        """
+        import torch
+
+        assert not np.any(np.isnan(train_features))
+        assert not np.any(np.isnan(train_labels))
+        assert (len(validation_features) == 0) == (len(validation_labels) == 0)
+        do_validation: bool = len(validation_features) != 0
+
+        # This code heavily mimics
+        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
+        # more detailed training loop example, see
+        # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
+
+        self.logger.training_size = train_features.shape[0]
+        self.logger.on_train_begin()
+
+        # Get `epochs` from training parameters!!!
+        number_of_epochs: int = 10
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+
+        class _ZipDataset(torch.utils.data.Dataset):
+            def __init__(self, train_features, train_labels) -> None:
+                torch.utils.data.Dataset.__init__(self)
+                self.train_features = torch.from_numpy(train_features)
+                self.train_labels = torch.from_numpy(train_labels)
+
+            def __len__(self):
+                return self.train_labels.shape[0]
+
+            def __getitem__(self, index: int):
+                return self.train_features[index, :], self.train_labels[index]
+
+        train_features_labels: _ZipDataset = _ZipDataset(train_features, train_labels)
+        # Instead, get `batch_size` from somewhere!!!
+        batch_size = 1
+        # Note that DataLoader has additional parameters that we may wish to use in a
+        # future implementation
+        my_train_data_loader = torch.utils.data.DataLoader(
+            train_features_labels, batch_size=batch_size
+        )
+
+        if do_validation:
+            validation_features_labels: _ZipDataset = _ZipDataset(
+                validation_features, validation_labels
+            )
+            # Note that DataLoader has additional parameters that we may wish to use in
+            # a future implementation
+            my_validation_data_loader = torch.utils.data.DataLoader(
+                validation_features_labels, batch_size=batch_size
+            )
+
+        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
+            self.logger.on_epoch_begin(epoch)
+            train_loss: float = 0.0
+            train_size = 0
+            train_correct = 0.0
+            for i, data in enumerate(my_train_data_loader):
+                self.logger.on_train_batch_begin(i)
+                inputs, labels = data
+                # zero the parameter gradients
+                optimizer.zero_grad()
+
+                # forward + backward + optimize
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                new_size = inputs.size(0)
+                train_size += new_size
+                new_loss: float = loss.item() * inputs.size(0)
+                train_loss += new_loss
+                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                train_correct += new_correct
+                loss = new_loss / new_size
+                accuracy = (new_correct / new_size).detach().cpu().numpy()
+                if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                    accuracy = accuracy[()]
+                logs: Dict = {"loss": loss, "accuracy": accuracy}
+                self.logger.on_train_batch_end(i, logs)
+            loss = train_loss / train_size
+            accuracy = (train_correct / train_size).detach().cpu().numpy()
+            if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                accuracy = accuracy[()]
+            logs = {"loss": loss, "accuracy": accuracy}
+            if do_validation:
+                validation_loss: float = 0.0
+                validation_size = 0
+                validation_correct = 0.0
+                for i, data in enumerate(my_validation_data_loader):
+                    inputs, labels = data
+                    outputs = self.model(inputs)
+                    loss = self.criterion(outputs, labels)
+                    new_size = inputs.size(0)
+                    validation_size += new_size
+                    new_loss = loss.item() * inputs.size(0)
+                    validation_loss += new_loss
+                    new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                    validation_correct += new_correct
+                val_loss: float = validation_loss / validation_size
+                val_accuracy = (
+                    (validation_correct / validation_size).detach().cpu().numpy()[()]
+                )
+                more_logs: Dict = {"val_loss": val_loss, "val_accuracy": val_accuracy}
+                logs = {**logs, **more_logs}
+            self.logger.on_epoch_end(epoch, logs)
+
+        self.logger.on_train_end(logs)  # `logs` is from the last epoch
+
+    def predict(self, features: NDArray, log_it: bool) -> NDArray:
+        """
+        Ask the model to make predictions.  This is generally called after training so
+        that the strategy can show the user the new predictions and ask for corrections.
+        Parameters include which examples should be predicted.
+        """
+        import torch
+
+        if log_it:
+            self.logger.on_predict_begin()
+        predictions_raw = self.model(torch.from_numpy(features))
+        predictions: NDArray = predictions_raw.detach().cpu().numpy()
+        if log_it:
+            self.logger.on_predict_end({"outputs": predictions})
+        return predictions
+
+
+class _TensorFlow(_AbstractPlatform):
+    """
+    This class is for implementation details; do not use any class beginning with "_"
+    outside of the ALBench package itself.
+
+    _TensorFlow implements the _AbstractPlatform part of the interface for
+    AbstractModelHandler that is related to the platform when the model is known to be
+    TensorFlow.  It must be agnostic to the choice of statistics (e.g., non-Bayesian,
+    sampling Bayesian, variational Bayesian)
+    """
+
+    import tensorflow as tf
+
+    def __init__(self) -> None:
+        # _AbstractPlatform.__init__(self)
         self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits=False
         )
@@ -629,294 +931,93 @@ class TensorFlowModelHandler(GenericModelHandler):
         return predictions
 
 
-class PyTorchModelHandler(GenericModelHandler):
+class AbstractModelHandler(_AbstractCommon, _AbstractStatistics, _AbstractPlatform):
     """
-    PyTorchModelHandler is the class that implements framework-dependent
-    GenericModelHandler routines via PyTorch.
+    AbstractModelHandler is the interface for model handlers.
     """
 
     def __init__(self) -> None:
-        import torch
-
-        super(PyTorchModelHandler, self).__init__()
-
-        def categorical_cross_entropy(y_pred, y_true):
-            y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
-            y_true = torch.eye(y_pred.shape[-1])[y_true]
-            return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
-
-        self.criterion = categorical_cross_entropy
-
-    def set_model(self, model) -> None:
-        """
-        Set the underlying model handled by this model handler.  This is generally
-        called just once.
-        """
-        import torch
-
-        if not isinstance(model, torch.nn.modules.module.Module):
-            raise ValueError(
-                "The parameter of PyTorchModelHandler.set_model must be of type "
-                "torch.nn.modules.module.Module"
-            )
-        self.model = model
-        self.model_state_dict = copy.deepcopy(model.state_dict())
-
-    def reinitialize_weights(self) -> None:
-        """
-        If the model is to be re-used, clear away any weights that
-        were learned through training.
-        """
-        self.model.load_state_dict(copy.deepcopy(self.model_state_dict))
-
-    def set_training_parameters(self) -> None:
-        """
-        Set the training parameters needed by the underlying model.  This is generally
-        called just once and generally includes batch size, number of epochs, loss
-        function, and stopping conditions.
-        """
-        raise NotImplementedError("Not implemented")
-
-    def train(
-        self,
-        train_features: NDArray,
-        train_labels: NDArray,
-        validation_features: NDArray = np.array((), dtype=np.int64),
-        validation_labels: NDArray = np.array((), dtype=np.int64),
-    ) -> None:
-        """
-        Ask the model to train.  This is generally called each time new labels have been
-        provided.  Add training weights!!!
-        """
-        import torch
-
-        assert not np.any(np.isnan(train_features))
-        assert not np.any(np.isnan(train_labels))
-        assert (len(validation_features) == 0) == (len(validation_labels) == 0)
-        do_validation: bool = len(validation_features) != 0
-
-        # This code heavily mimics
-        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
-        # more detailed training loop example, see
-        # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
-
-        self.logger.training_size = train_features.shape[0]
-        self.logger.on_train_begin()
-
-        # Get `epochs` from training parameters!!!
-        number_of_epochs: int = 10
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-
-        class ZipDataset(torch.utils.data.Dataset):
-            def __init__(self, train_features, train_labels) -> None:
-                super(ZipDataset, self).__init__()
-                self.train_features = torch.from_numpy(train_features)
-                self.train_labels = torch.from_numpy(train_labels)
-
-            def __len__(self):
-                return self.train_labels.shape[0]
-
-            def __getitem__(self, index: int):
-                return self.train_features[index, :], self.train_labels[index]
-
-        train_features_labels: ZipDataset = ZipDataset(train_features, train_labels)
-        # Instead, get `batch_size` from somewhere!!!
-        batch_size = 1
-        # DataLoader has additional parameters that we may wish to use!!!
-        my_train_data_loader = torch.utils.data.DataLoader(
-            train_features_labels, batch_size=batch_size
+        raise NotImplementedError(
+            "Abstract method AbstractModelHandler::__init__ should not be called."
         )
 
-        if do_validation:
-            validation_features_labels: ZipDataset = ZipDataset(
-                validation_features, validation_labels
-            )
-            # DataLoader has additional parameters that we may wish to use!!!
-            my_validation_data_loader = torch.utils.data.DataLoader(
-                validation_features_labels, batch_size=batch_size
-            )
-
-        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
-            self.logger.on_epoch_begin(epoch)
-            train_loss: float = 0.0
-            train_size = 0
-            train_correct = 0.0
-            for i, data in enumerate(my_train_data_loader):
-                self.logger.on_train_batch_begin(i)
-                inputs, labels = data
-                # zero the parameter gradients
-                optimizer.zero_grad()
-
-                # forward + backward + optimize
-                outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                new_size = inputs.size(0)
-                train_size += new_size
-                new_loss: float = loss.item() * inputs.size(0)
-                train_loss += new_loss
-                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
-                train_correct += new_correct
-                loss = new_loss / new_size
-                accuracy = (new_correct / new_size).detach().cpu().numpy()
-                if not isinstance(accuracy, (int, float, np.float32, np.float64)):
-                    accuracy = accuracy[()]
-                logs: Dict = {"loss": loss, "accuracy": accuracy}
-                self.logger.on_train_batch_end(i, logs)
-            loss = train_loss / train_size
-            accuracy = (train_correct / train_size).detach().cpu().numpy()
-            if not isinstance(accuracy, (int, float, np.float32, np.float64)):
-                accuracy = accuracy[()]
-            logs = {"loss": loss, "accuracy": accuracy}
-            if do_validation:
-                validation_loss: float = 0.0
-                validation_size = 0
-                validation_correct = 0.0
-                for i, data in enumerate(my_validation_data_loader):
-                    inputs, labels = data
-                    outputs = self.model(inputs)
-                    loss = self.criterion(outputs, labels)
-                    new_size = inputs.size(0)
-                    validation_size += new_size
-                    new_loss = loss.item() * inputs.size(0)
-                    validation_loss += new_loss
-                    new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
-                    validation_correct += new_correct
-                val_loss: float = validation_loss / validation_size
-                val_accuracy = (
-                    (validation_correct / validation_size).detach().cpu().numpy()[()]
-                )
-                more_logs: Dict = {"val_loss": val_loss, "val_accuracy": val_accuracy}
-                logs = {**logs, **more_logs}
-            self.logger.on_epoch_end(epoch, logs)
-
-        self.logger.on_train_end(logs)  # `logs` is from the last epoch
-
-    def predict(self, features: NDArray, log_it: bool) -> NDArray:
-        """
-        Ask the model to make predictions.  This is generally called after training so
-        that the strategy can show the user the new predictions and ask for corrections.
-        Parameters include which examples should be predicted.
-        """
-        import torch
-
-        if log_it:
-            self.logger.on_predict_begin()
-        predictions_raw = self.model(torch.from_numpy(features))
-        predictions: NDArray = predictions_raw.detach().cpu().numpy()
-        if log_it:
-            self.logger.on_predict_end({"outputs": predictions})
-        return predictions
+    # Do not define additional interface methods here; instead put them in one of the
+    # (abstract) super classes.
 
 
-class AbstractEnsembleModelHandler(GenericModelHandler):
-    """
-    AbstractEnsembleModelHandler is a generic implementation of a GenericModelHandler
-    that uses a committee of modelHandlers, via voting or similar, to determine its
-    responses.  It's subclasses deliver an actual implementation.
-    """
-
+class NonBayesianPyTorchModelHandler(
+    _Common, _NonBayesian, _PyTorch, AbstractModelHandler
+):
     def __init__(self) -> None:
-        # super(AbstractEnsembleModelHandler, self).__init__()
-        # raise NotImplementedError("Not implemented")
-        pass
+        _Common.__init__(self)
+        _NonBayesian.__init__(self)
+        _PyTorch.__init__(self)
+        # AbstractModelHandler.__init__(self)
+        # !!! Initialize any members that cannot be initialized in the super classes
 
-    def set_model(self, model) -> None:
-        """
-        Set the underlying model handled by this model handler.  This is generally
-        called just once.
-        """
-        raise NotImplementedError("Not implemented")
-
-    def reinitialize_weights(self) -> None:
-        """
-        If the model is to be re-used, clear away any weights that
-        were learned through training.
-        """
-        raise NotImplementedError("Not implemented")
-
-    def set_training_parameters(self) -> None:
-        """
-        Set the training parameters needed by the underlying model.  This is generally
-        called just once and generally includes batch size, number of epochs, loss
-        function, and stopping conditions.
-        """
-        raise NotImplementedError("Not implemented")
-
-    def train(
-        self,
-        train_features: NDArray,
-        train_labels: NDArray,
-        validation_features: NDArray = np.array((), dtype=np.int64),
-        validation_labels: NDArray = np.array((), dtype=np.int64),
-    ):
-        """
-        Ask the model to train.  This is generally called each time new labels have been
-        provided.  Add training weights!!!
-        """
-        raise NotImplementedError("Not implemented")
-
-    def predict(self, features: NDArray, log_it: bool):
-        """
-        Ask the model to make predictions.  This is generally called after training so
-        that the strategy can show the user the new predictions and ask for corrections.
-        Parameters include which examples should be predicted.
-        """
-        raise NotImplementedError("Not implemented")
+    # !!! Implement any methods that cannot be implemented in the super classes
 
 
-class ExampleEnsembleModelHandler(AbstractEnsembleModelHandler):
-    """
-    ExampleEnsembleModelHandler is a specific implementation of a
-    AbstractEnsembleModelHandler that uses a committee of modelHandlers, via voting or
-    similar, to determine its responses.  The methods of ExampleEnsembleModelHandler
-    determine the specific implementation of this ensemble.
-    """
-
+class SamplingBayesianPyTorchModelHandler(
+    _Common, _SamplingBayesian, _PyTorch, AbstractModelHandler
+):
     def __init__(self) -> None:
-        super(ExampleEnsembleModelHandler, self).__init__()
-        # raise NotImplementedError("Not implemented")
+        _Common.__init__(self)
+        _SamplingBayesian.__init__(self)
+        _PyTorch.__init__(self)
+        # AbstractModelHandler.__init__(self)
+        # !!! Initialize any members that cannot be initialized in the super classes
 
-    def set_model(self, model) -> None:
-        """
-        Set the underlying model handled by this model handler.  This is generally
-        called just once.
-        """
-        raise NotImplementedError("Not implemented")
+    # !!! Implement any methods that cannot be implemented in the super classes
 
-    def reinitialize_weights(self) -> None:
-        """
-        If the model is to be re-used, clear away any weights that
-        were learned through training.
-        """
-        raise NotImplementedError("Not implemented")
 
-    def set_training_parameters(self) -> None:
-        """
-        Set the training parameters needed by the underlying model.  This is generally
-        called just once and generally includes batch size, number of epochs, loss
-        function, and stopping conditions.
-        """
-        raise NotImplementedError("Not implemented")
+class VariationalBayesianPyTorchModelHandler(
+    _Common, _VariationalBayesian, _PyTorch, AbstractModelHandler
+):
+    def __init__(self) -> None:
+        _Common.__init__(self)
+        _VariationalBayesian.__init__(self)
+        _PyTorch.__init__(self)
+        # AbstractModelHandler.__init__(self)
+        # !!! Initialize any members that cannot be initialized in the super classes
 
-    def train(
-        self,
-        train_features: NDArray,
-        train_labels: NDArray,
-        validation_features: NDArray = np.array((), dtype=np.int64),
-        validation_labels: NDArray = np.array((), dtype=np.int64),
-    ) -> None:
-        """
-        Ask the model to train.  This is generally called each time new labels have been
-        provided.  Add training weights!!!
-        """
-        raise NotImplementedError("Not implemented")
+    # !!! Implement any methods that cannot be implemented in the super classes
 
-    def predict(self, features: NDArray, log_it: bool) -> NDArray:
-        """
-        Ask the model to make predictions.  This is generally called after training so
-        that the strategy can show the user the new predictions and ask for corrections.
-        Parameters include which examples should be predicted.
-        """
-        raise NotImplementedError("Not implemented")
+
+class NonBayesianTensorFlowModelHandler(
+    _Common, _NonBayesian, _TensorFlow, AbstractModelHandler
+):
+    def __init__(self) -> None:
+        _Common.__init__(self)
+        _NonBayesian.__init__(self)
+        _TensorFlow.__init__(self)
+        # AbstractModelHandler.__init__(self)
+        # !!! Initialize any members that cannot be initialized in the super classes
+
+    # !!! Implement any methods that cannot be implemented in the super classes
+
+
+class SamplingBayesianTensorFlowModelHandler(
+    _Common, _SamplingBayesian, _TensorFlow, AbstractModelHandler
+):
+    def __init__(self) -> None:
+        _Common.__init__(self)
+        _SamplingBayesian.__init__(self)
+        _TensorFlow.__init__(self)
+        # AbstractModelHandler.__init__(self)
+        # !!! Initialize any members that cannot be initialized in the super classes
+
+    # !!! Implement any methods that cannot be implemented in the super classes
+
+
+class VariationalBayesianTensorFlowModelHandler(
+    _Common, _VariationalBayesian, _TensorFlow, AbstractModelHandler
+):
+    def __init__(self) -> None:
+        _Common.__init__(self)
+        _VariationalBayesian.__init__(self)
+        _TensorFlow.__init__(self)
+        # AbstractModelHandler.__init__(self)
+        # !!! Initialize any members that cannot be initialized in the super classes
+
+    # !!! Implement any methods that cannot be implemented in the super classes
