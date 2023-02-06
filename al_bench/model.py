@@ -22,6 +22,7 @@ import enum
 import numpy as np
 import scipy.stats
 import tensorflow as tf
+import torch
 from datetime import datetime
 from numpy.typing import NDArray
 from typing import Dict, List, Mapping, MutableMapping, Sequence
@@ -544,6 +545,14 @@ class _Common(_AbstractCommon):
         # Compute several scores for each prediction.  High scores correspond to high
         # confidence.
 
+        # We assume that via "softmax" or similar, the values are already non-negative
+        # and sum to 1.0.
+        if np.amax(predictions) <= 0.0:
+            # Convert log_softmax to softmax
+            predictions = np.exp(predictions)
+        # predictions may have shape with indexes for (example, class) or for (example,
+        # random_sample, class).  We'll make the latter look like the former.
+        predictions = predictions.reshape((-1, predictions.shape[-1]))
         entropy_score: NDArray = -scipy.stats.entropy(predictions, axis=-1)
         margin_argsort: NDArray = np.argsort(predictions, axis=-1)
         prediction_indices: NDArray = np.arange(len(predictions))
@@ -654,9 +663,19 @@ class _PyTorch(_AbstractPlatform):
     sampling Bayesian, variational Bayesian)
     """
 
-    def __init__(self) -> None:
-        import torch
+    class _ZipDataset(torch.utils.data.Dataset):
+        def __init__(self, train_features, train_labels) -> None:
+            torch.utils.data.Dataset.__init__(self)
+            self.train_features = torch.from_numpy(train_features)
+            self.train_labels = torch.from_numpy(train_labels)
 
+        def __len__(self):
+            return self.train_labels.shape[0]
+
+        def __getitem__(self, index: int):
+            return self.train_features[index, :], self.train_labels[index]
+
+    def __init__(self) -> None:
         # _AbstractPlatform.__init__(self)
 
         def categorical_cross_entropy(y_pred, y_true):
@@ -671,11 +690,9 @@ class _PyTorch(_AbstractPlatform):
         Set the underlying model handled by this model handler.  This is generally
         called just once.
         """
-        import torch
-
         if not isinstance(model, torch.nn.modules.module.Module):
             raise ValueError(
-                "The parameter of PyTorchModelHandler.set_model must be of type "
+                "The parameter of _PyTorch.set_model must be of type "
                 "torch.nn.modules.module.Module"
             )
         self.model = model
@@ -695,140 +712,6 @@ class _PyTorch(_AbstractPlatform):
         function, and stopping conditions.
         """
         raise NotImplementedError("Not implemented")
-
-    def train(
-        self,
-        train_features: NDArray,
-        train_labels: NDArray,
-        validation_features: NDArray = np.array((), dtype=np.int64),
-        validation_labels: NDArray = np.array((), dtype=np.int64),
-    ) -> None:
-        """
-        Ask the model to train.  This is generally called each time new labels have been
-        provided.  Add training weights!!!
-        """
-        import torch
-
-        assert not np.any(np.isnan(train_features))
-        assert not np.any(np.isnan(train_labels))
-        assert (len(validation_features) == 0) == (len(validation_labels) == 0)
-        do_validation: bool = len(validation_features) != 0
-
-        # This code heavily mimics
-        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
-        # more detailed training loop example, see
-        # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
-
-        self.logger.training_size = train_features.shape[0]
-        self.logger.on_train_begin()
-
-        # Get `epochs` from training parameters!!!
-        number_of_epochs: int = 10
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-
-        class _ZipDataset(torch.utils.data.Dataset):
-            def __init__(self, train_features, train_labels) -> None:
-                torch.utils.data.Dataset.__init__(self)
-                self.train_features = torch.from_numpy(train_features)
-                self.train_labels = torch.from_numpy(train_labels)
-
-            def __len__(self):
-                return self.train_labels.shape[0]
-
-            def __getitem__(self, index: int):
-                return self.train_features[index, :], self.train_labels[index]
-
-        train_features_labels: _ZipDataset = _ZipDataset(train_features, train_labels)
-        # Instead, get `batch_size` from somewhere!!!
-        batch_size = 1
-        # Note that DataLoader has additional parameters that we may wish to use in a
-        # future implementation
-        my_train_data_loader = torch.utils.data.DataLoader(
-            train_features_labels, batch_size=batch_size
-        )
-
-        if do_validation:
-            validation_features_labels: _ZipDataset = _ZipDataset(
-                validation_features, validation_labels
-            )
-            # Note that DataLoader has additional parameters that we may wish to use in
-            # a future implementation
-            my_validation_data_loader = torch.utils.data.DataLoader(
-                validation_features_labels, batch_size=batch_size
-            )
-
-        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
-            self.logger.on_epoch_begin(epoch)
-            train_loss: float = 0.0
-            train_size = 0
-            train_correct = 0.0
-            for i, data in enumerate(my_train_data_loader):
-                self.logger.on_train_batch_begin(i)
-                inputs, labels = data
-                # zero the parameter gradients
-                optimizer.zero_grad()
-
-                # forward + backward + optimize
-                outputs = self.model(inputs)
-                loss = self.criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-                new_size = inputs.size(0)
-                train_size += new_size
-                new_loss: float = loss.item() * inputs.size(0)
-                train_loss += new_loss
-                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
-                train_correct += new_correct
-                loss = new_loss / new_size
-                accuracy = (new_correct / new_size).detach().cpu().numpy()
-                if not isinstance(accuracy, (int, float, np.float32, np.float64)):
-                    accuracy = accuracy[()]
-                logs: Dict = {"loss": loss, "accuracy": accuracy}
-                self.logger.on_train_batch_end(i, logs)
-            loss = train_loss / train_size
-            accuracy = (train_correct / train_size).detach().cpu().numpy()
-            if not isinstance(accuracy, (int, float, np.float32, np.float64)):
-                accuracy = accuracy[()]
-            logs = {"loss": loss, "accuracy": accuracy}
-            if do_validation:
-                validation_loss: float = 0.0
-                validation_size = 0
-                validation_correct = 0.0
-                for i, data in enumerate(my_validation_data_loader):
-                    inputs, labels = data
-                    outputs = self.model(inputs)
-                    loss = self.criterion(outputs, labels)
-                    new_size = inputs.size(0)
-                    validation_size += new_size
-                    new_loss = loss.item() * inputs.size(0)
-                    validation_loss += new_loss
-                    new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
-                    validation_correct += new_correct
-                val_loss: float = validation_loss / validation_size
-                val_accuracy = (
-                    (validation_correct / validation_size).detach().cpu().numpy()[()]
-                )
-                more_logs: Dict = {"val_loss": val_loss, "val_accuracy": val_accuracy}
-                logs = {**logs, **more_logs}
-            self.logger.on_epoch_end(epoch, logs)
-
-        self.logger.on_train_end(logs)  # `logs` is from the last epoch
-
-    def predict(self, features: NDArray, log_it: bool) -> NDArray:
-        """
-        Ask the model to make predictions.  This is generally called after training so
-        that the strategy can show the user the new predictions and ask for corrections.
-        Parameters include which examples should be predicted.
-        """
-        import torch
-
-        if log_it:
-            self.logger.on_predict_begin()
-        predictions_raw = self.model(torch.from_numpy(features))
-        predictions: NDArray = predictions_raw.detach().cpu().numpy()
-        if log_it:
-            self.logger.on_predict_end({"outputs": predictions})
-        return predictions
 
 
 class _TensorFlow(_AbstractPlatform):
@@ -857,7 +740,7 @@ class _TensorFlow(_AbstractPlatform):
         """
         if not isinstance(model, tf.keras.Model):
             raise ValueError(
-                "The parameter of TensorFlowModelHandler.set_model must be of type "
+                "The parameter of _TensorFlow.set_model must be of type "
                 "tf.keras.Model"
             )
         self.model = model
@@ -957,6 +840,142 @@ class NonBayesianPyTorchModelHandler(
 
     # !!! Implement any methods that cannot be implemented in the super classes
 
+    def train(
+        self,
+        train_features: NDArray,
+        train_labels: NDArray,
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
+    ) -> None:
+        """
+        Ask the model to train.  This is generally called each time new labels have been
+        provided.  Add training weights!!!
+        """
+        assert not np.any(np.isnan(train_features))
+        assert not np.any(np.isnan(train_labels))
+        assert (len(validation_features) == 0) == (len(validation_labels) == 0)
+        do_validation: bool = len(validation_features) != 0
+
+        # This code heavily mimics
+        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
+        # more detailed training loop example, see
+        # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
+
+        self.logger.training_size = train_features.shape[0]
+        self.logger.on_train_begin()
+
+        # Get `epochs` from training parameters!!!
+        number_of_epochs: int = 10
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+
+        train_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+            train_features, train_labels
+        )
+        # Instead, get `batch_size` from somewhere!!!
+        batch_size = 1
+        # Note that DataLoader has additional parameters that we may wish to use in a
+        # future implementation
+        my_train_data_loader = torch.utils.data.DataLoader(
+            train_features_labels, batch_size=batch_size
+        )
+
+        if do_validation:
+            validation_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+                validation_features, validation_labels
+            )
+            # Note that DataLoader has additional parameters that we may wish to use in
+            # a future implementation
+            my_validation_data_loader = torch.utils.data.DataLoader(
+                validation_features_labels, batch_size=batch_size
+            )
+
+        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
+            self.logger.on_epoch_begin(epoch)
+            train_loss: float = 0.0
+            train_size = 0
+            train_correct = 0.0
+            self.model.train()  # What does this do?!!!
+            for i, data in enumerate(my_train_data_loader):
+                self.logger.on_train_batch_begin(i)
+                inputs, labels = data
+                # zero the parameter gradients
+                optimizer.zero_grad()
+
+                # forward + backward + optimize
+                # Use non_blocking=True in the self.model call!!!
+                outputs = self.model(inputs)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                new_size = inputs.size(0)
+                train_size += new_size
+                new_loss: float = loss.item() * inputs.size(0)
+                train_loss += new_loss
+                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                train_correct += new_correct
+                loss = new_loss / new_size
+                accuracy = (new_correct / new_size).detach().cpu().numpy()
+                if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                    accuracy = accuracy[()]
+                logs: Dict = {"loss": loss, "accuracy": accuracy}
+                self.logger.on_train_batch_end(i, logs)
+            loss = train_loss / train_size
+            accuracy = (train_correct / train_size).detach().cpu().numpy()
+            if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                accuracy = accuracy[()]
+            logs = {"loss": loss, "accuracy": accuracy}
+            if do_validation:
+                validation_loss: float = 0.0
+                validation_size = 0
+                validation_correct = 0.0
+                with torch.no_grad():
+                    self.model.eval()  # What does this do?!!!
+                    for i, data in enumerate(my_validation_data_loader):
+                        inputs, labels = data
+                        # Use non_blocking=True in the self.model call!!!
+                        outputs = self.model(inputs)
+                        loss = self.criterion(outputs, labels)
+                        new_size = inputs.size(0)
+                        validation_size += new_size
+                        new_loss = loss.item() * inputs.size(0)
+                        validation_loss += new_loss
+                        new_correct = (
+                            (torch.argmax(outputs, dim=1) == labels).float().sum()
+                        )
+                        validation_correct += new_correct
+                    val_loss: float = validation_loss / validation_size
+                    val_accuracy = (
+                        (validation_correct / validation_size)
+                        .detach()
+                        .cpu()
+                        .numpy()[()]
+                    )
+                    more_logs: Dict = {
+                        "val_loss": val_loss,
+                        "val_accuracy": val_accuracy,
+                    }
+                    logs = {**logs, **more_logs}
+            self.logger.on_epoch_end(epoch, logs)
+
+        self.logger.on_train_end(logs)  # `logs` is from the last epoch
+
+    def predict(self, features: NDArray, log_it: bool) -> NDArray:
+        """
+        Ask the model to make predictions.  This is generally called after training so
+        that the strategy can show the user the new predictions and ask for corrections.
+        Parameters include which examples should be predicted.
+        """
+        if log_it:
+            self.logger.on_predict_begin()
+        with torch.no_grad():
+            self.model.eval()  # What does this do?!!!
+            # Use non_blocking=True in the self.model call!!!
+            predictions_raw = self.model(torch.from_numpy(features))
+            predictions: NDArray = predictions_raw.detach().cpu().numpy()
+        if log_it:
+            self.logger.on_predict_end({"outputs": predictions})
+        return predictions
+
 
 class SamplingBayesianPyTorchModelHandler(
     _Common, _SamplingBayesian, _PyTorch, AbstractModelHandler
@@ -969,6 +988,154 @@ class SamplingBayesianPyTorchModelHandler(
         # !!! Initialize any members that cannot be initialized in the super classes
 
     # !!! Implement any methods that cannot be implemented in the super classes
+
+    def train(
+        self,
+        train_features: NDArray,
+        train_labels: NDArray,
+        validation_features: NDArray = np.array((), dtype=np.int64),
+        validation_labels: NDArray = np.array((), dtype=np.int64),
+    ) -> None:
+        """
+        Ask the model to train.  This is generally called each time new labels have been
+        provided.  Add training weights!!!
+        """
+        assert not np.any(np.isnan(train_features))
+        assert not np.any(np.isnan(train_labels))
+        assert (len(validation_features) == 0) == (len(validation_labels) == 0)
+        self.model.train()  # What does this do?!!!
+        do_validation: bool = len(validation_features) != 0
+
+        # This code heavily mimics
+        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
+        # more detailed training loop example, see
+        # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
+
+        self.logger.training_size = train_features.shape[0]
+        self.logger.on_train_begin()
+
+        # Get `epochs` from training parameters!!!
+        number_of_epochs: int = 10
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+
+        train_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+            train_features, train_labels
+        )
+        # Instead, get `batch_size` from somewhere!!!
+        batch_size = 1
+        # Note that DataLoader has additional parameters that we may wish to use in a
+        # future implementation
+        my_train_data_loader = torch.utils.data.DataLoader(
+            train_features_labels, batch_size=batch_size
+        )
+
+        if do_validation:
+            validation_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+                validation_features, validation_labels
+            )
+            # Note that DataLoader has additional parameters that we may wish to use in
+            # a future implementation
+            my_validation_data_loader = torch.utils.data.DataLoader(
+                validation_features_labels, batch_size=batch_size
+            )
+
+        num_train_samples = 1
+        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
+            self.logger.on_epoch_begin(epoch)
+            train_loss: float = 0.0
+            train_size = 0
+            train_correct = 0.0
+            for i, data in enumerate(my_train_data_loader):
+                self.logger.on_train_batch_begin(i)
+                inputs, labels = data
+                # zero the parameter gradients
+                optimizer.zero_grad()
+
+                # forward + backward + optimize
+                # Use non_blocking=True in the self.model call!!!
+                outputs = self.model(inputs, num_train_samples)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                new_size = inputs.size(0)
+                train_size += new_size
+                new_loss: float = loss.item() * inputs.size(0)
+                train_loss += new_loss
+                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                train_correct += new_correct
+                loss = new_loss / new_size
+                accuracy = (new_correct / new_size).detach().cpu().numpy()
+                if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                    accuracy = accuracy[()]
+                logs: Dict = {"loss": loss, "accuracy": accuracy}
+                self.logger.on_train_batch_end(i, logs)
+            loss = train_loss / train_size
+            accuracy = (train_correct / train_size).detach().cpu().numpy()
+            if not isinstance(accuracy, (int, float, np.float32, np.float64)):
+                accuracy = accuracy[()]
+            logs = {"loss": loss, "accuracy": accuracy}
+            if do_validation:
+                validation_loss: float = 0.0
+                validation_size = 0
+                validation_correct = 0.0
+                with torch.no_grad():
+                    self.model.eval()  # What does this do?!!!
+                    for i, data in enumerate(my_validation_data_loader):
+                        inputs, labels = data
+                        # Use non_blocking=True in the self.model call!!!
+                        outputs = self.model(inputs, num_train_samples)
+                        loss = self.criterion(outputs, labels)
+                        new_size = inputs.size(0)
+                        validation_size += new_size
+                        new_loss = loss.item() * inputs.size(0)
+                        validation_loss += new_loss
+                        new_correct = (
+                            (torch.argmax(outputs, dim=1) == labels).float().sum()
+                        )
+                        validation_correct += new_correct
+                    val_loss: float = validation_loss / validation_size
+                    val_accuracy = (
+                        (validation_correct / validation_size)
+                        .detach()
+                        .cpu()
+                        .numpy()[()]
+                    )
+                    more_logs: Dict = {
+                        "val_loss": val_loss,
+                        "val_accuracy": val_accuracy,
+                    }
+                    logs = {**logs, **more_logs}
+            self.logger.on_epoch_end(epoch, logs)
+
+        self.logger.on_train_end(logs)  # `logs` is from the last epoch
+
+    def predict(self, features: NDArray, log_it: bool) -> NDArray:
+        """
+        Ask the model to make predictions.  This is generally called after training so
+        that the strategy can show the user the new predictions and ask for corrections.
+        Parameters include which examples should be predicted.
+        """
+        # Instead, get `num_predict_samples` from somewhere!!!
+        num_predict_samples = 100
+        if log_it:
+            self.logger.on_predict_begin()
+        # For this Bayesian model, torch is expecting a channels==1 dimension at
+        # shape[1].  Why?!!!
+        features = np.expand_dims(features, 1)
+        with torch.no_grad():
+            self.model.eval()  # What does this do?!!!
+            # Use non_blocking=True in the self.model call!!!
+            predictions_raw = self.model(
+                torch.from_numpy(features), num_predict_samples
+            )
+            predictions: NDArray = predictions_raw.detach().cpu().numpy()
+        # If we have just one prediction per sample then squeeze out that predictions
+        # dimension
+        if num_predict_samples == 1:
+            predictions = predictions.squeeze(1)
+        if log_it:
+            self.logger.on_predict_end({"outputs": predictions})
+        return predictions
 
 
 class VariationalBayesianPyTorchModelHandler(

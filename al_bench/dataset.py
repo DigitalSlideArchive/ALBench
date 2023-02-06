@@ -268,7 +268,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         Set the entire database of feature vectors from a supplied numpy array.
         """
-        if isinstance(feature_vectors, np.ndarray) and len(feature_vectors.shape) == 2:
+        if isinstance(feature_vectors, np.ndarray) and len(feature_vectors.shape) >= 2:
             self.feature_vectors = feature_vectors
         else:
             raise ValueError(

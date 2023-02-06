@@ -596,3 +596,39 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         # Find the lowest scoring examples
         predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
+
+
+class BaldStrategyHandler(GenericStrategyHandler):
+    def __init__(self) -> None:
+        super(BaldStrategyHandler, self).__init__()
+
+    def select_next_indices(
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
+    ) -> NDArray:
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples based upon the BALD criterion.  (See also BatchBaldStrategyHandler.)
+        """
+        raise NotImplementedError(
+            "BaldStrategyHandler::select_next_indices is not yet implemented."
+        )
+
+
+class BatchBaldStrategyHandler(GenericStrategyHandler):
+    def __init__(self) -> None:
+        super(BatchBaldStrategyHandler, self).__init__()
+
+    def select_next_indices(
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
+    ) -> NDArray:
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples based upon the Batch-BALD criterion.  (See also BaldStrategyHandler.)
+        """
+        raise NotImplementedError(
+            "BatchBaldStrategyHandler::select_next_indices is not yet implemented."
+        )
