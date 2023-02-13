@@ -498,11 +498,12 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
             )
 
         predictions: NDArray = self.predictions
-        # We assume that via "softmax" or similar, the values are already non-negative
-        # and sum to 1.0.
         if np.amax(predictions) <= 0.0:
             # Convert log_softmax to softmax
             predictions = np.exp(predictions)
+        # We assume that via "softmax" or similar, the values are already non-negative.
+        # Probably they also already sum to 1.0, but let's force that anyway.
+        predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # For each example, how strong is the best category's score?
         predict_score = np.amax(predictions, axis=-1)
         # Make the currently labeled examples look confident, so that they won't be
@@ -541,11 +542,12 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
             )
 
         predictions: NDArray = self.predictions
-        # We assume that via "softmax" or similar, the values are already non-negative
-        # and sum to 1.0.
         if np.amax(predictions) <= 0.0:
             # Convert log_softmax to softmax
             predictions = np.exp(predictions)
+        # We assume that via "softmax" or similar, the values are already non-negative.
+        # Probably they also already sum to 1.0, but let's force that anyway.
+        predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # Find the largest and second largest values, and compute their difference
         predict_indices: NDArray = np.arange(len(predictions))
         predict_argsort: NDArray = np.argsort(predictions, axis=-1)
@@ -592,11 +594,9 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         if np.amax(predictions) <= 0.0:
             # Convert log_softmax to softmax
             predictions = np.exp(predictions)
-        # We assume that via "softmax" or similar, the values are already non-negative
-        # and sum to 1.0.
-        if np.amax(predictions) <= 0.0:
-            # Convert log_softmax to softmax
-            predictions = np.exp(predictions)
+        # We assume that via "softmax" or similar, the values are already non-negative.
+        # Probably they also already sum to 1.0, but let's force that anyway.
+        predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # Scipy will (normalize row values to sum to 1 and then) compute the entropy of
         # each row.  We negate the entropy so that the distributions that are near
         # uniform have the smallest (i.e., most negative) values.
