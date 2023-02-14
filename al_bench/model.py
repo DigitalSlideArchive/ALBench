@@ -19,6 +19,7 @@
 from __future__ import annotations
 import copy
 import enum
+import math
 import numpy as np
 import scipy.stats
 import tensorflow as tf
@@ -677,13 +678,7 @@ class _PyTorch(_AbstractPlatform):
 
     def __init__(self) -> None:
         # _AbstractPlatform.__init__(self)
-
-        def categorical_cross_entropy(y_pred, y_true):
-            y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
-            y_true = torch.eye(y_pred.shape[-1])[y_true]
-            return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
-
-        self.criterion = categorical_cross_entropy
+        pass
 
     def set_model(self, model) -> None:
         """
@@ -838,6 +833,13 @@ class NonBayesianPyTorchModelHandler(
         # AbstractModelHandler.__init__(self)
         # !!! Initialize any members that cannot be initialized in the super classes
 
+        def categorical_cross_entropy(y_pred, y_true):
+            y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
+            y_true = torch.eye(y_pred.shape[-1])[y_true]
+            return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
+
+        self.criterion = categorical_cross_entropy
+
     # !!! Implement any methods that cannot be implemented in the super classes
 
     def train(
@@ -986,6 +988,7 @@ class SamplingBayesianPyTorchModelHandler(
         _PyTorch.__init__(self)
         # AbstractModelHandler.__init__(self)
         # !!! Initialize any members that cannot be initialized in the super classes
+        self.criterion = torch.nn.functional.nll_loss
 
     # !!! Implement any methods that cannot be implemented in the super classes
 
@@ -1006,17 +1009,12 @@ class SamplingBayesianPyTorchModelHandler(
         self.model.train()  # What does this do?!!!
         do_validation: bool = len(validation_features) != 0
 
-        # This code heavily mimics
-        # https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html.  For a
-        # more detailed training loop example, see
-        # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
-
         self.logger.training_size = train_features.shape[0]
         self.logger.on_train_begin()
 
         # Get `epochs` from training parameters!!!
         number_of_epochs: int = 10
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
+        optimizer = torch.optim.Adam(self.model.parameters())
 
         train_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
             train_features, train_labels
@@ -1040,6 +1038,8 @@ class SamplingBayesianPyTorchModelHandler(
             )
 
         num_train_samples = 1
+        # !!! num_validation_samples cannot be >1 in this code for some unknown reason
+        num_validation_samples = 1
         for epoch in range(number_of_epochs):  # loop over the dataset multiple times
             self.logger.on_epoch_begin(epoch)
             train_loss: float = 0.0
@@ -1054,7 +1054,9 @@ class SamplingBayesianPyTorchModelHandler(
                 # forward + backward + optimize
                 # Use non_blocking=True in the self.model call!!!
                 outputs = self.model(inputs, num_train_samples)
-                loss = self.criterion(outputs, labels)
+                # Apparently our criterion, nll_loss, requires that we squeeze our
+                # `outputs` value here
+                loss = self.criterion(outputs.squeeze(1), labels)
                 loss.backward()
                 optimizer.step()
                 new_size = inputs.size(0)
@@ -1083,8 +1085,16 @@ class SamplingBayesianPyTorchModelHandler(
                     for i, data in enumerate(my_validation_data_loader):
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
-                        outputs = self.model(inputs, num_train_samples)
-                        loss = self.criterion(outputs, labels)
+                        outputs = self.model(inputs, num_validation_samples)
+                        # Collapse multiple predictions into single one
+                        outputs = torch.logsumexp(outputs, dim=1) - math.log(
+                            num_validation_samples
+                        )
+                        # Apparently our criterion, nll_loss, requires that we squeeze
+                        # our `labels` value here
+                        loss = self.criterion(
+                            outputs, labels.squeeze(1), reduction="sum"
+                        )
                         new_size = inputs.size(0)
                         validation_size += new_size
                         new_loss = loss.item() * inputs.size(0)
