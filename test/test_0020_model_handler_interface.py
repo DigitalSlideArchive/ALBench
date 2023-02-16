@@ -36,8 +36,8 @@ def test_0020_model_handler_interface() -> None:
     # Try trivial exercises on the handler interface
     ModelHandler: Type[alb.model.AbstractModelHandler]
     for ModelHandler in (
-        alb.model.NonBayesianTensorFlowModelHandler,
-        alb.model.NonBayesianPyTorchModelHandler,
+        alb.model.TensorFlowModelHandler,
+        alb.model.PyTorchModelHandler,
     ):
         my_model_handler: alb.model.AbstractModelHandler = ModelHandler()
         exercise_model_handler(my_model_handler, **parameters)

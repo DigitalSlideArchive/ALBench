@@ -103,11 +103,11 @@ def exercise_model_handler(
         f"{type(my_model_handler)}"
     )
     model = None
-    if isinstance(my_model_handler, alb.model.NonBayesianTensorFlowModelHandler):
+    if isinstance(my_model_handler, alb.model.TensorFlowModelHandler):
         model = create_toy_tensorflow_model(
             number_of_features, number_of_categories_by_label, label_to_test
         )
-    if isinstance(my_model_handler, alb.model.NonBayesianPyTorchModelHandler):
+    if isinstance(my_model_handler, alb.model.PyTorchModelHandler):
         model = create_toy_pytorch_model(
             number_of_features, number_of_categories_by_label, label_to_test
         )

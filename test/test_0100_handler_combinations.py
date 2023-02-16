@@ -72,20 +72,14 @@ def test_0100_handler_combinations() -> None:
         for model_creator, ModelHandler in (
             # (
             #     create_toy_tensorflow_model,
-            #     alb.model.NonBayesianTensorFlowModelHandler,
+            #     alb.model.TensorFlowModelHandler,
             # ),
             # (
             #     create_toy_pytorch_model,
-            #     alb.model.NonBayesianPyTorchModelHandler,
+            #     alb.model.PyTorchModelHandler,
             # ),
-            (
-                create_tensorflow_model_with_dropout,
-                alb.model.NonBayesianTensorFlowModelHandler,
-            ),
-            (
-                create_pytorch_model_with_dropout,
-                alb.model.NonBayesianPyTorchModelHandler,
-            ),
+            (create_tensorflow_model_with_dropout, alb.model.TensorFlowModelHandler),
+            (create_pytorch_model_with_dropout, alb.model.PyTorchModelHandler),
         ):
             StrategyHandler: Type[alb.strategy.AbstractStrategyHandler]
             for StrategyHandler in (

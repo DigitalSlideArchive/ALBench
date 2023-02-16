@@ -823,9 +823,7 @@ class AbstractModelHandler(_AbstractCommon, _AbstractStatistics, _AbstractPlatfo
     # (abstract) super classes.
 
 
-class NonBayesianPyTorchModelHandler(
-    _Common, _NonBayesian, _PyTorch, AbstractModelHandler
-):
+class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler):
     def __init__(self) -> None:
         _Common.__init__(self)
         _NonBayesian.__init__(self)
@@ -1161,9 +1159,7 @@ class VariationalBayesianPyTorchModelHandler(
     # !!! Implement any methods that cannot be implemented in the super classes
 
 
-class NonBayesianTensorFlowModelHandler(
-    _Common, _NonBayesian, _TensorFlow, AbstractModelHandler
-):
+class TensorFlowModelHandler(_Common, _NonBayesian, _TensorFlow, AbstractModelHandler):
     def __init__(self) -> None:
         _Common.__init__(self)
         _NonBayesian.__init__(self)
