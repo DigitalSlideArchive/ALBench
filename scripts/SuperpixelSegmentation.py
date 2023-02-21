@@ -71,7 +71,6 @@ logging.basicConfig(level=logging.CRITICAL)
 def compute_boundary_data(
     img_path, tile_position, args, it_kwargs, src_mu_lab=None, src_sigma_lab=None
 ):
-
     # get slide tile source
     ts = large_image.getTileSource(img_path)
 
@@ -126,12 +125,10 @@ def compute_boundary_data(
 
     # get valid superpixels
     for i in range(len(region_props)):
-
         # grab superpixel label mask
         lmask = (im_label[:, :] == region_props[i].label).astype(bool)
 
         if np.sum(im_fgnd_mask & lmask) > args.min_fgnd_superpixel:
-
             # get x, y centroids for superpixel
             cen_x, cen_y = region_props[i].centroid
 
@@ -163,7 +160,6 @@ def compute_boundary_data(
 
     # get boundary and centroids
     for i in range(len(region_props)):
-
         if region_props[i].label in valid_superpixel:
             min_row, max_row, min_col, max_col = get_boundary_bounds(
                 region_props[i].bbox, 0, n_rows, n_cols
@@ -236,7 +232,6 @@ def get_patch_bounds(cx, cy, patch, m, n):
 
 
 def main(args):  # noqa: C901
-
     total_start_time = time.time()
 
     print("\n>> CLI Parameters ...\n")
@@ -274,7 +269,6 @@ def main(args):  # noqa: C901
     print(f"Dask setup time = {cli_utils.disp_time_hms(dask_setup_time)}")
 
     for i in range(len(img_paths)):
-
         slide_name = img_paths[i].split("/")[-1].split(".")[0]
 
         src_mu_lab = None
@@ -292,7 +286,6 @@ def main(args):  # noqa: C901
         print(json.dumps(ts_metadata, indent=2))
 
         if ts_metadata["magnification"] is not None:
-
             #
             # Compute tissue/foreground mask at low-res for whole slide images
             #
@@ -373,7 +366,6 @@ def main(args):  # noqa: C901
             tile_result_list = []
 
             for tile in ts.tileIterator(**it_kwargs):
-
                 tile_position = tile["tile_position"]["position"]
 
                 if tile_fgnd_frac_list[tile_position] <= args.min_fgnd_frac:
@@ -400,7 +392,6 @@ def main(args):  # noqa: C901
             y_boundaries = []
 
             for x_cent, y_cent, x_brs, y_brs in tile_result_list:
-
                 for x_c in x_cent:
                     x_centroids.append(x_c)
 

@@ -31,6 +31,10 @@ def test_0000_imports() -> None:
     from al_bench.model import ModelStep  # noqa F401
     from al_bench.model import PyTorchModelHandler  # noqa F401
     from al_bench.model import TensorFlowModelHandler  # noqa F401
+    from al_bench.model import SamplingBayesianPyTorchModelHandler  # noqa F401
+    from al_bench.model import SamplingBayesianTensorFlowModelHandler  # noqa F401
+    from al_bench.model import VariationalBayesianPyTorchModelHandler  # noqa F401
+    from al_bench.model import VariationalBayesianTensorFlowModelHandler  # noqa F401
     from al_bench.strategy import EntropyStrategyHandler  # noqa F401
     from al_bench.strategy import LeastConfidenceStrategyHandler  # noqa F401
     from al_bench.strategy import LeastMarginStrategyHandler  # noqa F401

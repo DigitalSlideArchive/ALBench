@@ -134,7 +134,6 @@ def compute_superpixel_data(
             left < x_centroids[i] <= left + width
             and top < y_centroids[i] <= top + height
         ):
-
             cen_x = x_centroids[i] - left
             cen_y = y_centroids[i] - top
 
@@ -234,7 +233,6 @@ def compute_superpixel_data_pca(
             left < x_centroids[i] <= left + width
             and top < y_centroids[i] <= top + height
         ):
-
             cen_x = x_centroids[i] - left
             cen_y = y_centroids[i] - top
 
@@ -305,7 +303,6 @@ def get_patch_bounds(cx, cy, patch, m, n):
 
 
 def main(args):  # noqa: C901
-
     total_start_time = time.time()
 
     print("\n>> CLI Parameters ...\n")
@@ -368,17 +365,14 @@ def main(args):  # noqa: C901
     index = 0
 
     for i in range(len(img_paths)):
-
         src_mu_lab = None
         src_sigma_lab = None
 
         for j in range(len(centroid_paths)):
-
             centroid_name = centroid_paths[j].split("/")[-1].split(".")[0]
             slide_name = img_paths[i].split("/")[-1].split(".")[0]
 
             if slide_name == centroid_name:
-
                 slide_name_list.append(slide_name)
 
                 #
@@ -401,7 +395,6 @@ def main(args):  # noqa: C901
                 is_wsi = ts_metadata["magnification"] is not None
 
                 if is_wsi:
-
                     #
                     # Compute tissue/foreground mask at low-res for whole slide images
                     #
@@ -521,7 +514,6 @@ def main(args):  # noqa: C901
                         print(f"tile_position = {tile_position}")
 
                         if len(tile_features) > 0:
-
                             if is_first:
                                 superpixel_data = tile_features
                                 is_first = False

@@ -11,6 +11,7 @@ maintainers = [{name = "Lee A. Newberg", email = "lee.newberg@kitware.com"}]
 keywords = ["active learning", "benchmark"]
 classifiers = ["License :: OSI Approved :: Apache Software License"]
 dependencies = [
+    "batchbald-redux",
     "h5py",
     "numpy",
     "scipy",

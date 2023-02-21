@@ -17,8 +17,11 @@
 # ==========================================================================
 
 from __future__ import annotations
+import batchbald_redux as bbald
+import batchbald_redux.batchbald
 import numpy as np
 import scipy.stats
+import torch
 from numpy.typing import NDArray
 from typing import List, Mapping, Set
 from . import dataset, model
@@ -495,9 +498,12 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
             )
 
         predictions: NDArray = self.predictions
-        # We assume that via "softmax" or similar, the values are already non-negative
-        # and sum to 1.0.
-        #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
+        if np.amax(predictions) <= 0.0:
+            # Convert log_softmax to softmax
+            predictions = np.exp(predictions)
+        # We assume that via "softmax" or similar, the values are already non-negative.
+        # Probably they also already sum to 1.0, but let's force that anyway.
+        predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # For each example, how strong is the best category's score?
         predict_score = np.amax(predictions, axis=-1)
         # Make the currently labeled examples look confident, so that they won't be
@@ -536,9 +542,12 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
             )
 
         predictions: NDArray = self.predictions
-        # We assume that via "softmax" or similar, the values are already non-negative
-        # and sum to 1.0.
-        #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
+        if np.amax(predictions) <= 0.0:
+            # Convert log_softmax to softmax
+            predictions = np.exp(predictions)
+        # We assume that via "softmax" or similar, the values are already non-negative.
+        # Probably they also already sum to 1.0, but let's force that anyway.
+        predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # Find the largest and second largest values, and compute their difference
         predict_indices: NDArray = np.arange(len(predictions))
         predict_argsort: NDArray = np.argsort(predictions, axis=-1)
@@ -582,9 +591,12 @@ class EntropyStrategyHandler(GenericStrategyHandler):
             )
 
         predictions: NDArray = self.predictions
-        # We assume that via "softmax" or similar, the values are already non-negative
-        # and sum to 1.0.
-        #   predictions = predictions / predictions.sum(axis=-1, keepdims=True)
+        if np.amax(predictions) <= 0.0:
+            # Convert log_softmax to softmax
+            predictions = np.exp(predictions)
+        # We assume that via "softmax" or similar, the values are already non-negative.
+        # Probably they also already sum to 1.0, but let's force that anyway.
+        predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # Scipy will (normalize row values to sum to 1 and then) compute the entropy of
         # each row.  We negate the entropy so that the distributions that are near
         # uniform have the smallest (i.e., most negative) values.
@@ -596,3 +608,78 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         # Find the lowest scoring examples
         predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
         return predict_order
+
+
+class BaldStrategyHandler(GenericStrategyHandler):
+    def __init__(self) -> None:
+        super(BaldStrategyHandler, self).__init__()
+
+    def select_next_indices(
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
+    ) -> NDArray:
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples based upon the BALD criterion.  (See also BatchBaldStrategyHandler.)
+        """
+        print(f"self.predictions.shape = {self.predictions.shape}")
+        raise NotImplementedError(
+            "BaldStrategyHandler::select_next_indices is not yet implemented."
+        )
+
+
+class BatchBaldStrategyHandler(GenericStrategyHandler):
+    def __init__(self) -> None:
+        super(BatchBaldStrategyHandler, self).__init__()
+
+    def select_next_indices(
+        self,
+        labeled_indices: NDArray,
+        validation_indices: NDArray = np.array((), dtype=np.int64),
+    ) -> NDArray:
+        """
+        Select new examples to be labeled by the expert.  This choses the unlabeled
+        examples based upon the Batch-BALD criterion.  (See also BaldStrategyHandler.)
+        """
+        # !!! Check that we have a torch model, not tensorflow
+        number_to_select: int = self.parameters["number_to_select_per_query"]
+        # Use the subset of self.predictions that excludes labeled_indices and
+        # validation_indices
+        available_indices = np.fromiter(
+            set(range(self.predictions.shape[0]))
+            - (set(labeled_indices) | set(validation_indices)),
+            dtype=np.int64,
+        )
+
+        # Check that there are enough available indices left
+        if number_to_select > available_indices.shape[0]:
+            raise ValueError(
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
+                f"{available_indices.shape[0]} remain."
+            )
+
+        num_samples: int = 100000
+        with torch.no_grad():
+            candidates = bbald.batchbald.get_batchbald_batch(
+                torch.from_numpy(self.predictions[available_indices]),
+                number_to_select,
+                num_samples,
+                dtype=torch.double,
+            )
+        if False:
+            print(f"type(candidates) = {type(candidates)}")
+            print(f"dir(candidates) = {dir(candidates)}")
+            print(f"type(candidates.indices) = {type(candidates.indices)}")
+            print(f"type(candidates.scores) = {type(candidates.scores)}")
+            print(f"len(candidates.indices) = {len(candidates.indices)}")
+            print(f"len(candidates.scores) = {len(candidates.scores)}")
+            print(f"type(candidates.indices[0]) = {type(candidates.indices[0])}")
+            print(f"type(candidates.scores[0]) = {type(candidates.scores[0])}")
+            print(f"candidates.indices = {candidates.indices}")
+            print(f"candidates.scores = {candidates.scores}")
+        if False:
+            raise NotImplementedError(
+                "BatchBaldStrategyHandler::select_next_indices is not yet implemented."
+            )
+        return available_indices[candidates.indices]
