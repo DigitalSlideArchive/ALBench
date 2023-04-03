@@ -93,12 +93,12 @@ class Logger(tf.keras.callbacks.Callback):
                     y_value: float = logs[key]
                     """
                     print(
-                        "Invoking writer.add_scalar("
-                        f"tag={repr(name)}, "
-                        f"scalar_value={repr(y_value)}, "
-                        f"global_step={repr(x_value)}, "
-                        f"walltime={repr(utc_seconds)}, "
-                        f"new_style={repr(True)})"
+                        "Invoking writer.add_scalar"
+                        f"(tag={repr(name)},"
+                        f" scalar_value={repr(y_value)},"
+                        f" global_step={repr(x_value)},"
+                        f" walltime={repr(utc_seconds)},"
+                        f" new_style={repr(True)})"
                     )
                     """
                     writer.add_scalar(
@@ -186,12 +186,12 @@ class Logger(tf.keras.callbacks.Callback):
                             name: str = f"Confidence/{statistic_kind}/{percentile:02d}%"
                             """
                             print(
-                                "Invoking writer.add_scalar("
-                                f"tag={repr(name)}, "
-                                f"scalar_value={repr(y_value)}, "
-                                f"global_step={repr(x_value)}, "
-                                f"walltime={repr(utc_seconds)}, "
-                                f"new_style={repr(True)})"
+                                "Invoking writer.add_scalar"
+                                f"(tag={repr(name)},"
+                                f" scalar_value={repr(y_value)},"
+                                f" global_step={repr(x_value)},"
+                                f" walltime={repr(utc_seconds)},"
+                                f" new_style={repr(True)})"
                             )
                             """
                             writer.add_scalar(
@@ -390,14 +390,14 @@ class _AbstractCommon:
 
     def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::write_train_log_for_tensorboard "
-            "should not be called."
+            "Abstract method AbstractModelHandler::write_train_log_for_tensorboard"
+            " should not be called."
         )
 
     def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::write_epoch_log_for_tensorboard "
-            "should not be called."
+            "Abstract method AbstractModelHandler::write_epoch_log_for_tensorboard"
+            " should not be called."
         )
 
     def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
@@ -414,8 +414,8 @@ class _AbstractCommon:
         predictions.
         """
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::compute_confidence_statistics "
-            "should not be called."
+            "Abstract method AbstractModelHandler::compute_confidence_statistics"
+            " should not be called."
         )
 
 
@@ -466,8 +466,8 @@ class _AbstractPlatform:
         were learned through training.
         """
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::reinitialize_weights "
-            "should not be called."
+            "Abstract method AbstractModelHandler::reinitialize_weights"
+            " should not be called."
         )
 
     def set_training_parameters(self) -> None:
@@ -477,8 +477,8 @@ class _AbstractPlatform:
         function, and stopping conditions.
         """
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::set_training_parameters "
-            "should not be called."
+            "Abstract method AbstractModelHandler::set_training_parameters"
+            " should not be called."
         )
 
     def train(
@@ -687,8 +687,8 @@ class _PyTorch(_AbstractPlatform):
         """
         if not isinstance(model, torch.nn.modules.module.Module):
             raise ValueError(
-                "The parameter of _PyTorch.set_model must be of type "
-                "torch.nn.modules.module.Module"
+                "The parameter of _PyTorch.set_model must be of type"
+                " torch.nn.modules.module.Module"
             )
         self.model = model
         self.model_state_dict = copy.deepcopy(model.state_dict())
@@ -735,8 +735,8 @@ class _TensorFlow(_AbstractPlatform):
         """
         if not isinstance(model, tf.keras.Model):
             raise ValueError(
-                "The parameter of _TensorFlow.set_model must be of type "
-                "tf.keras.Model"
+                "The parameter of _TensorFlow.set_model must be of type"
+                " tf.keras.Model"
             )
         self.model = model
         self.model_weights = copy.deepcopy(model.get_weights())
