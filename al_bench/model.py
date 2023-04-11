@@ -22,11 +22,9 @@ import enum
 import math
 import numpy as np
 import scipy.stats
-import tensorflow as tf
-import torch
 from datetime import datetime
 from numpy.typing import NDArray
-from typing import Dict, List, Mapping, MutableMapping, Sequence
+from typing import cast, Dict, List, Mapping, MutableMapping, Sequence
 
 
 class ModelStep(enum.Enum):
@@ -57,307 +55,6 @@ class ModelStep(enum.Enum):
 # !!! be using only tensorflow will nonetheless be required to install torch.
 
 
-class Logger(tf.keras.callbacks.Callback):
-    def __init__(self, model_handler: AbstractModelHandler) -> None:
-        tf.keras.callbacks.Callback.__init__(self)
-        self.reset_log()
-        self.training_size: int = 0
-        self.model_handler: AbstractModelHandler = model_handler
-
-    def reset_log(self) -> None:
-        self.log: List = list()
-
-    def get_log(self) -> List:
-        return self.log
-
-    def write_some_log_for_tensorboard(
-        self,
-        model_steps: Sequence[ModelStep],
-        y_dictionary: Mapping,
-        x_key: str,
-        *args,
-        **kwargs,
-    ) -> bool:
-        from torch.utils.tensorboard import SummaryWriter
-
-        beginning = datetime.utcfromtimestamp(0)
-        with SummaryWriter(*args, **kwargs) as writer:
-            for entry in self.log:
-                logs: Mapping = entry["logs"]
-                if entry["model_step"] not in model_steps or len(logs) == 0:
-                    continue
-                utc_seconds = (entry["utcnow"] - beginning).total_seconds()
-                x_value: float = entry[x_key]
-                for key in logs.keys() & y_dictionary.keys():
-                    name: str = y_dictionary[key]
-                    y_value: float = logs[key]
-                    """
-                    print(
-                        "Invoking writer.add_scalar"
-                        f"(tag={repr(name)},"
-                        f" scalar_value={repr(y_value)},"
-                        f" global_step={repr(x_value)},"
-                        f" walltime={repr(utc_seconds)},"
-                        f" new_style={repr(True)})"
-                    )
-                    """
-                    writer.add_scalar(
-                        tag=name,
-                        scalar_value=y_value,
-                        global_step=x_value,
-                        walltime=utc_seconds,
-                        new_style=True,
-                    )
-        return True
-
-    def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
-        model_steps = (ModelStep.ON_TRAIN_END,)
-        y_dictionary: Mapping = {
-            "loss": "Loss/train",
-            "val_loss": "Loss/validation",
-            "accuracy": "Accuracy/train",
-            "val_accuracy": "Accuracy/validation",
-        }
-        x_key: str = "training_size"
-        return self.write_some_log_for_tensorboard(
-            model_steps, y_dictionary, x_key, *args, **kwargs
-        )
-
-    def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
-        model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
-        y_dictionary: Mapping = {
-            "loss": "Loss/train",
-            "val_loss": "Loss/test",
-            "accuracy": "Accuracy/train",
-            "val_accuracy": "Accuracy/test",
-        }
-        x_key: str = "epoch"
-        return self.write_some_log_for_tensorboard(
-            model_steps, y_dictionary, x_key, *args, **kwargs
-        )
-
-    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
-        if len(self.log) == 0:
-            return False
-        x_key: str = "training_size"
-        beginning = datetime.utcfromtimestamp(0)
-        percentiles: Sequence[float] = (5, 10, 25, 50)
-        predictions_list: List[NDArray] = list()
-
-        from torch.utils.tensorboard import SummaryWriter
-
-        with SummaryWriter(*args, **kwargs) as writer:
-            for entry in self.log:
-                model_step = entry["model_step"]
-
-                if model_step == ModelStep.ON_PREDICT_BEGIN:
-                    # Clear accumulated records
-                    predictions_list = list()
-
-                if model_step in (
-                    ModelStep.ON_PREDICT_BATCH_END,
-                    ModelStep.ON_PREDICT_END,
-                ):
-                    # Accumulate any records
-                    if (
-                        entry.get("logs") is not None
-                        and entry.get("logs").get("outputs") is not None
-                        and len(entry["logs"]["outputs"]) > 0
-                    ):
-                        predictions_list.append(entry["logs"]["outputs"])
-
-                if model_step == ModelStep.ON_PREDICT_END:
-                    # Compute and write out statics from accumulated predictions
-                    if len(predictions_list) == 0:
-                        continue
-
-                    predictions: NDArray = np.concatenate(predictions_list, axis=0)
-                    predictions_list = list()
-                    statistcs: Mapping = (
-                        self.model_handler.compute_confidence_statistics(
-                            predictions, percentiles
-                        )
-                    )
-                    # Report percentile scores
-                    x_value: float = entry[x_key]
-                    utc_seconds = (entry["utcnow"] - beginning).total_seconds()
-                    for statistic_kind, statistic_percentiles in statistcs.items():
-                        for percentile, y_value in statistic_percentiles.items():
-                            name: str = f"Confidence/{statistic_kind}/{percentile:02d}%"
-                            """
-                            print(
-                                "Invoking writer.add_scalar"
-                                f"(tag={repr(name)},"
-                                f" scalar_value={repr(y_value)},"
-                                f" global_step={repr(x_value)},"
-                                f" walltime={repr(utc_seconds)},"
-                                f" new_style={repr(True)})"
-                            )
-                            """
-                            writer.add_scalar(
-                                tag=name,
-                                scalar_value=y_value,
-                                global_step=x_value,
-                                walltime=utc_seconds,
-                                new_style=True,
-                            )
-        return True
-
-    # Because tensorflow defines the interface for on_train_begin, etc. for us and
-    # invokes it for us, we cannot simply supply training_size through this interface.
-    # Instead we grab it from self.training_size and require that the user has already
-    # set that to something reasonable.
-    def on_train_begin(self, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TRAIN_BEGIN,
-                "training_size": self.training_size,
-                "logs": logs,
-            }
-        )
-
-    def on_train_end(self, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TRAIN_END,
-                "training_size": self.training_size,
-                "logs": logs,
-            }
-        )
-
-    def on_epoch_begin(self, epoch: int, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TRAIN_EPOCH_BEGIN,
-                "training_size": self.training_size,
-                "epoch": epoch,
-                "logs": logs,
-            }
-        )
-
-    def on_epoch_end(self, epoch: int, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TRAIN_EPOCH_END,
-                "training_size": self.training_size,
-                "epoch": epoch,
-                "logs": logs,
-            }
-        )
-
-    def on_train_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TRAIN_BATCH_BEGIN,
-                "training_size": self.training_size,
-                "batch": batch,
-                "logs": logs,
-            }
-        )
-
-    def on_train_batch_end(self, batch: int, logs: Dict = dict()) -> None:
-        # For tensorflow, logs.keys() == ["loss", "accuracy"]
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TRAIN_BATCH_END,
-                "training_size": self.training_size,
-                "batch": batch,
-                "logs": logs,
-            }
-        )
-
-    def on_test_begin(self, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TEST_BEGIN,
-                "training_size": self.training_size,
-                "logs": logs,
-            }
-        )
-
-    def on_test_end(self, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TEST_END,
-                "training_size": self.training_size,
-                "logs": logs,
-            }
-        )
-
-    def on_test_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TEST_BATCH_BEGIN,
-                "training_size": self.training_size,
-                "batch": batch,
-                "logs": logs,
-            }
-        )
-
-    def on_test_batch_end(self, batch: int, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_TEST_BATCH_END,
-                "training_size": self.training_size,
-                "batch": batch,
-                "logs": logs,
-            }
-        )
-
-    def on_predict_begin(self, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_PREDICT_BEGIN,
-                "training_size": self.training_size,
-                "logs": logs,
-            }
-        )
-
-    def on_predict_end(self, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_PREDICT_END,
-                "training_size": self.training_size,
-                "logs": logs,
-            }
-        )
-
-    def on_predict_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_PREDICT_BATCH_BEGIN,
-                "training_size": self.training_size,
-                "batch": batch,
-                "logs": logs,
-            }
-        )
-
-    def on_predict_batch_end(self, batch: int, logs: Dict = dict()) -> None:
-        # For tensorflow, logs.keys() == ["outputs"]
-        self.log.append(
-            {
-                "utcnow": datetime.utcnow(),
-                "model_step": ModelStep.ON_PREDICT_BATCH_END,
-                "training_size": self.training_size,
-                "batch": batch,
-                "logs": logs,
-            }
-        )
-
-
 class _AbstractCommon:
     """
     This class is for implementation details; do not use any class beginning with "_"
@@ -367,6 +64,312 @@ class _AbstractCommon:
     related to the statistics (e.g., non-Bayesian, sampling Bayesian, or variational
     Bayesian) or platform (e.g., PyTorch or TensorFlow).
     """
+
+    import tensorflow as tf
+
+    class Logger(tf.keras.callbacks.Callback):
+        def __init__(self, model_handler: AbstractModelHandler) -> None:
+            import tensorflow as tf
+
+            tf.keras.callbacks.Callback.__init__(self)
+            self.reset_log()
+            self.training_size: int = 0
+            self.model_handler: AbstractModelHandler = model_handler
+
+        def reset_log(self) -> None:
+            self.log: List = list()
+
+        def get_log(self) -> List:
+            return self.log
+
+        def write_some_log_for_tensorboard(
+            self,
+            model_steps: Sequence[ModelStep],
+            y_dictionary: Mapping,
+            x_key: str,
+            *args,
+            **kwargs,
+        ) -> bool:
+            from torch.utils.tensorboard import SummaryWriter
+
+            beginning = datetime.utcfromtimestamp(0)
+            with SummaryWriter(*args, **kwargs) as writer:
+                for entry in self.log:
+                    logs: Mapping = entry["logs"]
+                    if entry["model_step"] not in model_steps or len(logs) == 0:
+                        continue
+                    utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                    x_value: float = entry[x_key]
+                    for key in logs.keys() & y_dictionary.keys():
+                        name: str = y_dictionary[key]
+                        y_value: float = logs[key]
+                        """
+                        print(
+                            "Invoking writer.add_scalar"
+                            f"(tag={repr(name)},"
+                            f" scalar_value={repr(y_value)},"
+                            f" global_step={repr(x_value)},"
+                            f" walltime={repr(utc_seconds)},"
+                            f" new_style={repr(True)})"
+                        )
+                        """
+                        writer.add_scalar(
+                            tag=name,
+                            scalar_value=y_value,
+                            global_step=x_value,
+                            walltime=utc_seconds,
+                            new_style=True,
+                        )
+            return True
+
+        def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
+            model_steps = (ModelStep.ON_TRAIN_END,)
+            y_dictionary: Mapping = {
+                "loss": "Loss/train",
+                "val_loss": "Loss/validation",
+                "accuracy": "Accuracy/train",
+                "val_accuracy": "Accuracy/validation",
+            }
+            x_key: str = "training_size"
+            return self.write_some_log_for_tensorboard(
+                model_steps, y_dictionary, x_key, *args, **kwargs
+            )
+
+        def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
+            model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
+            y_dictionary: Mapping = {
+                "loss": "Loss/train",
+                "val_loss": "Loss/test",
+                "accuracy": "Accuracy/train",
+                "val_accuracy": "Accuracy/test",
+            }
+            x_key: str = "epoch"
+            return self.write_some_log_for_tensorboard(
+                model_steps, y_dictionary, x_key, *args, **kwargs
+            )
+
+        def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
+            if len(self.log) == 0:
+                return False
+            x_key: str = "training_size"
+            beginning = datetime.utcfromtimestamp(0)
+            percentiles: Sequence[float] = (5, 10, 25, 50)
+            predictions_list: List[NDArray] = list()
+
+            from torch.utils.tensorboard import SummaryWriter
+
+            with SummaryWriter(*args, **kwargs) as writer:
+                for entry in self.log:
+                    model_step = entry["model_step"]
+
+                    if model_step == ModelStep.ON_PREDICT_BEGIN:
+                        # Clear accumulated records
+                        predictions_list = list()
+
+                    if model_step in (
+                        ModelStep.ON_PREDICT_BATCH_END,
+                        ModelStep.ON_PREDICT_END,
+                    ):
+                        # Accumulate any records
+                        if (
+                            entry.get("logs") is not None
+                            and entry.get("logs").get("outputs") is not None
+                            and len(entry["logs"]["outputs"]) > 0
+                        ):
+                            predictions_list.append(entry["logs"]["outputs"])
+
+                    if model_step == ModelStep.ON_PREDICT_END:
+                        # Compute and write out statics from accumulated predictions
+                        if len(predictions_list) == 0:
+                            continue
+
+                        predictions: NDArray = np.concatenate(predictions_list, axis=0)
+                        predictions_list = list()
+                        statistcs: Mapping = (
+                            self.model_handler.compute_confidence_statistics(
+                                predictions, percentiles
+                            )
+                        )
+                        # Report percentile scores
+                        x_value: float = entry[x_key]
+                        utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                        for statistic_kind, statistic_percentiles in statistcs.items():
+                            for percentile, y_value in statistic_percentiles.items():
+                                name: str = (
+                                    f"Confidence/{statistic_kind}/{percentile:02d}%"
+                                )
+                                """
+                                print(
+                                    "Invoking writer.add_scalar"
+                                    f"(tag={repr(name)},"
+                                    f" scalar_value={repr(y_value)},"
+                                    f" global_step={repr(x_value)},"
+                                    f" walltime={repr(utc_seconds)},"
+                                    f" new_style={repr(True)})"
+                                )
+                                """
+                                writer.add_scalar(
+                                    tag=name,
+                                    scalar_value=y_value,
+                                    global_step=x_value,
+                                    walltime=utc_seconds,
+                                    new_style=True,
+                                )
+            return True
+
+        # Because tensorflow defines the interface for on_train_begin, etc. for us and
+        # invokes it for us, we cannot simply supply training_size through this
+        # interface.  Instead we grab it from self.training_size and require that the
+        # user has already set that to something reasonable.
+        def on_train_begin(self, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TRAIN_BEGIN,
+                    "training_size": self.training_size,
+                    "logs": logs,
+                }
+            )
+
+        def on_train_end(self, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TRAIN_END,
+                    "training_size": self.training_size,
+                    "logs": logs,
+                }
+            )
+
+        def on_epoch_begin(self, epoch: int, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TRAIN_EPOCH_BEGIN,
+                    "training_size": self.training_size,
+                    "epoch": epoch,
+                    "logs": logs,
+                }
+            )
+
+        def on_epoch_end(self, epoch: int, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TRAIN_EPOCH_END,
+                    "training_size": self.training_size,
+                    "epoch": epoch,
+                    "logs": logs,
+                }
+            )
+
+        def on_train_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TRAIN_BATCH_BEGIN,
+                    "training_size": self.training_size,
+                    "batch": batch,
+                    "logs": logs,
+                }
+            )
+
+        def on_train_batch_end(self, batch: int, logs: Dict = dict()) -> None:
+            # For tensorflow, logs.keys() == ["loss", "accuracy"]
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TRAIN_BATCH_END,
+                    "training_size": self.training_size,
+                    "batch": batch,
+                    "logs": logs,
+                }
+            )
+
+        def on_test_begin(self, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TEST_BEGIN,
+                    "training_size": self.training_size,
+                    "logs": logs,
+                }
+            )
+
+        def on_test_end(self, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TEST_END,
+                    "training_size": self.training_size,
+                    "logs": logs,
+                }
+            )
+
+        def on_test_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TEST_BATCH_BEGIN,
+                    "training_size": self.training_size,
+                    "batch": batch,
+                    "logs": logs,
+                }
+            )
+
+        def on_test_batch_end(self, batch: int, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_TEST_BATCH_END,
+                    "training_size": self.training_size,
+                    "batch": batch,
+                    "logs": logs,
+                }
+            )
+
+        def on_predict_begin(self, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_PREDICT_BEGIN,
+                    "training_size": self.training_size,
+                    "logs": logs,
+                }
+            )
+
+        def on_predict_end(self, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_PREDICT_END,
+                    "training_size": self.training_size,
+                    "logs": logs,
+                }
+            )
+
+        def on_predict_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_PREDICT_BATCH_BEGIN,
+                    "training_size": self.training_size,
+                    "batch": batch,
+                    "logs": logs,
+                }
+            )
+
+        def on_predict_batch_end(self, batch: int, logs: Dict = dict()) -> None:
+            # For tensorflow, logs.keys() == ["outputs"]
+            self.log.append(
+                {
+                    "utcnow": datetime.utcnow(),
+                    "model_step": ModelStep.ON_PREDICT_BATCH_END,
+                    "training_size": self.training_size,
+                    "batch": batch,
+                    "logs": logs,
+                }
+            )
 
     def __init__(self) -> None:
         raise NotImplementedError(
@@ -383,7 +386,7 @@ class _AbstractCommon:
             "Abstract method AbstractModelHandler::get_log should not be called."
         )
 
-    def get_logger(self) -> Logger:
+    def get_logger(self) -> _AbstractCommon.Logger:
         raise NotImplementedError(
             "Abstract method AbstractModelHandler::get_log should not be called."
         )
@@ -520,7 +523,9 @@ class _Common(_AbstractCommon):
 
     def __init__(self) -> None:
         # _AbstractCommon.__init__(self)
-        self.logger: Logger = Logger(self)
+        self.logger: _AbstractCommon.Logger = _AbstractCommon.Logger(
+            cast(AbstractModelHandler, self)
+        )
 
     def reset_log(self) -> None:
         self.logger.reset_log()
@@ -528,7 +533,7 @@ class _Common(_AbstractCommon):
     def get_log(self) -> List:
         return self.get_logger().get_log()
 
-    def get_logger(self) -> Logger:
+    def get_logger(self) -> _AbstractCommon.Logger:
         return self.logger
 
     def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
@@ -664,8 +669,12 @@ class _PyTorch(_AbstractPlatform):
     sampling Bayesian, variational Bayesian)
     """
 
+    import torch
+
     class _ZipDataset(torch.utils.data.Dataset):
         def __init__(self, train_features, train_labels) -> None:
+            import torch
+
             torch.utils.data.Dataset.__init__(self)
             self.train_features = torch.from_numpy(train_features)
             self.train_labels = torch.from_numpy(train_labels)
@@ -685,6 +694,8 @@ class _PyTorch(_AbstractPlatform):
         Set the underlying model handled by this model handler.  This is generally
         called just once.
         """
+        import torch
+
         if not isinstance(model, torch.nn.modules.module.Module):
             raise ValueError(
                 "The parameter of _PyTorch.set_model must be of type"
@@ -723,6 +734,8 @@ class _TensorFlow(_AbstractPlatform):
     import tensorflow as tf
 
     def __init__(self) -> None:
+        import tensorflow as tf
+
         # _AbstractPlatform.__init__(self)
         self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits=False
@@ -733,6 +746,8 @@ class _TensorFlow(_AbstractPlatform):
         Set the underlying model handled by this model handler.  This is generally
         called just once.
         """
+        import tensorflow as tf
+
         if not isinstance(model, tf.keras.Model):
             raise ValueError(
                 "The parameter of _TensorFlow.set_model must be of type"
@@ -832,6 +847,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         # !!! Initialize any members that cannot be initialized in the super classes
 
         def categorical_cross_entropy(y_pred, y_true):
+            import torch
+
             y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
             y_true = torch.eye(y_pred.shape[-1])[y_true]
             return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
@@ -851,6 +868,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
+        import torch
+
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
@@ -965,6 +984,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         that the strategy can show the user the new predictions and ask for corrections.
         Parameters include which examples should be predicted.
         """
+        import torch
+
         if log_it:
             self.logger.on_predict_begin()
         with torch.no_grad():
@@ -981,6 +1002,8 @@ class SamplingBayesianPyTorchModelHandler(
     _Common, _SamplingBayesian, _PyTorch, AbstractModelHandler
 ):
     def __init__(self) -> None:
+        import torch
+
         _Common.__init__(self)
         _SamplingBayesian.__init__(self)
         _PyTorch.__init__(self)
@@ -1001,6 +1024,8 @@ class SamplingBayesianPyTorchModelHandler(
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
+        import torch
+
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
@@ -1123,6 +1148,8 @@ class SamplingBayesianPyTorchModelHandler(
         that the strategy can show the user the new predictions and ask for corrections.
         Parameters include which examples should be predicted.
         """
+        import torch
+
         # Instead, get `num_predict_samples` from somewhere!!!
         num_predict_samples = 100
         if log_it:

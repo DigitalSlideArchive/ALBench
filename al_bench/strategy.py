@@ -17,11 +17,8 @@
 # ==========================================================================
 
 from __future__ import annotations
-import batchbald_redux as bbald
-import batchbald_redux.batchbald
 import numpy as np
 import scipy.stats
-import torch
 from numpy.typing import NDArray
 from typing import List, Mapping, Set
 from . import dataset, model
@@ -642,6 +639,10 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples based upon the Batch-BALD criterion.  (See also BaldStrategyHandler.)
         """
+        import torch
+        import batchbald_redux as bbald
+        import batchbald_redux.batchbald
+
         # !!! Check that we have a torch model, not tensorflow
         number_to_select: int = self.parameters["number_to_select_per_query"]
         # Use the subset of self.predictions that excludes labeled_indices and
