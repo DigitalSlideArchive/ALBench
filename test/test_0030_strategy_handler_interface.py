@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import al_bench as alb
+import al_bench.strategy
 from exercise import exercise_strategy_handler
 from typing import Any, Dict, Type
 
@@ -39,7 +40,7 @@ def test_0030_strategy_handler_interface() -> None:
         alb.strategy.RandomStrategyHandler,
         alb.strategy.LeastConfidenceStrategyHandler,
         alb.strategy.LeastMarginStrategyHandler,
-        alb.strategy.EntropyStrategyHandler,
+        alb.strategy.MaximumEntropyStrategyHandler,
     ):
         my_strategy_handler: alb.strategy.AbstractStrategyHandler = StrategyHandler()
         exercise_strategy_handler(my_strategy_handler, **parameters)

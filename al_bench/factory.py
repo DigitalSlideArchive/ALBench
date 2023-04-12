@@ -24,11 +24,11 @@ from typing import Mapping, MutableMapping, Sequence, Any
 
 
 class ComputeCertainty:
-    all_certainty_types = ["negative_entropy", "confidence", "margin"]
+    all_certainty_types = ["confidence", "margin", "negative_entropy"]
 
     def __init__(self, certainty_type, percentiles, cutoffs):
         """
-        certainty_type can be "negative_entropy", "confidence", or "margin", or a list
+        certainty_type can be "confidence", "margin", or "negative_entropy" or a list
         (or tuple) of one or more of these.  A value of None means all certainty types.
 
         percentiles is a list (or tuple) of percentile values to be computed, e.g., (5,
@@ -98,11 +98,6 @@ class ComputeCertainty:
         predictions = np.sort(predictions, axis=-1)
 
         scores: MutableMapping[str, NDArray] = dict()
-        # When certainty is defined by entropy, compute the entropy of each row and
-        # negate it, because we want larger values (i.e. values that are less negative)
-        # to represent more certainty than smaller values.
-        if "negative_entropy" in self.certainty_type:
-            scores["negative_entropy"] = -scipy.stats.entropy(predictions, axis=-1)
         # When certainty is defined by confidence, use the largest prediction
         # probability.
         if "confidence" in self.certainty_type:
@@ -111,6 +106,11 @@ class ComputeCertainty:
         # and second largest prediction probabilities.
         if "margin" in self.certainty_type:
             scores["margin"] = predictions[..., -1] - predictions[..., -2]
+        # When certainty is defined by entropy, compute the entropy of each row and
+        # negate it, because we want larger values (i.e. values that are less negative)
+        # to represent more certainty than smaller values.
+        if "negative_entropy" in self.certainty_type:
+            scores["negative_entropy"] = -scipy.stats.entropy(predictions, axis=-1)
 
         # Report percentile scores
         percentile: float

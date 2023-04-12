@@ -148,7 +148,7 @@ class _AbstractCommon:
                 model_steps, y_dictionary, x_key, *args, **kwargs
             )
 
-        def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        def write_certainty_log_for_tensorboard(self, *args, **kwargs) -> bool:
             if len(self.log) == 0:
                 return False
             x_key: str = "training_size"
@@ -186,7 +186,7 @@ class _AbstractCommon:
                         predictions: NDArray = np.concatenate(predictions_list, axis=0)
                         predictions_list = list()
                         statistcs: Mapping = (
-                            self.model_handler.compute_confidence_statistics(
+                            self.model_handler.compute_certainty_statistics(
                                 predictions, percentiles
                             )
                         )
@@ -196,7 +196,7 @@ class _AbstractCommon:
                         for statistic_kind, statistic_percentiles in statistcs.items():
                             for percentile, y_value in statistic_percentiles.items():
                                 name: str = (
-                                    f"Confidence/{statistic_kind}/{percentile:02d}%"
+                                    f"Certainty/{statistic_kind}/{percentile:02d}%"
                                 )
                                 """
                                 print(
@@ -403,21 +403,21 @@ class _AbstractCommon:
             " should not be called."
         )
 
-    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
+    def write_certainty_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::write_confidence_log_for_tensorboard"
+            "Abstract method AbstractModelHandler::write_certainty_log_for_tensorboard"
             " should not be called."
         )
 
-    def compute_confidence_statistics(
+    def compute_certainty_statistics(
         self, predictions: NDArray, percentiles: Sequence[float]
     ) -> Mapping:
         """
-        Ask that the model provide statistics about its confidence in the supplied
+        Ask that the model provide statistics about its certainty in the supplied
         predictions.
         """
         raise NotImplementedError(
-            "Abstract method AbstractModelHandler::compute_confidence_statistics"
+            "Abstract method AbstractModelHandler::compute_certainty_statistics"
             " should not be called."
         )
 
@@ -542,14 +542,14 @@ class _Common(_AbstractCommon):
     def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
         return self.logger.write_epoch_log_for_tensorboard(*args, **kwargs)
 
-    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
-        return self.logger.write_confidence_log_for_tensorboard(*args, **kwargs)
+    def write_certainty_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        return self.logger.write_certainty_log_for_tensorboard(*args, **kwargs)
 
-    def compute_confidence_statistics(
+    def compute_certainty_statistics(
         self, predictions: NDArray, percentiles: Sequence[float]
     ) -> Mapping:
         # Compute several scores for each prediction.  High scores correspond to high
-        # confidence.
+        # certainty.
 
         # We assume that via "softmax" or similar, the values are already non-negative
         # and sum to 1.0.
@@ -559,7 +559,7 @@ class _Common(_AbstractCommon):
         # predictions may have shape with indexes for (example, class) or for (example,
         # random_sample, class).  We'll make the latter look like the former.
         predictions = predictions.reshape((-1, predictions.shape[-1]))
-        entropy_score: NDArray = -scipy.stats.entropy(predictions, axis=-1)
+        negative_entropy_score: NDArray = -scipy.stats.entropy(predictions, axis=-1)
         margin_argsort: NDArray = np.argsort(predictions, axis=-1)
         prediction_indices: NDArray = np.arange(len(predictions))
         confidence_score: NDArray = predictions[
@@ -574,8 +574,8 @@ class _Common(_AbstractCommon):
         statistic_kind: str
         source_score: NDArray
         for statistic_kind, source_score in zip(
-            ("maximum", "margin", "entropy"),
-            (confidence_score, margin_score, entropy_score),
+            ("confidence", "margin", "negative_entropy"),
+            (confidence_score, margin_score, negative_entropy_score),
         ):
             response[statistic_kind] = dict()
             percentile_scores: NDArray = np.percentile(source_score, percentiles)
