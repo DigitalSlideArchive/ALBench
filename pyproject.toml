@@ -11,18 +11,15 @@ maintainers = [{name = "Lee A. Newberg", email = "lee.newberg@kitware.com"}]
 keywords = ["active learning", "benchmark"]
 classifiers = ["License :: OSI Approved :: Apache Software License"]
 dependencies = [
-    "batchbald-redux",
     "h5py",
     "numpy",
     "scipy",
-    "tensorflow",
-    "torch",
 ]
 dynamic = ["version", "description"]
 
 # [project.optional-dependencies]
-# torch = ["torch >= 1.11"]
-# tensorflow = ["tensorflow >= 2.6"]
+# torch = ["torch>=1.11<2.0"]
+# tensorflow = ["tensorflow>=2.6<3.0"]
 
 [project.urls]
 Source = "https://github.com/DigitalSlideArchive/ALBench"

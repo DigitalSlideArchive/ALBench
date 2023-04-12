@@ -17,11 +17,8 @@
 # ==========================================================================
 
 from __future__ import annotations
-import batchbald_redux as bbald
-import batchbald_redux.batchbald
 import numpy as np
 import scipy.stats
-import torch
 from numpy.typing import NDArray
 from typing import List, Mapping, Set
 from . import dataset, model
@@ -56,80 +53,80 @@ class AbstractStrategyHandler:
         self, dataset_handler: dataset.AbstractDatasetHandler
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::set_dataset_handler "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::set_dataset_handler"
+            " should not be called."
         )
 
     def get_dataset_handler(self) -> dataset.AbstractDatasetHandler:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::get_dataset_handler "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::get_dataset_handler"
+            " should not be called."
         )
 
     def set_model_handler(self, model_handler: model.AbstractModelHandler) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::set_model_handler "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::set_model_handler"
+            " should not be called."
         )
 
     def get_model_handler(self) -> model.AbstractModelHandler:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::get_model_handler "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::get_model_handler"
+            " should not be called."
         )
 
     def set_desired_outputs(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::set_desired_outputs "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::set_desired_outputs"
+            " should not be called."
         )
 
     def set_scoring_metric(self, scoring_metric: AbstractScoringMetric) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::set_scoring_metric "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::set_scoring_metric"
+            " should not be called."
         )
 
     def get_scoring_metric(self) -> AbstractScoringMetric:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::get_scoring_metric "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::get_scoring_metric"
+            " should not be called."
         )
 
     def clear_scoring_metric(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::clear_scoring_metric "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::clear_scoring_metric"
+            " should not be called."
         )
 
     def set_diversity_metric(self, diversity_metric: AbstractDiversityMetric) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::set_diversity_metric "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::set_diversity_metric"
+            " should not be called."
         )
 
     def get_diversity_metric(self) -> AbstractDiversityMetric:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::get_diversity_metric "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::get_diversity_metric"
+            " should not be called."
         )
 
     def clear_diversity_metric(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::clear_diversity_metric "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::clear_diversity_metric"
+            " should not be called."
         )
 
     def set_learning_parameters(self, **parameters) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::set_learning_parameters "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::set_learning_parameters"
+            " should not be called."
         )
 
     def get_learning_parameters(self) -> Mapping:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::get_learning_parameters "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::get_learning_parameters"
+            " should not be called."
         )
 
     def select_next_indices(
@@ -138,8 +135,8 @@ class AbstractStrategyHandler:
         validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::select_next_indices "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::select_next_indices"
+            " should not be called."
         )
 
     def reset_log(self) -> None:
@@ -154,14 +151,14 @@ class AbstractStrategyHandler:
 
     def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::write_train_log_for_tensorboard "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::write_train_log_for_tensorboard"
+            " should not be called."
         )
 
     def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::write_epoch_log_for_tensorboard "
-            "should not be called."
+            "Abstract method AbstractStrategyHandler::write_epoch_log_for_tensorboard"
+            " should not be called."
         )
 
     def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
@@ -204,8 +201,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     ) -> None:
         if not isinstance(dataset_handler, dataset.AbstractDatasetHandler):
             raise ValueError(
-                "The argument to set_dataset_handler must be a (subclass of) "
-                "AbstractDatasetHandler"
+                "The argument to set_dataset_handler must be a (subclass of)"
+                " AbstractDatasetHandler"
             )
         self.dataset_handler = dataset_handler
 
@@ -215,8 +212,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     def set_model_handler(self, model_handler: model.AbstractModelHandler) -> None:
         if not isinstance(model_handler, model.AbstractModelHandler):
             raise ValueError(
-                "The argument to set_model_handler must be a (subclass of) "
-                "AbstractModelHandler"
+                "The argument to set_model_handler must be a (subclass of)"
+                " AbstractModelHandler"
             )
         self.model_handler = model_handler
 
@@ -244,8 +241,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         """
         if not isinstance(scoring_metric, AbstractScoringMetric):
             raise ValueError(
-                "The argument to set_scoring_metric must be a subclass of "
-                "AbstractScoringMetric"
+                "The argument to set_scoring_metric must be a subclass of"
+                " AbstractScoringMetric"
             )
         self.scoring_metric = scoring_metric
 
@@ -270,8 +267,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         """
         if not isinstance(diversity_metric, AbstractDiversityMetric):
             raise ValueError(
-                "The argument to set_diversity_metric must be a subclass of "
-                "AbstractDiversityMetric"
+                "The argument to set_diversity_metric must be a subclass of"
+                " AbstractDiversityMetric"
             )
         self.diversity_metric = diversity_metric
 
@@ -295,8 +292,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
 
         if not isinstance(parameters, dict):
             raise ValueError(
-                f"The argument to set_learning_parameters must be (a subclass of) a "
-                f"Python dict but is of type {type(parameters)}"
+                f"The argument to set_learning_parameters must be (a subclass of) a"
+                f" Python dict but is of type {type(parameters)}"
             )
 
         missing_keys: Set = set(self.required_parameters_keys) - set(parameters)
@@ -321,8 +318,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         raise NotImplementedError(
-            "Abstract method GenericStrategyHandler::select_next_indices should not "
-            "be called."
+            "Abstract method GenericStrategyHandler::select_next_indices should not"
+            " be called."
         )
 
     def reset_log(self) -> None:
@@ -451,8 +448,8 @@ class RandomStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > feature_vectors.shape[0]:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
-                f"{feature_vectors.shape[0] - len(excluded_indices)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f" {feature_vectors.shape[0] - len(excluded_indices)} remain."
             )
 
         # This implementation simply selects a random subset of labels from those not
@@ -493,8 +490,8 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
-                f"{number_of_feature_vectors - len(excluded_indices)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f" {number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
         predictions: NDArray = self.predictions
@@ -537,8 +534,8 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
-                f"{number_of_feature_vectors - len(excluded_indices)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f" {number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
         predictions: NDArray = self.predictions
@@ -586,8 +583,8 @@ class EntropyStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
-                f"{number_of_feature_vectors - len(excluded_indices)} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f" {number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
         predictions: NDArray = self.predictions
@@ -642,6 +639,10 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples based upon the Batch-BALD criterion.  (See also BaldStrategyHandler.)
         """
+        import torch
+        import batchbald_redux as bbald
+        import batchbald_redux.batchbald
+
         # !!! Check that we have a torch model, not tensorflow
         number_to_select: int = self.parameters["number_to_select_per_query"]
         # Use the subset of self.predictions that excludes labeled_indices and
@@ -655,8 +656,8 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         # Check that there are enough available indices left
         if number_to_select > available_indices.shape[0]:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only "
-                f"{available_indices.shape[0]} remain."
+                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f" {available_indices.shape[0]} remain."
             )
 
         num_samples: int = 100000

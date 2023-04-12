@@ -11,10 +11,11 @@ jobs:
         python-version: ["3.7", "3.8", "3.9", "3.10"]
 
         include:
+          - batchbald_redux-git-tag: ""
           - flake8-python-git-tag: ""
           - pytest-python-git-tag: ""
-          - tensorflow-python-git-tag: ""
-          - torch-python-git-tag: ""
+          - tensorflow-python-git-tag: "<3.0.0"
+          - torch-python-git-tag: "<2.0.0"
 
     steps:
       - uses: actions/checkout@v2
@@ -35,11 +36,14 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install 'flake8${{ matrix.flake8-python-git-tag }}' 'pytest${{ matrix.pytest-python-git-tag }}'
-          pip install 'tensorflow${{ matrix.tensorflow-python-git-tag }}' 'torch${{ matrix.torch-python-git-tag }}'
+          pip install 'flake8${{ matrix.flake8-python-git-tag }}'
+          pip install 'pytest${{ matrix.pytest-python-git-tag }}'
 
-      - name: Install al_bench
+      - name: Install machine learning frameworks and al_bench
         run: |
+          pip install 'tensorflow${{ matrix.tensorflow-python-git-tag }}'
+          pip install 'torch${{ matrix.torch-python-git-tag }}'
+          pip install 'batchbald_redux${{ matrix.batchbald_redux-python-git-tag }}'
           pip install .
 
       - name: Lint with flake8

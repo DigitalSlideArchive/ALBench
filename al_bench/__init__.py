@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-__version__: str = "1.0.0"
+__version__: str = "1.1.0"
 
 """
 
@@ -36,4 +36,4 @@ multiple runs of the tool with different models and datasets can be compared, ev
 these models and datasets for their compatibility with a given active learning strategy.
 
 """
-from . import dataset, model, strategy  # noqa F401
+# from . import dataset, model, strategy, factory  # noqa F401

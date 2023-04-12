@@ -37,119 +37,119 @@ class AbstractDatasetHandler:
         self, filename: str, data_name: str = "features"
     ) -> None:
         raise NotImplementedError(
-            "Abstract method "
-            "AbstractDatasetHandler::read_all_feature_vectors_from_h5py should not be "
-            "called."
+            "Abstract method"
+            " AbstractDatasetHandler::read_all_feature_vectors_from_h5py should not be"
+            " called."
         )
 
     def write_all_feature_vectors_to_h5py(
         self, filename: str, data_name: str = "features"
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::write_all_feature_vectors_to_h5py "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::write_all_feature_vectors_to_h5py"
+            " should not be called."
         )
 
     def set_all_feature_vectors(self, feature_vectors: NDArray) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_all_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_all_feature_vectors"
+            " should not be called."
         )
 
     def get_all_feature_vectors(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_all_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_all_feature_vectors"
+            " should not be called."
         )
 
     def clear_all_feature_vectors(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::clear_all_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::clear_all_feature_vectors"
+            " should not be called."
         )
 
     def set_some_feature_vectors(
         self, feature_vector_indices: NDArray, feature_vectors: NDArray
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_some_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_some_feature_vectors"
+            " should not be called."
         )
 
     def get_some_feature_vectors(self, feature_vector_indices: NDArray) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_some_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_some_feature_vectors"
+            " should not be called."
         )
 
     def get_training_feature_vectors(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_training_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_training_feature_vectors"
+            " should not be called."
         )
 
     def get_validation_feature_vectors(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_validation_feature_vectors "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_validation_feature_vectors"
+            " should not be called."
         )
 
     def read_all_labels_from_h5py(
         self, filename: str, data_name: str = "labels"
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::read_all_labels_from_h5py "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::read_all_labels_from_h5py"
+            " should not be called."
         )
 
     def write_all_labels_to_h5py(
         self, filename: str, data_name: str = "labels"
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::write_all_labels_to_h5py "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::write_all_labels_to_h5py"
+            " should not be called."
         )
 
     def set_all_labels(self, labels: NDArray) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_all_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_all_labels"
+            " should not be called."
         )
 
     def get_all_labels(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_all_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_all_labels"
+            " should not be called."
         )
 
     def clear_all_labels(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::clear_all_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::clear_all_labels"
+            " should not be called."
         )
 
     def set_some_labels(self, label_indices: NDArray, labels: NDArray) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_some_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_some_labels"
+            " should not be called."
         )
 
     def get_some_labels(self, label_indices: NDArray) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_some_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_some_labels"
+            " should not be called."
         )
 
     def get_training_labels(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_training_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_training_labels"
+            " should not be called."
         )
 
     def get_validation_labels(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_validation_labels "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_validation_labels"
+            " should not be called."
         )
 
     def query_oracle(self, next_indices: NDArray) -> NDArray:
@@ -164,74 +164,74 @@ class AbstractDatasetHandler:
 
     def set_all_dictionaries(self, dictionaries: Iterable[MutableMapping]) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_all_dictionaries "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_all_dictionaries"
+            " should not be called."
         )
 
     def get_all_dictionaries(self) -> Iterable[MutableMapping]:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_all_dictionaries "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_all_dictionaries"
+            " should not be called."
         )
 
     def clear_all_dictionaries(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::clear_all_dictionaries "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::clear_all_dictionaries"
+            " should not be called."
         )
 
     def set_some_dictionaries(
         self, dictionary_indices: NDArray, dictionaries: Iterable[MutableMapping]
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_some_dictionaries "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_some_dictionaries"
+            " should not be called."
         )
 
     def get_some_dictionaries(
         self, dictionary_indices: NDArray
     ) -> Iterable[MutableMapping]:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_some_dictionaries "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_some_dictionaries"
+            " should not be called."
         )
 
     def set_validation_indices(self, validation_indices: NDArray) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_validation_indices "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_validation_indices"
+            " should not be called."
         )
 
     def get_validation_indices(self) -> NDArray:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_validation_indices "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_validation_indices"
+            " should not be called."
         )
 
     def clear_validation_indices(self) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::clear_validation_indices "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::clear_validation_indices"
+            " should not be called."
         )
 
     def set_all_label_definitions(
         self, label_definitions: Iterable[MutableMapping]
     ) -> None:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::set_all_label_definitions "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::set_all_label_definitions"
+            " should not be called."
         )
 
     def get_all_label_definitions(self) -> Iterable[MutableMapping]:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::get_all_label_definitions "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::get_all_label_definitions"
+            " should not be called."
         )
 
     def check_data_consistency(self) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractDatasetHandler::check_data_consistency "
-            "should not be called."
+            "Abstract method AbstractDatasetHandler::check_data_consistency"
+            " should not be called."
         )
 
 
@@ -272,8 +272,8 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.feature_vectors = feature_vectors
         else:
             raise ValueError(
-                "The argument to set_all_feature_vectors must be a 2-dimensional numpy "
-                "ndarray."
+                "The argument to set_all_feature_vectors must be a 2-dimensional numpy"
+                " ndarray."
             )
 
     def get_all_feature_vectors(self) -> NDArray:
@@ -369,8 +369,8 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.labels = labels
         else:
             raise ValueError(
-                "The argument to set_all_labels must be a 1-dimensional or "
-                "2-dimensional numpy ndarray."
+                "The argument to set_all_labels must be a 1-dimensional or"
+                " 2-dimensional numpy ndarray."
             )
 
     def get_all_labels(self) -> NDArray:
@@ -455,8 +455,8 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.dictionaries: List[MutableMapping] = dictionaries
         else:
             raise ValueError(
-                "The argument to set_all_dictionaries must be a list of Python "
-                "dict objects"
+                "The argument to set_all_dictionaries must be a list of Python"
+                " dict objects"
             )
 
     def get_all_dictionaries(self) -> Iterable[MutableMapping]:
@@ -520,8 +520,8 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         if isinstance(self.dictionaries, tuple):
             raise ValueError(
-                "set_some_dictionaries cannot be used unless the initially supplied "
-                "dictionaries are supplied in a list instead of a tuple"
+                "set_some_dictionaries cannot be used unless the initially supplied"
+                " dictionaries are supplied in a list instead of a tuple"
             )
 
         for k, v in zip(dictionary_indices, dictionaries):
@@ -569,8 +569,8 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.label_definitions: List[MutableMapping] = label_definitions
         else:
             raise ValueError(
-                "The argument to set_all_label_definitions must be a list of Python "
-                "dict objects"
+                "The argument to set_all_label_definitions must be a list of Python"
+                " dict objects"
             )
 
     def get_all_label_definitions(self) -> Iterable[MutableMapping]:
@@ -635,14 +635,14 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         mesgs: List[str] = list()
         if not lengths_test:
             mesgs += [
-                f"height(feature_vectors) = {feature_vectors_length}, "
-                f"height(labels) = {labels_length}, and "
-                f"height(dictionaries) = {dictionaries_length} do not match."
+                f"height(feature_vectors) = {feature_vectors_length},"
+                f" height(labels) = {labels_length}, and"
+                f" height(dictionaries) = {dictionaries_length} do not match."
             ]
         if not widths_test:
             mesgs += [
-                f"width(labels) = {labels_width} and "
-                f"width(label_definitions) = {label_definitions_width} do not match."
+                f"width(labels) = {labels_width} and"
+                f" width(label_definitions) = {label_definitions_width} do not match."
             ]
         if not definitions_test:
             mesgs += ["Some labels have categories without definitions."]
