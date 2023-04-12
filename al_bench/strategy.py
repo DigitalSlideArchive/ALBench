@@ -161,9 +161,9 @@ class AbstractStrategyHandler:
             " should not be called."
         )
 
-    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
+    def write_certainty_log_for_tensorboard(self, *args, **kwargs) -> bool:
         raise NotImplementedError(
-            "Abstract method AbstractStrategyHandler::write_confidence_log_for"
+            "Abstract method AbstractStrategyHandler::write_certainty_log_for"
             "_tensorboard should not be called."
         )
 
@@ -178,7 +178,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     GenericStrategyHandler handles functionality that is agnostic to the choice of the
     active learning strategy.  GenericStrategyHandler is the superclass for
     RandomStrategyHandler, LeastConfidenceStrategyHandler, LeastMarginStrategyHandler,
-    EntropyStrategyHandler, etc.  These subclasses handle AbstractStrategyHandler
+    MaximumEntropyStrategyHandler, etc.  These subclasses handle AbstractStrategyHandler
     operations that are dependent upon which active learning strategy is being used.
     """
 
@@ -334,8 +334,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
     def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
         return self.model_handler.write_epoch_log_for_tensorboard(*args, **kwargs)
 
-    def write_confidence_log_for_tensorboard(self, *args, **kwargs) -> bool:
-        return self.model_handler.write_confidence_log_for_tensorboard(*args, **kwargs)
+    def write_certainty_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        return self.model_handler.write_certainty_log_for_tensorboard(*args, **kwargs)
 
     def run(self, labeled_indices: NDArray) -> None:
         """
@@ -561,9 +561,9 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         return predict_order
 
 
-class EntropyStrategyHandler(GenericStrategyHandler):
+class MaximumEntropyStrategyHandler(GenericStrategyHandler):
     def __init__(self) -> None:
-        super(EntropyStrategyHandler, self).__init__()
+        super(MaximumEntropyStrategyHandler, self).__init__()
 
     def select_next_indices(
         self,

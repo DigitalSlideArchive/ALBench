@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import al_bench as alb
+import al_bench.strategy
 import datetime
 import numpy as np
 import os
@@ -86,7 +87,7 @@ def test_0100_handler_combinations() -> None:
                 alb.strategy.RandomStrategyHandler,
                 alb.strategy.LeastConfidenceStrategyHandler,
                 alb.strategy.LeastMarginStrategyHandler,
-                alb.strategy.EntropyStrategyHandler,
+                alb.strategy.MaximumEntropyStrategyHandler,
             ):
                 # Create fresh handlers and components
                 my_feature_vectors: NDArray
@@ -170,7 +171,7 @@ def test_0100_handler_combinations() -> None:
                 my_strategy_handler.write_train_log_for_tensorboard(
                     log_dir=os.path.join("runs", combination_name)
                 )
-                my_strategy_handler.write_confidence_log_for_tensorboard(
+                my_strategy_handler.write_certainty_log_for_tensorboard(
                     log_dir=os.path.join("runs", combination_name)
                 )
 

@@ -18,7 +18,8 @@
 
 from __future__ import annotations
 import numpy as np
-import al_bench.factory as alb_factory
+import al_bench as alb
+import al_bench.factory
 from numpy.typing import NDArray
 from typing import Sequence
 
@@ -54,7 +55,7 @@ def test_0040_factory():
         }
 
     # Get a class from our factory
-    certainty_computer = alb_factory.ComputeCertainty(
+    certainty_computer = alb.factory.ComputeCertainty(
         certainty_type, percentiles, cutoffs
     )
     print(f"all_certainty_types = {certainty_computer.all_certainty_types}")

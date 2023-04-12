@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import al_bench as alb
+import al_bench.dataset
 from exercise import exercise_dataset_handler
 from typing import Any, Dict, Type
 
