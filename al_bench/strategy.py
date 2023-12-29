@@ -507,7 +507,11 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
-        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray
+        predict_order = np.argpartition(predict_score, number_to_select)[
+            0:number_to_select
+        ]
+        predict_order = predict_order[np.argsort(predict_score[predict_order])]
         return predict_order
 
 
@@ -556,7 +560,11 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
-        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray
+        predict_order = np.argpartition(predict_score, number_to_select)[
+            0:number_to_select
+        ]
+        predict_order = predict_order[np.argsort(predict_score[predict_order])]
         return predict_order
 
 
@@ -602,7 +610,11 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
-        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray
+        predict_order = np.argpartition(predict_score, number_to_select)[
+            0:number_to_select
+        ]
+        predict_order = predict_order[np.argsort(predict_score[predict_order])]
         return predict_order
 
 

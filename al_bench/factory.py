@@ -95,18 +95,18 @@ class ComputeCertainty:
 
         # Normalize rows to sum to 1.0
         predictions = predictions / np.sum(predictions, axis=-1, keepdims=True)
-        # Find the sorted order of values within each row.
-        predictions = np.sort(predictions, axis=-1)
+        # Find the two largest values within each row.
+        partitioned = np.partition(predictions, -2, axis=-1)[..., -2:]
 
         scores: MutableMapping[str, NDArray] = dict()
         # When certainty is defined by confidence, use the largest prediction
         # probability.
         if "confidence" in self.certainty_type:
-            scores["confidence"] = predictions[..., -1]
+            scores["confidence"] = partitioned[..., -1]
         # When certainty is defined by margin, use the difference between the largest
         # and second largest prediction probabilities.
         if "margin" in self.certainty_type:
-            scores["margin"] = predictions[..., -1] - predictions[..., -2]
+            scores["margin"] = partitioned[..., -1] - partitioned[..., -2]
         # When certainty is defined by entropy, compute the entropy of each row and
         # negate it, because we want larger values (i.e. values that are less negative)
         # to represent more certainty than smaller values.

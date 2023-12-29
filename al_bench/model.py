@@ -580,7 +580,8 @@ class _Common(_AbstractCommon):
         # random_sample, class).  We'll make the latter look like the former.
         predictions = predictions.reshape((-1, predictions.shape[-1]))
         negative_entropy_score: NDArray = -scipy.stats.entropy(predictions, axis=-1)
-        margin_argsort: NDArray = np.argsort(predictions, axis=-1)
+        # Find second highest and highest scoring classes
+        margin_argsort: NDArray = np.argpartition(predictions, -2, axis=-1)
         prediction_indices: NDArray = np.arange(len(predictions))
         confidence_score: NDArray
         confidence_score = predictions[prediction_indices, margin_argsort[:, -1]]

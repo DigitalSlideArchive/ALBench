@@ -44,6 +44,7 @@ def test_0000_imports() -> None:
     from numpy import amax  # noqa F401
     from numpy import any  # noqa F401
     from numpy import arange  # noqa F401
+    from numpy import argpartition  # noqa F401
     from numpy import argsort  # noqa F401
     from numpy import array  # noqa F401
     from numpy import clip  # noqa F401
