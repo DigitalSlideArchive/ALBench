@@ -24,7 +24,7 @@ import numpy as np
 import scipy.stats
 from datetime import datetime
 from numpy.typing import NDArray
-from typing import cast, Dict, List, Mapping, MutableMapping, Sequence
+from typing import cast, Any, Dict, List, Mapping, MutableMapping, Sequence
 
 
 class ModelStep(enum.Enum):
@@ -82,6 +82,16 @@ class _AbstractCommon:
         def get_log(self) -> List:
             return self.log
 
+        def append_to_log(self, d: Dict[str, Any]) -> None:
+            if not all(
+                [
+                    isinstance(e, (int, float, np.float32, np.float64, np.ndarray))
+                    for e in d["logs"].values()
+                ]
+            ):
+                raise ValueError(f"Logger.append_to_log bad dictionary: {repr(d)}")
+            self.log.append(d)
+
         def write_some_log_for_tensorboard(
             self,
             model_steps: Sequence[ModelStep],
@@ -103,16 +113,21 @@ class _AbstractCommon:
                     for key in logs.keys() & y_dictionary.keys():
                         name: str = y_dictionary[key]
                         y_value: float = logs[key]
-                        """
-                        print(
-                            "Invoking writer.add_scalar"
-                            f"(tag={repr(name)},"
-                            f" scalar_value={repr(y_value)},"
-                            f" global_step={repr(x_value)},"
-                            f" walltime={repr(utc_seconds)},"
-                            f" new_style={repr(True)})"
-                        )
-                        """
+                        if not (
+                            isinstance(x_value, (int, float, np.float32, np.float64))
+                            and isinstance(
+                                y_value, (int, float, np.float32, np.float64)
+                            )
+                        ):
+                            raise ValueError(
+                                "global_step and scalar_value must be numeric "
+                                "when invoking writer.add_scalar"
+                                f"(tag={repr(name)},"
+                                f" scalar_value={repr(y_value)},"
+                                f" global_step={repr(x_value)},"
+                                f" walltime={repr(utc_seconds)},"
+                                f" new_style={repr(True)})"
+                            )
                         writer.add_scalar(
                             tag=name,
                             scalar_value=y_value,
@@ -195,19 +210,25 @@ class _AbstractCommon:
                         utc_seconds = (entry["utcnow"] - beginning).total_seconds()
                         for statistic_kind, statistic_percentiles in statistcs.items():
                             for percentile, y_value in statistic_percentiles.items():
-                                name: str = (
-                                    f"Certainty/{statistic_kind}/{percentile:02d}%"
-                                )
-                                """
-                                print(
-                                    "Invoking writer.add_scalar"
-                                    f"(tag={repr(name)},"
-                                    f" scalar_value={repr(y_value)},"
-                                    f" global_step={repr(x_value)},"
-                                    f" walltime={repr(utc_seconds)},"
-                                    f" new_style={repr(True)})"
-                                )
-                                """
+                                name: str
+                                name = f"Certainty/{statistic_kind}/{percentile:02d}%"
+                                if not (
+                                    isinstance(
+                                        x_value, (int, float, np.float32, np.float64)
+                                    )
+                                    and isinstance(
+                                        y_value, (int, float, np.float32, np.float64)
+                                    )
+                                ):
+                                    raise ValueError(
+                                        "global_step and scalar_value must be numeric "
+                                        "when invoking writer.add_scalar"
+                                        f"(tag={repr(name)},"
+                                        f" scalar_value={repr(y_value)},"
+                                        f" global_step={repr(x_value)},"
+                                        f" walltime={repr(utc_seconds)},"
+                                        f" new_style={repr(True)})"
+                                    )
                                 writer.add_scalar(
                                     tag=name,
                                     scalar_value=y_value,
@@ -222,7 +243,7 @@ class _AbstractCommon:
         # interface.  Instead we grab it from self.training_size and require that the
         # user has already set that to something reasonable.
         def on_train_begin(self, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TRAIN_BEGIN,
@@ -232,7 +253,7 @@ class _AbstractCommon:
             )
 
         def on_train_end(self, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TRAIN_END,
@@ -242,7 +263,7 @@ class _AbstractCommon:
             )
 
         def on_epoch_begin(self, epoch: int, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TRAIN_EPOCH_BEGIN,
@@ -253,7 +274,7 @@ class _AbstractCommon:
             )
 
         def on_epoch_end(self, epoch: int, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TRAIN_EPOCH_END,
@@ -264,7 +285,7 @@ class _AbstractCommon:
             )
 
         def on_train_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TRAIN_BATCH_BEGIN,
@@ -276,7 +297,7 @@ class _AbstractCommon:
 
         def on_train_batch_end(self, batch: int, logs: Dict = dict()) -> None:
             # For tensorflow, logs.keys() == ["loss", "accuracy"]
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TRAIN_BATCH_END,
@@ -287,7 +308,7 @@ class _AbstractCommon:
             )
 
         def on_test_begin(self, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TEST_BEGIN,
@@ -297,7 +318,7 @@ class _AbstractCommon:
             )
 
         def on_test_end(self, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TEST_END,
@@ -307,7 +328,7 @@ class _AbstractCommon:
             )
 
         def on_test_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TEST_BATCH_BEGIN,
@@ -318,7 +339,7 @@ class _AbstractCommon:
             )
 
         def on_test_batch_end(self, batch: int, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_TEST_BATCH_END,
@@ -329,7 +350,7 @@ class _AbstractCommon:
             )
 
         def on_predict_begin(self, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_PREDICT_BEGIN,
@@ -339,7 +360,7 @@ class _AbstractCommon:
             )
 
         def on_predict_end(self, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_PREDICT_END,
@@ -349,7 +370,7 @@ class _AbstractCommon:
             )
 
         def on_predict_batch_begin(self, batch: int, logs: Dict = dict()) -> None:
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_PREDICT_BATCH_BEGIN,
@@ -361,7 +382,7 @@ class _AbstractCommon:
 
         def on_predict_batch_end(self, batch: int, logs: Dict = dict()) -> None:
             # For tensorflow, logs.keys() == ["outputs"]
-            self.log.append(
+            self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
                     "model_step": ModelStep.ON_PREDICT_BATCH_END,
@@ -523,9 +544,8 @@ class _Common(_AbstractCommon):
 
     def __init__(self) -> None:
         # _AbstractCommon.__init__(self)
-        self.logger: _AbstractCommon.Logger = _AbstractCommon.Logger(
-            cast(AbstractModelHandler, self)
-        )
+        self.logger: _AbstractCommon.Logger
+        self.logger = _AbstractCommon.Logger(cast(AbstractModelHandler, self))
 
     def reset_log(self) -> None:
         self.logger.reset_log()
@@ -562,9 +582,8 @@ class _Common(_AbstractCommon):
         negative_entropy_score: NDArray = -scipy.stats.entropy(predictions, axis=-1)
         margin_argsort: NDArray = np.argsort(predictions, axis=-1)
         prediction_indices: NDArray = np.arange(len(predictions))
-        confidence_score: NDArray = predictions[
-            prediction_indices, margin_argsort[:, -1]
-        ]
+        confidence_score: NDArray
+        confidence_score = predictions[prediction_indices, margin_argsort[:, -1]]
         margin_score: NDArray = (
             confidence_score - predictions[prediction_indices, margin_argsort[:, -2]]
         )
@@ -887,9 +906,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         number_of_epochs: int = 10
         optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
-        train_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
-            train_features, train_labels
-        )
+        train_features_labels: _PyTorch._ZipDataset
+        train_features_labels = _PyTorch._ZipDataset(train_features, train_labels)
         # Instead, get `batch_size` from somewhere!!!
         batch_size = 1
         # Note that DataLoader has additional parameters that we may wish to use in a
@@ -908,7 +926,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 validation_features_labels, batch_size=batch_size
             )
 
-        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
+        # Loop over the dataset multiple times
+        for epoch in range(number_of_epochs):
             self.logger.on_epoch_begin(epoch)
             train_loss: float = 0.0
             train_size = 0
@@ -930,16 +949,18 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 train_size += new_size
                 new_loss: float = loss.item() * inputs.size(0)
                 train_loss += new_loss
-                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                new_correct_t: torch.Tensor
+                new_correct_t = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                new_correct: float = new_correct_t.detach().cpu().numpy()
                 train_correct += new_correct
                 loss = new_loss / new_size
-                accuracy = (new_correct / new_size).detach().cpu().numpy()
+                accuracy = new_correct / new_size
                 if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                     accuracy = accuracy[()]
                 logs: Dict = {"loss": loss, "accuracy": accuracy}
                 self.logger.on_train_batch_end(i, logs)
             loss = train_loss / train_size
-            accuracy = (train_correct / train_size).detach().cpu().numpy()
+            accuracy = train_correct / train_size
             if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                 accuracy = accuracy[()]
             logs = {"loss": loss, "accuracy": accuracy}
@@ -958,21 +979,14 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                         validation_size += new_size
                         new_loss = loss.item() * inputs.size(0)
                         validation_loss += new_loss
-                        new_correct = (
+                        new_correct_t = (
                             (torch.argmax(outputs, dim=1) == labels).float().sum()
                         )
+                        new_correct = new_correct_t.detach().cpu().numpy()
                         validation_correct += new_correct
                     val_loss: float = validation_loss / validation_size
-                    val_accuracy = (
-                        (validation_correct / validation_size)
-                        .detach()
-                        .cpu()
-                        .numpy()[()]
-                    )
-                    more_logs: Dict = {
-                        "val_loss": val_loss,
-                        "val_accuracy": val_accuracy,
-                    }
+                    val_accuracy: float = validation_correct / validation_size
+                    more_logs: Dict = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                     logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 
@@ -1039,9 +1053,8 @@ class SamplingBayesianPyTorchModelHandler(
         number_of_epochs: int = 10
         optimizer = torch.optim.Adam(self.model.parameters())
 
-        train_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
-            train_features, train_labels
-        )
+        train_features_labels: _PyTorch._ZipDataset
+        train_features_labels = _PyTorch._ZipDataset(train_features, train_labels)
         # Instead, get `batch_size` from somewhere!!!
         batch_size = 1
         # Note that DataLoader has additional parameters that we may wish to use in a
@@ -1062,8 +1075,9 @@ class SamplingBayesianPyTorchModelHandler(
 
         num_train_samples = 1
         # !!! num_validation_samples cannot be >1 in this code for some unknown reason
-        num_validation_samples = 1
-        for epoch in range(number_of_epochs):  # loop over the dataset multiple times
+        num_validation_samples: int = 1
+        # Loop over the dataset multiple times
+        for epoch in range(number_of_epochs):
             self.logger.on_epoch_begin(epoch)
             train_loss: float = 0.0
             train_size = 0
@@ -1079,23 +1093,25 @@ class SamplingBayesianPyTorchModelHandler(
                 outputs = self.model(inputs, num_train_samples)
                 # Apparently our criterion, nll_loss, requires that we squeeze our
                 # `outputs` value here
-                loss = self.criterion(outputs.squeeze(1), labels)
-                loss.backward()
+                criterion_loss = self.criterion(outputs.squeeze(1), labels)
+                criterion_loss.backward()
                 optimizer.step()
                 new_size = inputs.size(0)
                 train_size += new_size
-                new_loss: float = loss.item() * inputs.size(0)
+                new_loss: float = criterion_loss.item() * inputs.size(0)
                 train_loss += new_loss
-                new_correct = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                new_correct_t: torch.Tensor
+                new_correct_t = (torch.argmax(outputs, dim=1) == labels).float().sum()
+                new_correct: float = new_correct_t.detach().cpu().numpy()
                 train_correct += new_correct
-                loss = new_loss / new_size
-                accuracy = (new_correct / new_size).detach().cpu().numpy()
+                loss: float = new_loss / new_size
+                accuracy: float = new_correct / new_size
                 if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                     accuracy = accuracy[()]
                 logs: Dict = {"loss": loss, "accuracy": accuracy}
                 self.logger.on_train_batch_end(i, logs)
             loss = train_loss / train_size
-            accuracy = (train_correct / train_size).detach().cpu().numpy()
+            accuracy = train_correct / train_size
             if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                 accuracy = accuracy[()]
             logs = {"loss": loss, "accuracy": accuracy}
@@ -1115,28 +1131,21 @@ class SamplingBayesianPyTorchModelHandler(
                         )
                         # Apparently our criterion, nll_loss, requires that we squeeze
                         # our `labels` value here
-                        loss = self.criterion(
+                        criterion_loss = self.criterion(
                             outputs, labels.squeeze(1), reduction="sum"
                         )
                         new_size = inputs.size(0)
                         validation_size += new_size
-                        new_loss = loss.item() * inputs.size(0)
+                        new_loss = criterion_loss.item() * inputs.size(0)
                         validation_loss += new_loss
-                        new_correct = (
+                        new_correct_t = (
                             (torch.argmax(outputs, dim=1) == labels).float().sum()
                         )
+                        new_correct = new_correct_t.detach().cpu().numpy()
                         validation_correct += new_correct
                     val_loss: float = validation_loss / validation_size
-                    val_accuracy = (
-                        (validation_correct / validation_size)
-                        .detach()
-                        .cpu()
-                        .numpy()[()]
-                    )
-                    more_logs: Dict = {
-                        "val_loss": val_loss,
-                        "val_accuracy": val_accuracy,
-                    }
+                    val_accuracy: float = validation_correct / validation_size
+                    more_logs: Dict = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                     logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 

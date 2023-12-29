@@ -26,7 +26,7 @@ from typing import Mapping, MutableMapping, Sequence, Any
 class ComputeCertainty:
     all_certainty_types = ["confidence", "margin", "negative_entropy"]
 
-    def __init__(self, certainty_type, percentiles, cutoffs):
+    def __init__(self, certainty_type, percentiles, cutoffs) -> None:
         """
         certainty_type can be "confidence", "margin", or "negative_entropy" or a list
         (or tuple) of one or more of these.  A value of None means all certainty types.
@@ -46,11 +46,11 @@ class ComputeCertainty:
         """
 
         if certainty_type is None:
-            certainty_type: Sequence[str] = self.all_certainty_types
+            certainty_type = self.all_certainty_types
         if isinstance(certainty_type, str):
             certainty_type = [certainty_type]
         if not all([ct in self.all_certainty_types for ct in certainty_type]):
-            raise ValueError("Something wrong with certainty_type")
+            raise ValueError(f"Something wrong with {certainty_type = }")
         self.certainty_type: Sequence[str] = certainty_type
 
         if percentiles is None:
@@ -60,13 +60,14 @@ class ComputeCertainty:
         self.percentiles: Sequence[float] = percentiles
 
         if cutoffs is None:
-            # No cutoffs for any certainty type
-            cutoffs = {ct: [] for ct in certainty_type}
-        if len(certainty_type) == 1 and not isinstance(cutoffs, dict):
+            cutoffs = {}
+        if len(certainty_type) == 1 and isinstance(cutoffs, list):
             cutoffs = {certainty_type[0]: cutoffs}
+        # If we have no information for a certainty type, default to no cutoffs.
+        cutoffs = {**{k: [] for k in certainty_type}, **cutoffs}
+        if not all([cut in certainty_type for cut in cutoffs.keys()]):
+            raise ValueError(f"Something wrong with {cutoffs = }")
         cutoffs = {key: [float(c) for c in value] for key, value in cutoffs.items()}
-        if not set(cutoffs.keys()) == set(certainty_type):
-            raise ValueError("Something wrong with cutoffs")
         self.cutoffs: Mapping[str, Sequence[float]] = cutoffs
 
     def from_numpy_array(self, predictions: NDArray) -> Mapping[str, Mapping[str, Any]]:

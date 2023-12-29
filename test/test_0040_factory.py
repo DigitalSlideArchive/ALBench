@@ -24,7 +24,7 @@ from numpy.typing import NDArray
 from typing import Sequence
 
 
-def test_0040_factory():
+def test_0040_factory() -> None:
     # Try one of these certainty_type values
     # certainty_type = "confidence"
     # certainty_type = ("negative_entropy",)

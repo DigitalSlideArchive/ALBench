@@ -52,6 +52,7 @@ def test_0000_imports() -> None:
     from numpy import float32  # noqa F401
     from numpy import float64  # noqa F401
     from numpy import floor  # noqa F401
+    from numpy import full  # noqa F401
     from numpy import isnan  # noqa F401
     from numpy import nan  # noqa F401
     from numpy import ndarray  # noqa F401
