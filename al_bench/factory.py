@@ -20,16 +20,22 @@ from __future__ import annotations
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import Mapping, MutableMapping, Sequence, Any
+from typing import Any, List, Mapping, MutableMapping, Sequence
 
 
 class ComputeCertainty:
-    all_certainty_types = ["confidence", "margin", "negative_entropy"]
+    confidence: str = "confidence"
+    margin: str = "margin"
+    negative_entropy: str = "negative_entropy"
+    batchbald: str = "batchbald"
+    all_certainty_types: List[str]
+    all_certainty_types = ["confidence", "margin", "negative_entropy", "batchbald"]
 
     def __init__(self, certainty_type, percentiles, cutoffs) -> None:
         """
-        certainty_type can be "confidence", "margin", or "negative_entropy" or a list
-        (or tuple) of one or more of these.  A value of None means all certainty types.
+        certainty_type can be "confidence", "margin", "negative_entropy", "batchbald" or
+        a list (or tuple) of one or more of these.  A value of None means all certainty
+        types.
 
         percentiles is a list (or tuple) of percentile values to be computed, e.g., (5,
         10, 25, 50).  The P percentile score will be that score S such that P percent of
@@ -103,15 +109,54 @@ class ComputeCertainty:
         # probability.
         if "confidence" in self.certainty_type:
             scores["confidence"] = partitioned[..., -1]
+
         # When certainty is defined by margin, use the difference between the largest
         # and second largest prediction probabilities.
         if "margin" in self.certainty_type:
             scores["margin"] = partitioned[..., -1] - partitioned[..., -2]
+
         # When certainty is defined by entropy, compute the entropy of each row and
         # negate it, because we want larger values (i.e. values that are less negative)
         # to represent more certainty than smaller values.
         if "negative_entropy" in self.certainty_type:
             scores["negative_entropy"] = -scipy.stats.entropy(predictions, axis=-1)
+
+        # When certainty is determined by batchbald, we let batchbald_redux do our
+        # calculations.
+        if "batchbald" in self.certainty_type:
+            if len(predictions.shape) != 3:
+                raise ValueError(
+                    "To compute statistics for batchbald,"
+                    " `predictions` must be 3-dimensional,"
+                    f" but its {len(predictions.shape)} dimensions"
+                    f" are {predictions.shape}."
+                )
+
+            import torch
+            import batchbald_redux as bbald
+            import batchbald_redux.batchbald
+
+            # Indicate how many predictions we want batchbald to rate as uncertain.  All
+            # the remaining will be rated more certain via a constant.
+            num_uncertain: int = 10  # Is this good?!!!
+            num_samples: int = 100000
+            log_predictions = np.log(predictions)
+            with torch.no_grad():
+                bald: bbald.batchbald.CandidateBatch
+                bald = bbald.batchbald.get_batchbald_batch(
+                    torch.from_numpy(log_predictions),
+                    num_uncertain,
+                    num_samples,
+                    dtype=torch.double,
+                )
+
+            # By default, set all scores to very_certain
+            very_certain = max(bald.scores) + 1.0
+            scores["batchbald"] = np.full(predictions.shape[:-1], very_certain)
+            # Override the default for those scores that we have computed
+            bald_indices = np.array(bald.indices)
+            bald_scores = np.array(bald.scores)
+            scores["batchbald"][bald_indices, :] = bald_scores[:, np.newaxis]
 
         # Report percentile scores
         percentile: float

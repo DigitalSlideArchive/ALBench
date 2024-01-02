@@ -672,10 +672,15 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
             )
 
         num_samples: int = 100000
+        log_predictions = (
+            np.log(self.predictions)
+            if np.amin(self.predictions) >= 0.0
+            else self.predictions
+        )
         with torch.no_grad():
             candidates: bbald.batchbald.CandidateBatch
             candidates = bbald.batchbald.get_batchbald_batch(
-                torch.from_numpy(self.predictions[available_indices]),
+                torch.from_numpy(log_predictions[available_indices]),
                 number_to_select,
                 num_samples,
                 dtype=torch.double,
