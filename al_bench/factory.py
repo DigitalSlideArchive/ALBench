@@ -138,7 +138,7 @@ class ComputeCertainty:
 
             # Indicate how many predictions we want batchbald to rate as uncertain.  All
             # the remaining will be rated more certain via a constant.
-            num_uncertain: int = 10  # Is this good?!!!
+            num_uncertain: int = min(100, predictions.shape[0])
             num_samples: int = 100000
             log_predictions = np.log(predictions)
             with torch.no_grad():
