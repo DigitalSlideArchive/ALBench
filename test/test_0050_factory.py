@@ -25,7 +25,7 @@ import torch
 from data_0050_factory import expected_certainties
 from check import deep_print
 from numpy.typing import NDArray
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Mapping, Type
 
 
 def build_predictions(num_samples: int, num_repeats: int, num_classes: int) -> NDArray:

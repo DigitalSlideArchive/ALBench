@@ -36,8 +36,7 @@ def deep_array(x) -> str:
         return deep_print(x[()])
     if len(x.shape) == 1:
         return "[" + ", ".join(deep_print(e) for e in x) + ",]"
-    if len(x.shape) > 1:
-        return "[" + ", ".join(deep_array(e) for e in x) + ",]"
+    return "[" + ", ".join(deep_array(e) for e in x) + ",]"
 
 
 def deep_print(x) -> str:
