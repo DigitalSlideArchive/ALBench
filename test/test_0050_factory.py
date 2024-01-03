@@ -20,12 +20,11 @@ from __future__ import annotations
 import al_bench as alb
 import al_bench.factory
 import numpy as np
-import random
 import torch
 from data_0050_factory import expected_certainties
 from check import deep_print
 from numpy.typing import NDArray
-from typing import Any, Dict, List, Mapping, Type
+from typing import Any, Mapping
 
 
 def build_predictions(num_samples: int, num_repeats: int, num_classes: int) -> NDArray:

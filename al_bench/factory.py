@@ -168,12 +168,7 @@ class ComputeCertainty:
             bald_scores = np.array(bald.scores)
             scores["batchbald"][bald_indices, :] = bald_scores[:, np.newaxis]
 
-        # Report percentile scores
-        percentile: float
-        percentile_score: float
-        cutoff: float
-        source_name: str
-
+        # Report scores, percentile scores, and cutoff percentiles
         response: Mapping[str, Mapping[str, Any]] = {
             source_name: {
                 "scores": scores[source_name],

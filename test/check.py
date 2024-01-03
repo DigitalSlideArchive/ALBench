@@ -31,43 +31,63 @@ def check_deeply_numeric(x: Any) -> bool:
     )
 
 
-def deep_array(x) -> str:
-    if len(x.shape) == 0:
-        return deep_print(x[()])
-    if len(x.shape) == 1:
-        return "[" + ", ".join(deep_print(e) for e in x) + ",]"
-    return "[" + ", ".join(deep_array(e) for e in x) + ",]"
-
-
 def deep_print(x) -> str:
-    if isinstance(x, list):
-        if len(x):
-            return "[" + ", ".join(deep_print(e) for e in x) + ",]"
-        else:
-            return repr(list())
-    if isinstance(x, tuple):
-        if len(x):
-            return "(" + ", ".join(deep_print(e) for e in x) + ",)"
-        else:
-            return repr(tuple())
-    if isinstance(x, set):
-        if len(x):
-            return "{" + ", ".join(deep_print(e) for e in x) + ",}"
-        else:
-            return repr(set())
-    if isinstance(x, dict):
-        if len(x):
-            return (
-                "{"
-                + ", ".join(deep_print(k) + ": " + deep_print(v) for k, v in x.items())
-                + ",}"
-            )
-        else:
-            return repr(dict())
-    if isinstance(x, np.ndarray):
-        return "np.array(" + deep_array(x) + ")"
-    if isinstance(x, (int, np.int32, np.int64, str)):
-        return repr(x)
-    if isinstance(x, (float, np.float32, np.float64)):
-        return f"{x:.20g}"
-    return repr(type(x))
+    return (
+        f"{x:.20g}"
+        if isinstance(x, (float, np.float32, np.float64))
+        else repr(x)
+        if isinstance(x, (int, np.int32, np.int64, str))
+        else deep_print_array(x)
+        if isinstance(x, np.ndarray)
+        else deep_print_tuple(x)
+        if isinstance(x, tuple)
+        else deep_print_list(x)
+        if isinstance(x, list)
+        else deep_print_dict(x)
+        if isinstance(x, dict)
+        else deep_print_set(x)
+        if isinstance(x, set)
+        else repr(type(x))
+    )
+
+
+def deep_print_array(x) -> str:
+    return (
+        "np.array("
+        + (deep_print_array_iterable(x) if len(x.shape) else deep_print(x[()]))
+        + ")"
+    )
+
+
+def deep_print_array_iterable(x) -> str:
+    return (
+        "["
+        + (
+            ", ".join(deep_print_array_iterable(e) for e in x)
+            if len(x.shape) > 1
+            else ", ".join(deep_print(e) for e in x)
+        )
+        + ",]"
+    )
+
+
+def deep_print_list(x) -> str:
+    return "[" + ", ".join(deep_print(e) for e in x) + ",]" if len(x) else repr(list())
+
+
+def deep_print_tuple(x) -> str:
+    return "(" + ", ".join(deep_print(e) for e in x) + ",)" if len(x) else repr(tuple())
+
+
+def deep_print_set(x) -> str:
+    return "{" + ", ".join(deep_print(e) for e in x) + ",}" if len(x) else repr(set())
+
+
+def deep_print_dict(x) -> str:
+    return (
+        "{"
+        + ", ".join(deep_print(k) + ": " + deep_print(v) for k, v in x.items())
+        + ",}"
+        if len(x)
+        else repr(dict())
+    )

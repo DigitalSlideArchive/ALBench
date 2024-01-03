@@ -28,7 +28,7 @@ import random
 import shutil
 import torch
 from numpy.typing import NDArray
-from typing import Any, Dict, List, Tuple, Type
+from typing import Dict, List, Tuple
 
 
 class BayesianCNN(bbald.consistent_mc_dropout.BayesianModule):
@@ -83,7 +83,8 @@ def test_0120_bayesian_model() -> None:
     num_validation_indices: int = len(test_dataset_list)
     dataset_list: List[Tuple[torch.Tensor, int]]
     dataset_list = train_dataset_list + test_dataset_list
-    # Unzip the data set into separate (unlabeled) input data and their labels.  Data only:
+    # Unzip the data set into separate (unlabeled) input data and their labels.  Data
+    # only:
     my_feature_vectors: NDArray = np.concatenate([d[0].numpy() for d in dataset_list])
 
     # Each is list of one label only:
@@ -131,11 +132,9 @@ def test_0120_bayesian_model() -> None:
     # my_model_handler = my_tensorflow_model_handler
     my_model_handler: alb.model.AbstractModelHandler = my_pytorch_model_handler
 
+    # DELETE OLD LOG FILES
     all_logs_dir = "runs-SamplingBayesian"
-    try:
-        shutil.rmtree(all_logs_dir)  # DELETE OLD LOG FILES
-    except:
-        pass
+    shutil.rmtree(all_logs_dir, ignore_errors=True)
 
     name: str
     my_strategy_handler: alb.strategy.AbstractStrategyHandler

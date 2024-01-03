@@ -163,7 +163,9 @@ class _AbstractCommon:
                 model_steps, y_dictionary, x_key, *args, **kwargs
             )
 
-        def write_certainty_log_for_tensorboard(self, *args, **kwargs) -> bool:
+        def write_certainty_log_for_tensorboard(  # noqa C901
+            self, *args, **kwargs
+        ) -> bool:
             if len(self.log) == 0:
                 return False
             x_key: str = "training_size"
