@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import List, Mapping, Set
+from typing import Dict, List, Mapping, Set
 from . import dataset, model
 
 
@@ -187,14 +187,14 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         pass
 
         # These parameters must be supplied to the set_learning_parameters call.
-        self.required_parameters_keys = [
+        self.required_parameters_keys: List[str] = [
             "label_of_interest",
             "maximum_queries",
             "number_to_select_per_query",
         ]
         # This the exhaustive list of parameters that are valid when used with a
         # set_learning_parameters call.
-        self.valid_parameters_keys = self.required_parameters_keys + list()
+        self.valid_parameters_keys: List[str] = self.required_parameters_keys + list()
 
     def set_dataset_handler(
         self, dataset_handler: dataset.AbstractDatasetHandler
@@ -204,7 +204,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 "The argument to set_dataset_handler must be a (subclass of)"
                 " AbstractDatasetHandler"
             )
-        self.dataset_handler = dataset_handler
+        self.dataset_handler: dataset.AbstractDatasetHandler = dataset_handler
 
     def get_dataset_handler(self) -> dataset.AbstractDatasetHandler:
         return self.dataset_handler
@@ -215,7 +215,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 "The argument to set_model_handler must be a (subclass of)"
                 " AbstractModelHandler"
             )
-        self.model_handler = model_handler
+        self.model_handler: model.AbstractModelHandler = model_handler
 
     def get_model_handler(self) -> model.AbstractModelHandler:
         return self.model_handler
@@ -244,7 +244,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 "The argument to set_scoring_metric must be a subclass of"
                 " AbstractScoringMetric"
             )
-        self.scoring_metric = scoring_metric
+        self.scoring_metric: AbstractScoringMetric = scoring_metric
 
     def get_scoring_metric(self) -> AbstractScoringMetric:
         """
@@ -270,7 +270,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 "The argument to set_diversity_metric must be a subclass of"
                 " AbstractDiversityMetric"
             )
-        self.diversity_metric = diversity_metric
+        self.diversity_metric: AbstractDiversityMetric = diversity_metric
 
     def get_diversity_metric(self) -> AbstractDiversityMetric:
         """
@@ -307,7 +307,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             raise ValueError(
                 f"set_learning_parameters given invalid key(s): {invalid_keys}"
             )
-        self.parameters = parameters
+        self.parameters: Dict[str, str] = parameters
 
     def get_learning_parameters(self) -> Mapping:
         return self.parameters
@@ -363,8 +363,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             else [validation_feature_vectors, validation_labels]
         )
 
-        maximum_queries: int = self.parameters["maximum_queries"]
-        label_of_interest: int = self.parameters["label_of_interest"]
+        maximum_queries: int = int(self.parameters["maximum_queries"])
+        label_of_interest: int = int(self.parameters["label_of_interest"])
 
         # Do initial training
         self.model_handler.reinitialize_weights()
@@ -391,9 +391,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                     {"outputs": unlabeled_predictions}
                 )
             # Find the next indices to be labeled
-            next_indices: NDArray = self.select_next_indices(
-                labeled_indices, validation_indices
-            )
+            next_indices: NDArray
+            next_indices = self.select_next_indices(labeled_indices, validation_indices)
             # Query the oracle to get labels for the next_indices.  This call returns
             # all available labels, old and new.
             labels = self.dataset_handler.query_oracle(next_indices)
@@ -441,14 +440,14 @@ class RandomStrategyHandler(GenericStrategyHandler):
           examples, including both those examples that have been labeled and those that
           could be selected for labeling.
         """
-        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_to_select: int = int(self.parameters["number_to_select_per_query"])
         feature_vectors: NDArray = self.dataset_handler.get_all_feature_vectors()
 
         # Make sure the pool to select from is large enough
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > feature_vectors.shape[0]:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f"Cannot select {number_to_select} unlabeled feature vectors; only"
                 f" {feature_vectors.shape[0] - len(excluded_indices)} remain."
             )
 
@@ -481,7 +480,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest maximum score.
         """
-        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_to_select: int = int(self.parameters["number_to_select_per_query"])
         number_of_feature_vectors: int = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
@@ -490,7 +489,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f"Cannot select {number_to_select} unlabeled feature vectors; only"
                 f" {number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
@@ -508,7 +507,11 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
-        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray
+        predict_order = np.argpartition(predict_score, number_to_select)[
+            0:number_to_select
+        ]
+        predict_order = predict_order[np.argsort(predict_score[predict_order])]
         return predict_order
 
 
@@ -525,7 +528,7 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the smallest gap between highest and second-highest score.
         """
-        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_to_select: int = int(self.parameters["number_to_select_per_query"])
         number_of_feature_vectors: int = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
@@ -534,7 +537,7 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f"Cannot select {number_to_select} unlabeled feature vectors; only"
                 f" {number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
@@ -557,7 +560,11 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
-        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray
+        predict_order = np.argpartition(predict_score, number_to_select)[
+            0:number_to_select
+        ]
+        predict_order = predict_order[np.argsort(predict_score[predict_order])]
         return predict_order
 
 
@@ -574,7 +581,7 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         Select new examples to be labeled by the expert.  This choses the unlabeled
         examples with the highest entropy.
         """
-        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_to_select: int = int(self.parameters["number_to_select_per_query"])
         number_of_feature_vectors: int = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
@@ -583,7 +590,7 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         excluded_indices: Set = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f"Cannot select {number_to_select} unlabeled feature vectors; only"
                 f" {number_of_feature_vectors - len(excluded_indices)} remain."
             )
 
@@ -603,7 +610,11 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         if len(excluded_indices):
             predict_score[np.fromiter(excluded_indices, dtype=np.int64)] = 2
         # Find the lowest scoring examples
-        predict_order: NDArray = np.argsort(predict_score)[0:number_to_select]
+        predict_order: NDArray
+        predict_order = np.argpartition(predict_score, number_to_select)[
+            0:number_to_select
+        ]
+        predict_order = predict_order[np.argsort(predict_score[predict_order])]
         return predict_order
 
 
@@ -636,7 +647,7 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         validation_indices: NDArray = np.array((), dtype=np.int64),
     ) -> NDArray:
         """
-        Select new examples to be labeled by the expert.  This choses the unlabeled
+        Select new examples to be labeled by the expert.  This chooses the unlabeled
         examples based upon the Batch-BALD criterion.  (See also BaldStrategyHandler.)
         """
         import torch
@@ -644,10 +655,10 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         import batchbald_redux.batchbald
 
         # !!! Check that we have a torch model, not tensorflow
-        number_to_select: int = self.parameters["number_to_select_per_query"]
+        number_to_select: int = int(self.parameters["number_to_select_per_query"])
         # Use the subset of self.predictions that excludes labeled_indices and
         # validation_indices
-        available_indices = np.fromiter(
+        available_indices: NDArray = np.fromiter(
             set(range(self.predictions.shape[0]))
             - (set(labeled_indices) | set(validation_indices)),
             dtype=np.int64,
@@ -656,31 +667,22 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         # Check that there are enough available indices left
         if number_to_select > available_indices.shape[0]:
             raise ValueError(
-                f"Cannot not select {number_to_select} unlabeled feature vectors; only"
+                f"Cannot select {number_to_select} unlabeled feature vectors; only"
                 f" {available_indices.shape[0]} remain."
             )
 
         num_samples: int = 100000
+        log_predictions = (
+            np.log(self.predictions)
+            if np.amin(self.predictions) >= 0.0
+            else self.predictions
+        )
         with torch.no_grad():
+            candidates: bbald.batchbald.CandidateBatch
             candidates = bbald.batchbald.get_batchbald_batch(
-                torch.from_numpy(self.predictions[available_indices]),
+                torch.from_numpy(log_predictions[available_indices]),
                 number_to_select,
                 num_samples,
                 dtype=torch.double,
-            )
-        if False:
-            print(f"type(candidates) = {type(candidates)}")
-            print(f"dir(candidates) = {dir(candidates)}")
-            print(f"type(candidates.indices) = {type(candidates.indices)}")
-            print(f"type(candidates.scores) = {type(candidates.scores)}")
-            print(f"len(candidates.indices) = {len(candidates.indices)}")
-            print(f"len(candidates.scores) = {len(candidates.scores)}")
-            print(f"type(candidates.indices[0]) = {type(candidates.indices[0])}")
-            print(f"type(candidates.scores[0]) = {type(candidates.scores[0])}")
-            print(f"candidates.indices = {candidates.indices}")
-            print(f"candidates.scores = {candidates.scores}")
-        if False:
-            raise NotImplementedError(
-                "BatchBaldStrategyHandler::select_next_indices is not yet implemented."
             )
         return available_indices[candidates.indices]
