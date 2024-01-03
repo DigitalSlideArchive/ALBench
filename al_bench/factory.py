@@ -76,6 +76,16 @@ class ComputeCertainty:
         cutoffs = {key: [float(c) for c in value] for key, value in cutoffs.items()}
         self.cutoffs: Mapping[str, Sequence[float]] = cutoffs
 
+        # Defaults.  See
+        self.batchbald_batch_size: int = 100
+        self.batchbald_num_samples: int = 10000
+
+    def set_batchbald_batch_size(self, batchbald_batch_size: int) -> None:
+        self.batchbald_batch_size = batchbald_batch_size
+
+    def set_batchbald_num_samples(self, batchbald_num_samples: int) -> None:
+        self.batchbald_num_samples = batchbald_num_samples
+
     def from_numpy_array(self, predictions: NDArray) -> Mapping[str, Mapping[str, Any]]:
         # Compute several certainty scores for each prediction.  High scores correspond
         # to high certainty.  Also report summary statistcs about these scores.
@@ -137,15 +147,15 @@ class ComputeCertainty:
             import batchbald_redux.batchbald
 
             # Indicate how many predictions we want batchbald to rate as uncertain.  All
-            # the remaining will be rated more certain via a constant.
-            num_uncertain: int = min(100, predictions.shape[0])
-            num_samples: int = 100000
+            # the remaining will be rated as more certain via a constant.
+            batch_size: int = min(self.batchbald_batch_size, predictions.shape[0])
+            num_samples: int = self.batchbald_num_samples
             log_predictions = np.log(predictions)
             with torch.no_grad():
                 bald: bbald.batchbald.CandidateBatch
                 bald = bbald.batchbald.get_batchbald_batch(
                     torch.from_numpy(log_predictions),
-                    num_uncertain,
+                    batch_size,
                     num_samples,
                     dtype=torch.double,
                 )
