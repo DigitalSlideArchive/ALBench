@@ -86,7 +86,9 @@ class ComputeCertainty:
     def set_batchbald_num_samples(self, batchbald_num_samples: int) -> None:
         self.batchbald_num_samples = batchbald_num_samples
 
-    def from_numpy_array(self, predictions: NDArray) -> Mapping[str, Mapping[str, Any]]:
+    def from_numpy_array(
+        self, predictions: NDArray[np.float_]
+    ) -> Mapping[str, Mapping[str, Any]]:
         # Compute several certainty scores for each prediction.  High scores correspond
         # to high certainty.  Also report summary statistcs about these scores.
 
@@ -114,7 +116,7 @@ class ComputeCertainty:
         # Find the two largest values within each row.
         partitioned = np.partition(predictions, -2, axis=-1)[..., -2:]
 
-        scores: MutableMapping[str, NDArray] = dict()
+        scores: MutableMapping[str, NDArray[np.float_]] = dict()
         # When certainty is defined by confidence, use the largest prediction
         # probability.
         if "confidence" in self.certainty_type:

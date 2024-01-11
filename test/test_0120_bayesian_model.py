@@ -27,7 +27,7 @@ import os
 import random
 import shutil
 import torch
-from numpy.typing import NDArray
+from check import NDArrayFloat, NDArrayInt
 from typing import Dict, List, Tuple
 
 
@@ -85,10 +85,12 @@ def test_0120_bayesian_model() -> None:
     dataset_list = train_dataset_list + test_dataset_list
     # Unzip the data set into separate (unlabeled) input data and their labels.  Data
     # only:
-    my_feature_vectors: NDArray = np.concatenate([d[0].numpy() for d in dataset_list])
+    my_feature_vectors: NDArrayFloat = np.concatenate(
+        [d[0].numpy() for d in dataset_list]
+    )
 
     # Each is list of one label only:
-    my_labels: NDArray = np.array([[d[1]] for d in dataset_list])
+    my_labels: NDArrayInt = np.array([[d[1]] for d in dataset_list])
     # This dataset is the digits "0" through "9" which we will enumerate with the
     # values 0 through 9.
     num_classes: int = 10
@@ -96,7 +98,7 @@ def test_0120_bayesian_model() -> None:
     my_label_definitions: List[Dict[int, Dict[str, str]]]
     my_label_definitions = [{i: {"description": repr(i)} for i in range(num_classes)}]
     # We will indicate the validation examples by their indices.
-    validation_indices: NDArray
+    validation_indices: NDArrayInt
     validation_indices = np.array(
         range(num_training_indices, num_training_indices + num_validation_indices)
     )
@@ -115,7 +117,7 @@ def test_0120_bayesian_model() -> None:
     # We'll start the first pass of active learning with some randomly chosen samples
     # from the training data set.
     num_initial_training: int = 20
-    currently_labeled_examples: NDArray
+    currently_labeled_examples: NDArrayInt
     currently_labeled_examples = np.array(
         random.sample(range(num_training_indices), num_initial_training)
     )

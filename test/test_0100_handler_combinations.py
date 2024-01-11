@@ -24,12 +24,11 @@ import numpy as np
 import os
 import random
 import re
-from check import check_deeply_numeric
+from check import check_deeply_numeric, NDArrayFloat, NDArrayInt
 from create import create_dataset_4598_1280_4
 from create import create_pytorch_model_with_dropout
 from create import create_tensorflow_model_with_dropout
-from numpy.typing import NDArray
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Match, Optional, Type
 
 
 def test_0100_handler_combinations() -> None:
@@ -90,9 +89,9 @@ def test_0100_handler_combinations() -> None:
                 alb.strategy.MaximumEntropyStrategyHandler,
             ):
                 # Create fresh handlers and components
-                my_feature_vectors: NDArray
+                my_feature_vectors: NDArrayFloat
                 my_label_definitions: List[Dict]
-                my_labels: NDArray
+                my_labels: NDArrayInt
                 my_feature_vectors, my_label_definitions, my_labels = dataset_creator(
                     **parameters
                 )
@@ -127,27 +126,45 @@ def test_0100_handler_combinations() -> None:
                 )
 
                 # Start with nothing labeled yet
-                currently_labeled_examples: NDArray = np.array((), dtype=np.int64)
+                currently_labeled_examples: NDArrayInt = np.array((), dtype=np.int64)
 
-                # Go!
+                # dataset_match: Optional[Match[str]] = re.search(
+                #     r"<class 'al_bench\.dataset\.(.*)'>",
+                #     f"{type(my_dataset_handler)}",
+                # )
+                # dataset_string: str = (
+                #     "dataset_handler_NOT_FOUND"
+                #     if dataset_match is None
+                #     else dataset_match.group(1)
+                # )
+                model_match: Optional[Match[str]] = re.search(
+                    r"<class 'al_bench\.model\.(.*)'>", f"{type(my_model_handler)}"
+                )
+                model_string: str = (
+                    "model_handler_NOT_FOUND"
+                    if model_match is None
+                    else model_match.group(1)
+                )
+                strategy_match: Optional[Match[str]] = re.search(
+                    r"<class 'al_bench\.strategy\.(.*)'>",
+                    f"{type(my_strategy_handler)}",
+                )
+                strategy_string: str = (
+                    "strategy_handler_NOT_FOUND"
+                    if strategy_match is None
+                    else strategy_match.group(1)
+                )
                 combination_name: str = "-".join(
                     [
-                        # re.search(
-                        #     r"<class 'al_bench\.dataset\.(.*)'>",
-                        #     f"{type(my_dataset_handler)}",
-                        # ).group(1),
-                        re.search(
-                            r"<class 'al_bench\.model\.(.*)'>",
-                            f"{type(my_model_handler)}",
-                        ).group(1),
-                        re.search(
-                            r"<class 'al_bench\.strategy\.(.*)'>",
-                            f"{type(my_strategy_handler)}",
-                        ).group(1),
+                        # dataset_string,
+                        model_string,
+                        strategy_string,
                         datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f"),
                         f"{combination_index:06d}",
                     ]
                 )
+
+                # Go!
                 print(f"Exercise combination: {combination_name}")
                 combination_index += 1
                 ################

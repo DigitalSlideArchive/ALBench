@@ -50,13 +50,13 @@ class AbstractDatasetHandler:
             " should not be called."
         )
 
-    def set_all_feature_vectors(self, feature_vectors: NDArray) -> None:
+    def set_all_feature_vectors(self, feature_vectors: NDArray[np.float_]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_feature_vectors"
             " should not be called."
         )
 
-    def get_all_feature_vectors(self) -> NDArray:
+    def get_all_feature_vectors(self) -> NDArray[np.float_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_feature_vectors"
             " should not be called."
@@ -69,26 +69,30 @@ class AbstractDatasetHandler:
         )
 
     def set_some_feature_vectors(
-        self, feature_vector_indices: NDArray, feature_vectors: NDArray
+        self,
+        feature_vector_indices: NDArray[np.int_],
+        feature_vectors: NDArray[np.float_],
     ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_feature_vectors"
             " should not be called."
         )
 
-    def get_some_feature_vectors(self, feature_vector_indices: NDArray) -> NDArray:
+    def get_some_feature_vectors(
+        self, feature_vector_indices: NDArray[np.int_]
+    ) -> NDArray[np.float_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_feature_vectors"
             " should not be called."
         )
 
-    def get_training_feature_vectors(self) -> NDArray:
+    def get_training_feature_vectors(self) -> NDArray[np.float_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_training_feature_vectors"
             " should not be called."
         )
 
-    def get_validation_feature_vectors(self) -> NDArray:
+    def get_validation_feature_vectors(self) -> NDArray[np.float_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_validation_feature_vectors"
             " should not be called."
@@ -110,13 +114,13 @@ class AbstractDatasetHandler:
             " should not be called."
         )
 
-    def set_all_labels(self, labels: NDArray) -> None:
+    def set_all_labels(self, labels: NDArray[np.int_]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_labels"
             " should not be called."
         )
 
-    def get_all_labels(self) -> NDArray:
+    def get_all_labels(self) -> NDArray[np.int_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_labels"
             " should not be called."
@@ -128,31 +132,33 @@ class AbstractDatasetHandler:
             " should not be called."
         )
 
-    def set_some_labels(self, label_indices: NDArray, labels: NDArray) -> None:
+    def set_some_labels(
+        self, label_indices: NDArray[np.int_], labels: NDArray[np.int_]
+    ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_labels"
             " should not be called."
         )
 
-    def get_some_labels(self, label_indices: NDArray) -> NDArray:
+    def get_some_labels(self, label_indices: NDArray[np.int_]) -> NDArray[np.int_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_labels"
             " should not be called."
         )
 
-    def get_training_labels(self) -> NDArray:
+    def get_training_labels(self) -> NDArray[np.int_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_training_labels"
             " should not be called."
         )
 
-    def get_validation_labels(self) -> NDArray:
+    def get_validation_labels(self) -> NDArray[np.int_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_validation_labels"
             " should not be called."
         )
 
-    def query_oracle(self, next_indices: NDArray) -> NDArray:
+    def query_oracle(self, next_indices: NDArray[np.int_]) -> NDArray[np.int_]:
         """
         This method queries the oracle for labels for the supplied indices.  It returns
         all labels.  Note that in a simulation, we already have those labels and there
@@ -181,7 +187,9 @@ class AbstractDatasetHandler:
         )
 
     def set_some_dictionaries(
-        self, dictionary_indices: NDArray, dictionaries: Iterable[MutableMapping]
+        self,
+        dictionary_indices: NDArray[np.int_],
+        dictionaries: Iterable[MutableMapping],
     ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_dictionaries"
@@ -189,20 +197,20 @@ class AbstractDatasetHandler:
         )
 
     def get_some_dictionaries(
-        self, dictionary_indices: NDArray
+        self, dictionary_indices: NDArray[np.int_]
     ) -> Iterable[MutableMapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_dictionaries"
             " should not be called."
         )
 
-    def set_validation_indices(self, validation_indices: NDArray) -> None:
+    def set_validation_indices(self, validation_indices: NDArray[np.int_]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_validation_indices"
             " should not be called."
         )
 
-    def get_validation_indices(self) -> NDArray:
+    def get_validation_indices(self) -> NDArray[np.int_]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_validation_indices"
             " should not be called."
@@ -236,7 +244,7 @@ class AbstractDatasetHandler:
 
 
 class GenericDatasetHandler(AbstractDatasetHandler):
-    def __init__(self):
+    def __init__(self) -> None:
         # super(GenericDatasetHandler, self).__init__()
         pass
 
@@ -251,7 +259,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         Read the entire database of features from a supplied h5py file.
         """
         with h5.File(filename) as ds:
-            self.feature_vectors: NDArray = np.array(ds[data_name])
+            self.feature_vectors: NDArray[np.float_] = np.array(ds[data_name])
 
     def write_all_feature_vectors_to_h5py(
         self, filename: str, data_name: str = "features"
@@ -264,7 +272,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 data_name, self.feature_vectors.shape, data=self.feature_vectors
             )
 
-    def set_all_feature_vectors(self, feature_vectors: NDArray) -> None:
+    def set_all_feature_vectors(self, feature_vectors: NDArray[np.float_]) -> None:
         """
         Set the entire database of feature vectors from a supplied numpy array.
         """
@@ -276,7 +284,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 " ndarray."
             )
 
-    def get_all_feature_vectors(self) -> NDArray:
+    def get_all_feature_vectors(self) -> NDArray[np.float_]:
         """
         Get the entire database of feature vectors as a numpy array.
         """
@@ -293,7 +301,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         del self.feature_vectors
 
     def set_some_feature_vectors(
-        self, feature_vector_indices: NDArray, feature_vectors: NDArray
+        self,
+        feature_vector_indices: NDArray[np.int_],
+        feature_vectors: NDArray[np.float_],
     ) -> None:
         """
         This overwrites existing feature vectors.  It does not (yet) handle insert,
@@ -307,7 +317,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         self.feature_vectors[feature_vector_indices] = feature_vectors
 
-    def get_some_feature_vectors(self, feature_vector_indices: NDArray) -> NDArray:
+    def get_some_feature_vectors(
+        self, feature_vector_indices: NDArray[np.int_]
+    ) -> NDArray[np.float_]:
         """
         This fetches a subset of existing feature_vectors.
 
@@ -319,7 +331,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         return self.feature_vectors[feature_vector_indices]
 
-    def get_training_feature_vectors(self) -> NDArray:
+    def get_training_feature_vectors(self) -> NDArray[np.float_]:
         return (
             self.get_all_feature_vectors()
             if not hasattr(self, "validation_indices")
@@ -332,7 +344,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             )
         )
 
-    def get_validation_feature_vectors(self) -> NDArray:
+    def get_validation_feature_vectors(self) -> NDArray[np.float_]:
         return (
             np.array((), dtype=np.int64)
             if not hasattr(self, "validation_indices")
@@ -350,7 +362,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         Read the entire database of labels from a supplied h5py file.
         """
         with h5.File(filename) as ds:
-            self.labels: NDArray = np.array(ds[data_name])
+            self.labels: NDArray[np.int_] = np.array(ds[data_name])
 
     def write_all_labels_to_h5py(
         self, filename: str, data_name: str = "labels"
@@ -361,7 +373,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         with h5.File(filename, "w") as f:
             f.create_dataset(data_name, self.labels.shape, data=self.labels)
 
-    def set_all_labels(self, labels: NDArray) -> None:
+    def set_all_labels(self, labels: NDArray[np.int_]) -> None:
         """
         Set the entire database of labels from a supplied numpy array.
         """
@@ -373,7 +385,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
                 " 2-dimensional numpy ndarray."
             )
 
-    def get_all_labels(self) -> NDArray:
+    def get_all_labels(self) -> NDArray[np.int_]:
         """
         Get the entire database of labels as a numpy array.
         """
@@ -385,7 +397,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         del self.labels
 
-    def set_some_labels(self, label_indices: NDArray, labels: NDArray) -> None:
+    def set_some_labels(
+        self, label_indices: NDArray[np.int_], labels: NDArray[np.int_]
+    ) -> None:
         """
         This overwrites existing labels.  It does not (yet) handle insert, delete, or
         append.
@@ -398,7 +412,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         self.labels[label_indices] = labels
 
-    def get_some_labels(self, label_indices: NDArray) -> NDArray:
+    def get_some_labels(self, label_indices: NDArray[np.int_]) -> NDArray[np.int_]:
         """
         This fetches a subset of existing labels.
 
@@ -409,7 +423,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         return self.labels[label_indices]
 
-    def get_training_labels(self) -> NDArray:
+    def get_training_labels(self) -> NDArray[np.int_]:
         return (
             self.get_all_labels()
             if not hasattr(self, "validation_indices")
@@ -421,14 +435,14 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             )
         )
 
-    def get_validation_labels(self) -> NDArray:
+    def get_validation_labels(self) -> NDArray[np.int_]:
         return (
             np.array((), dtype=np.int64)
             if not hasattr(self, "validation_indices")
             else self.get_some_labels(self.validation_indices)
         )
 
-    def query_oracle(self, next_indices: NDArray) -> NDArray:
+    def query_oracle(self, next_indices: NDArray[np.int_]) -> NDArray[np.int_]:
         """
         This method queries the oracle for labels for the supplied indices.  It returns
         all labels.  Note that in a simulation, we already have those labels and there
@@ -472,19 +486,19 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         del self.dictionaries
 
-    def set_validation_indices(self, validation_indices: NDArray) -> None:
+    def set_validation_indices(self, validation_indices: NDArray[np.int_]) -> None:
         """
         Mark which feature vectors are reserved for validation, and should not
         participate in training.
         """
         if isinstance(validation_indices, np.ndarray):
-            self.validation_indices: NDArray = validation_indices
+            self.validation_indices: NDArray[np.int_] = validation_indices
         else:
             raise ValueError(
                 "The argument to set_validation_indices must be a numpy array"
             )
 
-    def get_validation_indices(self) -> NDArray:
+    def get_validation_indices(self) -> NDArray[np.int_]:
         """
         Retrieve the indices of those feature vectors that are reserved for validation,
         and should not participate in training.
@@ -502,7 +516,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         del self.validation_indices
 
     def set_some_dictionaries(
-        self, dictionary_indices: NDArray, dictionaries: Iterable[MutableMapping]
+        self,
+        dictionary_indices: NDArray[np.int_],
+        dictionaries: Iterable[MutableMapping],
     ) -> None:
         """
         This overwrites existing dictionaries.  It does not (yet) handle insert, delete,
@@ -528,7 +544,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             self.dictionaries[k] = v
 
     def get_some_dictionaries(
-        self, dictionary_indices: NDArray
+        self, dictionary_indices: NDArray[np.int_]
     ) -> Iterable[MutableMapping]:
         """
         This fetches a subset of existing dictionaries.
@@ -613,15 +629,15 @@ class GenericDatasetHandler(AbstractDatasetHandler):
 
         # Check whether every supplied label category has a definition.
         definitions_test = (
-            not widths_test  # already failed previous test
-            or labels_width == 0  # nothing to compare
-            or label_definitions_width == 0  # nothing to compare
+            not widths_test
+            or labels_width == 0
+            or label_definitions_width == 0
             or (
-                len(self.labels.shape) == 1  # 1-dimensional numpy array
+                len(self.labels.shape) == 1
                 and len(set(self.labels) - set(self.label_definitions[0])) == 0
             )
             or (
-                len(self.labels.shape) == 2  # 2-dimensional numpy array
+                len(self.labels.shape) == 2
                 and all(
                     [
                         len(set(self.labels[:, col]) - set(self.label_definitions[col]))

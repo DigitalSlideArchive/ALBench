@@ -20,8 +20,7 @@ from __future__ import annotations
 import numpy as np
 import al_bench as alb
 import al_bench.factory
-from check import deep_print
-from numpy.typing import NDArray
+from check import deep_print, NDArrayFloat
 from typing import Sequence
 
 
@@ -60,7 +59,7 @@ def test_0040_factory() -> None:
         certainty_type, percentiles, cutoffs
     )
     # Create dummy input for testing
-    predictions: NDArray = np.array(
+    predictions: NDArrayFloat = np.array(
         [
             [
                 [6.32163380, 3.41019114, 3.30049889, 2.06819065, 1.52704675],
