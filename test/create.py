@@ -17,8 +17,9 @@
 # ==========================================================================
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Sequence, Tuple
-from numpy.typing import NDArray
+import numpy as np
+from check import NDArrayFloat, NDArrayInt, SequenceFloat, SequenceInt
+from typing import Dict, List, Optional, Tuple
 
 
 def create_dataset(
@@ -26,16 +27,14 @@ def create_dataset(
     number_of_features: int,
     number_of_categories_by_label: List[int],
     **kwargs,
-) -> Tuple[NDArray, List[Dict], NDArray]:
+) -> Tuple[NDArrayFloat, List[Dict], NDArrayInt]:
     """
     Create a toy set of feature vectors
     """
-    import numpy as np
-
     rng = np.random.default_rng()
-    my_feature_vectors: NDArray = rng.normal(
+    my_feature_vectors: NDArrayFloat = rng.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
-    ).astype(np.float32)
+    ).astype(np.float64)
 
     # Note that apparently TensorFlow requires that the labels be consecutive integers
     # starting with zero.  So, we will use -1 for "unknown".
@@ -56,7 +55,7 @@ def create_dataset(
 
     # Create a random label for each superpixel.  Avoid -1, which we are using for
     # "unknown".
-    my_labels: NDArray = np.concatenate(
+    my_labels: NDArrayInt = np.concatenate(
         [
             np.array(
                 np.clip(
@@ -77,15 +76,14 @@ def create_dataset_4598_1280_4(
     number_of_features: int,
     number_of_categories_by_label: int,
     **kwargs,
-) -> Tuple[NDArray, List[Dict], NDArray]:
+) -> Tuple[NDArrayFloat, List[Dict], NDArrayInt]:
     import h5py as h5
-    import numpy as np
 
     """Use the dataset from test/TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"""
     filename: str = "TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"
     with h5.File(filename) as ds:
-        my_feature_vectors: NDArray = np.array(ds["features"])
-        my_labels: NDArray = np.array(ds["labels"])
+        my_feature_vectors: NDArrayFloat = np.array(ds["features"])
+        my_labels: NDArrayInt = np.array(ds["labels"])
     my_label_definitions: List[Dict] = [
         {
             0: {"description": "other"},
@@ -133,7 +131,7 @@ def create_tensorflow_model_with_dropout(
     label_to_test: int,
     hidden_units: int = 32,
     dropout: float = 0.3,
-    noise_shape: Optional[Sequence[int]] = None,
+    noise_shape: Optional[SequenceInt] = None,
     seed: int = 145,
     **kwargs,
 ):
@@ -196,7 +194,7 @@ def create_pytorch_model_with_dropout(
     label_to_test: int,
     hidden_units: int = 32,
     dropout: float = 0.3,
-    noise_shape: Optional[Sequence[int]] = None,
+    noise_shape: Optional[SequenceInt] = None,
     seed: int = 145,
     **kwargs,
 ):
@@ -225,3 +223,91 @@ def create_pytorch_model_with_dropout(
     number_of_categories: int = number_of_categories_by_label[label_to_test]
     model = TorchToyWithDropout(number_of_features, number_of_categories)
     return model
+
+
+def rng_gamma(
+    alpha: float,
+    beta: float = 1.0,
+    shape: SequenceInt = (),
+    rng: np.random._generator.Generator = np.random.default_rng(),
+) -> NDArrayFloat:
+    num_factors: int = 100
+    response: NDArrayFloat = np.zeros(shape=shape, dtype=float)
+    linearized: NDArrayFloat = np.reshape(response, (-1,))
+    for i in range(linearized.size):
+        random_values: NDArrayFloat = rng.random((num_factors,))
+        value: float = alpha
+        for k in range(num_factors):
+            ratio = 1.0 / (alpha + k)
+            value *= (1.0 + ratio) * random_values[k] ** ratio
+        linearized[i] = value + 1e-12
+    return response / beta
+
+
+def rng_dirichlet(
+    alpha: SequenceFloat,
+    shape: SequenceInt,
+    rng: np.random._generator.Generator = np.random.default_rng(),
+) -> NDArrayFloat:
+    dimensions: int = len(alpha)
+    # Note that returned shape is the concatenation of shape + (dimensions,)
+    response: NDArrayFloat = np.zeros(tuple(shape) + (dimensions,))
+    for i in range(dimensions):
+        response[..., i] = rng_gamma(alpha=alpha[i], beta=1.0, shape=shape, rng=rng)
+    response = response / np.sum(response, axis=-1, keepdims=True)
+    return response
+
+
+def create_dirichlet_predictions(
+    num_samples: int,
+    num_repeats: int,
+    num_classes: int,
+    alpha_hyperprior: float = 2.0,
+    beta_hyperprior: float = 1.0,
+    rng: np.random._generator.Generator = np.random.default_rng(),
+) -> Tuple[NDArrayFloat, NDArrayFloat]:
+    # Make predictions array where each row sums to 1.0.  Using alpha_hyperprior and
+    # beta_hyperprior to parameterize a gamma distribution we draw pseudocounts for
+    # every (sample, class) combination.  For a given sample, the (sample, :) values
+    # will be the pseudocounts for the Dirichlet distribution from which the (repeated)
+    # predictions for the sample will be drawn.  In particular a sample for which the
+    # pseudocounts are all large will produce (Bayesian) predictions that are similar; a
+    # sample for which the pseudocounts are all small will produce (Bayesian)
+    # predictions that have similar mean but are not significantly similar.
+    remove_repeats = num_repeats is None
+    if remove_repeats:
+        num_repeats = 1
+
+    predictions: NDArrayFloat = np.zeros((num_samples, num_repeats, num_classes))
+    sample_pseudocounts: NDArrayFloat = rng_gamma(
+        alpha=alpha_hyperprior,
+        beta=beta_hyperprior,
+        shape=(num_samples, num_classes),
+        rng=rng,
+    )
+    for s in range(num_samples):
+        predictions[s, :, :] = rng_dirichlet(
+            alpha=sample_pseudocounts[s, :], shape=(num_repeats,), rng=rng
+        )
+    if remove_repeats:
+        predictions = np.reshape(predictions, (num_samples, num_classes))
+    return sample_pseudocounts, predictions
+
+
+def create_predictions(
+    num_samples: int,
+    num_repeats: int,
+    num_classes: int,
+    rng: np.random._generator.Generator = np.random.default_rng(),
+) -> NDArrayFloat:
+    predictions: NDArrayFloat
+    sample_pseudocounts: SequenceFloat = (1.0,) * num_classes
+    if num_repeats is None:
+        predictions = rng_dirichlet(
+            alpha=sample_pseudocounts, shape=(num_samples,), rng=rng
+        )
+    else:
+        predictions = rng_dirichlet(
+            alpha=sample_pseudocounts, shape=(num_samples, num_repeats), rng=rng
+        )
+    return predictions

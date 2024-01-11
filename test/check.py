@@ -18,7 +18,13 @@
 
 from __future__ import annotations
 import numpy as np
-from typing import Any
+from numpy.typing import NDArray
+from typing import Any, Sequence, Union
+
+NDArrayFloat = NDArray[np.float_]
+NDArrayInt = NDArray[np.int_]
+SequenceFloat = Union[Sequence[float], NDArrayFloat]
+SequenceInt = Union[Sequence[int], NDArrayInt]
 
 
 def check_deeply_numeric(x: Any) -> bool:
@@ -29,6 +35,40 @@ def check_deeply_numeric(x: Any) -> bool:
             or (len(x.shape) > 0 and all([check_deeply_numeric(e) for e in x]))
         )
     )
+
+
+def deeply_allclose(a: Any, b: Any, rtol=1e-05, atol=1e-08, equal_nan=False) -> bool:
+    response: bool = (
+        isinstance(b, (int, float, np.int32, np.int64, np.float32, np.float64))
+        and np.allclose(a, b, rtol, atol, equal_nan)
+        if (isinstance(a, (int, float, np.int32, np.int64, np.float32, np.float64)))
+        else False
+        if type(a) is not type(b)
+        else deeply_allclose(a.shape, b.shape, rtol, atol, equal_nan)
+        and np.allclose(a, b, rtol, atol, equal_nan)
+        if isinstance(a, np.ndarray)
+        else a == b
+        if isinstance(a, str)
+        else len(a) == len(b)
+        and all(
+            [
+                deeply_allclose(elem_a, elem_b, rtol, atol, equal_nan)
+                for elem_a, elem_b in zip(a, b)
+            ]
+        )
+        if isinstance(a, (list, tuple, set))
+        else deeply_allclose(set(a.keys()), set(b.keys()), rtol, atol, equal_nan)
+        and all([deeply_allclose(a[k], b[k], rtol, atol, equal_nan) for k in a.keys()])
+        if isinstance(a, dict)
+        else False
+    )
+    if False and not response:
+        print("response = False")
+        print(f"{type(a) = }")
+        print(f"{type(b) = }")
+        print(f"{a = }")
+        print(f"{b = }")
+    return response
 
 
 def deep_print(x) -> str:

@@ -21,112 +21,46 @@ import al_bench as alb
 import al_bench.factory
 import numpy as np
 import torch
+from check import deeply_allclose, deep_print, NDArrayFloat, NDArrayInt
+from create import create_dirichlet_predictions
+from data_0050_factory import best_cutoffs
 from data_0050_factory import expected_certainties
-from check import deep_print
-from numpy.typing import NDArray
 from typing import Any, Mapping
 
 
-def build_predictions(num_samples: int, num_repeats: int, num_classes: int) -> NDArray:
-    predictions: NDArray
-    # Make predictions array where each row sums to 1.0.  (In fancy words, we are using
-    # a Dirichlet distribution, where each class has a single pseudocount.)  It is
-    # overkill, but we will generate random 52-bit ints rather than random
-    # double-precision floats because the latter give more precision beyond the decimal
-    # point for values less than 0.5.
-    remove_repeats = num_repeats is None
-    if remove_repeats:
-        num_repeats = 1
-
-    torch.manual_seed(20240102)
-    rng = np.random.default_rng(seed=20240102)
-    max_precision: int = 2**52
-    predictions = (
-        rng.integers(0, max_precision, (num_samples, num_repeats, num_classes - 1))
-        / max_precision
-    )
-    predictions = np.sort(predictions, axis=-1)
-    predictions = np.diff(predictions, axis=-1, prepend=0, append=1.0)
-
-    # If the user requested a two-dimensional array then return that
-    if remove_repeats:
-        predictions = np.reshape(predictions, (num_samples, num_classes))
-    return predictions
-
-
 def test_0050_factory() -> None:
-    num_samples = 100
-    num_repeats = 20
-    num_classes = 5
-    predictions = build_predictions(num_samples, num_repeats, num_classes)
+    rng: np.random._generator.Generator = np.random.default_rng(seed=20240108)
+    torch.manual_seed(20240102)
 
-    percentiles: NDArray = np.fromiter(range(11), dtype=float) * 10
-    if False:
-        # Read the values that we expect the percentile calculations to return.  These
-        # can be submitted as cutoffs and should return close the original percentiles
-        # that generated them.
-        cutoffs = {
-            k: [cut for cut in v["percentiles"].values()]
-            for k, v in expected_certainties.items()
-        }
-        print(f"cutoffs = {deep_print(cutoffs)}")
-        return
-    cutoffs = {
-        "confidence": [
-            0.23319522573892670358,
-            0.32432748123291815778,
-            0.35435025360693872543,
-            0.38084620724981499418,
-            0.40770838473435910831,
-            0.43709436017449876388,
-            0.46737826053936193382,
-            0.50387446133793900582,
-            0.55052071336584962324,
-            0.62265907605418024939,
-            0.92456310666481122951,
-        ],
-        "margin": [
-            0.00037661163756985693851,
-            0.028640871329089056391,
-            0.054366109196087329669,
-            0.083985899187714083136,
-            0.11950722442761438358,
-            0.15983776715969899573,
-            0.20349967771826005247,
-            0.2592390540508386354,
-            0.32837790495088298171,
-            0.43819030712335260702,
-            0.89597557461394683465,
-        ],
-        "negative_entropy": [
-            -1.6018099636517608708,
-            -1.4893020660420734913,
-            -1.4373000706607712562,
-            -1.3945333933939410009,
-            -1.3550938452258365352,
-            -1.3144531931864329444,
-            -1.2699945981319848975,
-            -1.2158309850245696548,
-            -1.1445573754943771938,
-            -1.0369674780469477771,
-            -0.36344068987929223358,
-        ],
-        "batchbald": [
-            0.42628003436274486404,
-            2.6369226698467573833,
-            2.9110099644887497128,
-            2.9374140708677480838,
-            2.9585105399558986328,
-            2.9742478406972487903,
-            2.983767717379953055,
-            2.9979672343857641792,
-            3.0192880442387632911,
-            3.0535196123103358623,
-            3.1752039746139502085,
-        ],
-    }
+    # Gamma distribution has mean = alpha/beta and variance = alpha/beta^2.
+    num_samples = 24
+    num_repeats = 100
+    num_classes = 3
+    pseudocount_total_mean = 5.0
+    pseudocount_total_variance = 4.0
+    pseudocount_mean = pseudocount_total_mean / num_classes
+    pseudocount_variance = pseudocount_total_variance / num_classes
+    beta_hyperprior = pseudocount_mean / pseudocount_variance
+    alpha_hyperprior = pseudocount_mean * beta_hyperprior
+    sample_pseudocounts: NDArrayFloat
+    predictions: NDArrayFloat
+    sample_pseudocounts, predictions = create_dirichlet_predictions(
+        num_samples=num_samples,
+        num_repeats=num_repeats,
+        num_classes=num_classes,
+        alpha_hyperprior=alpha_hyperprior,
+        beta_hyperprior=beta_hyperprior,
+        rng=rng,
+    )
 
+    percentiles: NDArrayFloat = np.fromiter(range(0, 101, 10), dtype=float)
     compute_certainty: alb.factory.ComputeCertainty
+    cutoffs = (
+        best_cutoffs
+        if len(best_cutoffs)
+        else {t: [] for t in alb.factory.ComputeCertainty.all_certainty_types}
+    )
+
     compute_certainty = alb.factory.ComputeCertainty(
         certainty_type=alb.factory.ComputeCertainty.all_certainty_types,
         percentiles=percentiles,
@@ -136,18 +70,54 @@ def test_0050_factory() -> None:
         predictions
     )
 
+    # Note that applying np.argsort twice produces integers in the same order as the
+    # original input.
+    batchbald_scores: NDArrayFloat = certainties["batchbald"]["scores"][:, 0]
+    total_pseudocounts: NDArrayFloat = np.sum(sample_pseudocounts, axis=-1)
+    batchbald_index: NDArrayInt = np.argsort(np.argsort(batchbald_scores))
+    pseudocounts_index: NDArrayInt = np.argsort(np.argsort(total_pseudocounts))
+    correlation: float = np.corrcoef(batchbald_index, pseudocounts_index)[0, 1]
+
     if True:
-        # Until we convince torch to be deterministic or find some other solution,
-        # disable checking the results of BatchBALD.
+        print(f"{num_samples = }")
+        print(f"{num_repeats = }")
+        print(f"{num_classes = }")
+        print(f"{alpha_hyperprior = }")
+        print(f"{beta_hyperprior = }")
+        print(f"{batchbald_scores = }")
+        print(f"{total_pseudocounts = }")
+        print(f"{batchbald_index = }")
+        print(f"{pseudocounts_index = }")
+        print(f"{correlation = }")
+        # Torch is still inserting randomness, so we cannot expect batchbald to produce
+        # deterministic results.  Instead simply check that the correlation is large
+        # enough.  (Note that the threshold for large enough reasonably depends upon the
+        # hyperpriors.)
         del certainties["batchbald"], expected_certainties["batchbald"]
-        passed = deep_print(certainties) == deep_print(expected_certainties)
+        passed = (
+            deeply_allclose(certainties, expected_certainties) and correlation > 0.75
+        )
         print(f"test_0050_factory() {'passed' if passed else 'failed'}")
         if not passed:
             raise ValueError("test_0050_factory() failed")
     else:
-        # Generate expected output for data_0050_factory.py
+        # To regenerate the expected output, set this code section to run and, from a
+        # shell prompt, run the following twice or thrice.  Then revert the file edit so
+        # that this section is not run.
+        """
+        (
+        python test_0050_factory.py > data_0050_factory2.py
+        black -C data_0050_factory2.py
+        mv data_0050_factory2.py data_0050_factory.py
+        )
+        """
         print("import numpy as np")
         print(f"expected_certainties = {deep_print(certainties)}")
+        cutoffs = {
+            k: [cut for cut in v["percentiles"].values()]
+            for k, v in expected_certainties.items()
+        }
+        print(f"best_cutoffs = {deep_print(cutoffs)}")
 
 
 if __name__ == "__main__":
