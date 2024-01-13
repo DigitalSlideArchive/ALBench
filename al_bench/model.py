@@ -24,24 +24,24 @@ import numpy as np
 import scipy.stats
 from datetime import datetime
 from numpy.typing import NDArray
-from typing import cast, Any, List, Mapping, Sequence
+from typing import cast, Any, List, Mapping, Sequence, Tuple
 
 
 class ModelStep(enum.Enum):
-    ON_TRAIN_BEGIN = 100
-    ON_TRAIN_END = 105
-    ON_TRAIN_EPOCH_BEGIN = 120
-    ON_TRAIN_EPOCH_END = 125
-    ON_TRAIN_BATCH_BEGIN = 140
-    ON_TRAIN_BATCH_END = 145
-    ON_TEST_BEGIN = 200
-    ON_TEST_END = 205
-    ON_TEST_BATCH_BEGIN = 240
-    ON_TEST_BATCH_END = 245
-    ON_PREDICT_BEGIN = 300
-    ON_PREDICT_END = 305
-    ON_PREDICT_BATCH_BEGIN = 340
-    ON_PREDICT_BATCH_END = 345
+    ON_TRAIN_BEGIN: int = 100
+    ON_TRAIN_END: int = 105
+    ON_TRAIN_EPOCH_BEGIN: int = 120
+    ON_TRAIN_EPOCH_END: int = 125
+    ON_TRAIN_BATCH_BEGIN: int = 140
+    ON_TRAIN_BATCH_END: int = 145
+    ON_TEST_BEGIN: int = 200
+    ON_TEST_END: int = 205
+    ON_TEST_BATCH_BEGIN: int = 240
+    ON_TEST_BATCH_END: int = 245
+    ON_PREDICT_BEGIN: int = 300
+    ON_PREDICT_END: int = 305
+    ON_PREDICT_BATCH_BEGIN: int = 340
+    ON_PREDICT_BATCH_END: int = 345
 
 
 # !!! Does it matter that the model.Logger class requires `import tensorflow.keras`
@@ -102,13 +102,13 @@ class _AbstractCommon:
         ) -> bool:
             from torch.utils.tensorboard import SummaryWriter
 
-            beginning = datetime.utcfromtimestamp(0)
+            beginning: datetime = datetime.utcfromtimestamp(0)
             with SummaryWriter(*args, **kwargs) as writer:
                 for entry in self.log:
                     logs: Mapping = entry["logs"]
                     if entry["model_step"] not in model_steps or len(logs) == 0:
                         continue
-                    utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                    utc_seconds: float = (entry["utcnow"] - beginning).total_seconds()
                     x_value: float = entry[x_key]
                     for key in logs.keys() & y_dictionary.keys():
                         name: str = y_dictionary[key]
@@ -138,8 +138,8 @@ class _AbstractCommon:
             return True
 
         def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
-            model_steps = (ModelStep.ON_TRAIN_END,)
-            y_dictionary: Mapping = {
+            model_steps: Tuple[ModelStep] = (ModelStep.ON_TRAIN_END,)
+            y_dictionary: Mapping[str, str] = {
                 "loss": "Loss/train",
                 "val_loss": "Loss/validation",
                 "accuracy": "Accuracy/train",
@@ -151,8 +151,8 @@ class _AbstractCommon:
             )
 
         def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
-            model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
-            y_dictionary: Mapping = {
+            model_steps: Tuple[ModelStep] = (ModelStep.ON_TRAIN_EPOCH_END,)
+            y_dictionary: Mapping[str, str] = {
                 "loss": "Loss/train",
                 "val_loss": "Loss/test",
                 "accuracy": "Accuracy/train",
@@ -169,7 +169,7 @@ class _AbstractCommon:
             if len(self.log) == 0:
                 return False
             x_key: str = "training_size"
-            beginning = datetime.utcfromtimestamp(0)
+            beginning: datetime = datetime.utcfromtimestamp(0)
             percentiles: Sequence[float] = (5, 10, 25, 50)
             predictions_list: List[NDArray[np.float_]] = list()
 
@@ -177,7 +177,7 @@ class _AbstractCommon:
 
             with SummaryWriter(*args, **kwargs) as writer:
                 for entry in self.log:
-                    model_step = entry["model_step"]
+                    model_step: ModelStep = entry["model_step"]
 
                     if model_step == ModelStep.ON_PREDICT_BEGIN:
                         # Clear accumulated records
@@ -204,14 +204,16 @@ class _AbstractCommon:
                             predictions_list, axis=0
                         )
                         predictions_list = list()
-                        statistcs: Mapping = (
-                            self.model_handler.compute_certainty_statistics(
-                                predictions, percentiles
-                            )
+                        statistcs: Mapping[
+                            str, Mapping[float, float]
+                        ] = self.model_handler.compute_certainty_statistics(
+                            predictions, percentiles
                         )
                         # Report percentile scores
                         x_value: float = entry[x_key]
-                        utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                        utc_seconds: float = (
+                            entry["utcnow"] - beginning
+                        ).total_seconds()
                         for statistic_kind, statistic_percentiles in statistcs.items():
                             for percentile, y_value in statistic_percentiles.items():
                                 name: str
@@ -448,7 +450,7 @@ class _AbstractCommon:
 
     def compute_certainty_statistics(
         self, predictions: NDArray[np.float_], percentiles: Sequence[float]
-    ) -> Mapping:
+    ) -> Mapping[str, Mapping[float, float]]:
         """
         Ask that the model provide statistics about its certainty in the supplied
         predictions.
@@ -583,7 +585,7 @@ class _Common(_AbstractCommon):
 
     def compute_certainty_statistics(
         self, predictions: NDArray[np.float_], percentiles: Sequence[float]
-    ) -> Mapping:
+    ) -> Mapping[str, Mapping[float, float]]:
         # Compute several scores for each prediction.  High scores correspond to high
         # certainty.
 
@@ -930,7 +932,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         train_features_labels: _PyTorch._ZipDataset
         train_features_labels = _PyTorch._ZipDataset(train_features, train_labels)
         # Instead, get `batch_size` from somewhere!!!
-        batch_size = 1
+        batch_size: int = 1
         # Note that DataLoader has additional parameters that we may wish to use in a
         # future implementation
         my_train_data_loader = torch.utils.data.DataLoader(
@@ -951,8 +953,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         for epoch in range(number_of_epochs):
             self.logger.on_epoch_begin(epoch)
             train_loss: float = 0.0
-            train_size = 0
-            train_correct = 0.0
+            train_size: int = 0
+            train_correct: float = 0.0
             self.model.train()  # What does this do?!!!
             for i, data in enumerate(my_train_data_loader):
                 self.logger.on_train_batch_begin(i)
@@ -966,7 +968,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 loss: Any = self.criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
-                new_size = inputs.size(0)
+                new_size: int = inputs.size(0)
                 train_size += new_size
                 new_loss: float = loss.item() * inputs.size(0)
                 train_loss += new_loss
@@ -987,8 +989,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
             logs = {"loss": loss, "accuracy": accuracy}
             if do_validation:
                 validation_loss: float = 0.0
-                validation_size = 0
-                validation_correct = 0.0
+                validation_size: int = 0
+                validation_correct: float = 0.0
                 with torch.no_grad():
                     self.model.eval()  # What does this do?!!!
                     for i, data in enumerate(my_validation_data_loader):
@@ -1096,15 +1098,15 @@ class SamplingBayesianPyTorchModelHandler(
                 validation_features_labels, batch_size=batch_size
             )
 
-        num_train_samples = 1
+        num_train_samples: int = 1
         # !!! num_validation_samples cannot be >1 in this code for some unknown reason
         num_validation_samples: int = 1
         # Loop over the dataset multiple times
         for epoch in range(number_of_epochs):
             self.logger.on_epoch_begin(epoch)
             train_loss: float = 0.0
-            train_size = 0
-            train_correct = 0.0
+            train_size: int = 0
+            train_correct: float = 0.0
             for i, data in enumerate(my_train_data_loader):
                 self.logger.on_train_batch_begin(i)
                 inputs, labels = data
@@ -1119,7 +1121,7 @@ class SamplingBayesianPyTorchModelHandler(
                 criterion_loss = self.criterion(outputs.squeeze(1), labels)
                 criterion_loss.backward()
                 optimizer.step()
-                new_size = inputs.size(0)
+                new_size: int = inputs.size(0)
                 train_size += new_size
                 new_loss: float = criterion_loss.item() * inputs.size(0)
                 train_loss += new_loss

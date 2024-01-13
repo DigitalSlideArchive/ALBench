@@ -296,13 +296,13 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 f" Python dict but is of type {type(parameters)}"
             )
 
-        missing_keys: Set = set(self.required_parameters_keys) - set(parameters)
+        missing_keys: Set[str] = set(self.required_parameters_keys) - set(parameters)
         if len(missing_keys) > 0:
             raise ValueError(
                 f"set_learning_parameters missing required key(s): {missing_keys}"
             )
 
-        invalid_keys: Set = set(parameters) - set(self.valid_parameters_keys)
+        invalid_keys: Set[str] = set(parameters) - set(self.valid_parameters_keys)
         if len(invalid_keys) > 0:
             raise ValueError(
                 f"set_learning_parameters given invalid key(s): {invalid_keys}"
@@ -382,14 +382,16 @@ class GenericStrategyHandler(AbstractStrategyHandler):
                 current_feature_vectors, current_labels, *validation_args
             )
         # Loop through the queries
-        all_indices: Set = set(range(len(feature_vectors)))
+        all_indices: Set[int] = set(range(len(feature_vectors)))
         for query in range(maximum_queries):
             # Evaluate the pool of possibilities
             print(f"Predicting for {feature_vectors.shape[0]} examples")
-            self.predictions = self.model_handler.predict(feature_vectors, log_it=all_p)
+            self.predictions: NDArray[np.float_] = self.model_handler.predict(
+                feature_vectors, log_it=all_p
+            )
             if not all_p:
                 # Log the predictions for the unlabeled examples only
-                unlabeled_indices: Set = all_indices - set(labeled_indices)
+                unlabeled_indices: Set[int] = all_indices - set(labeled_indices)
                 unlabeled_predictions: NDArray[np.float_] = self.predictions[
                     np.fromiter(unlabeled_indices, dtype=np.int64)
                 ]
@@ -451,7 +453,7 @@ class RandomStrategyHandler(GenericStrategyHandler):
         feature_vectors = self.dataset_handler.get_all_feature_vectors()
 
         # Make sure the pool to select from is large enough
-        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
+        excluded_indices: Set[int] = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > feature_vectors.shape[0]:
             raise ValueError(
                 f"Cannot select {number_to_select} unlabeled feature vectors; only"
@@ -493,7 +495,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         )
 
         # Make sure the pool to select from is large enough
-        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
+        excluded_indices: Set[int] = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
                 f"Cannot select {number_to_select} unlabeled feature vectors; only"
@@ -508,7 +510,7 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         # Probably they also already sum to 1.0, but let's force that anyway.
         predictions = predictions / predictions.sum(axis=-1, keepdims=True)
         # For each example, how strong is the best category's score?
-        predict_score = np.amax(predictions, axis=-1)
+        predict_score: NDArray[np.float_] = np.amax(predictions, axis=-1)
         # Make the currently labeled examples look confident, so that they won't be
         # selected
         if len(excluded_indices):
@@ -541,7 +543,7 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         )
 
         # Make sure the pool to select from is large enough
-        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
+        excluded_indices: Set[int] = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
                 f"Cannot select {number_to_select} unlabeled feature vectors; only"
@@ -594,7 +596,7 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         )
 
         # Make sure the pool to select from is large enough
-        excluded_indices: Set = set(labeled_indices) | set(validation_indices)
+        excluded_indices: Set[int] = set(labeled_indices) | set(validation_indices)
         if number_to_select + len(excluded_indices) > number_of_feature_vectors:
             raise ValueError(
                 f"Cannot select {number_to_select} unlabeled feature vectors; only"

@@ -20,7 +20,7 @@ from __future__ import annotations
 import h5py as h5
 import numpy as np
 from numpy.typing import NDArray
-from typing import Iterable, List, Mapping
+from typing import Iterable, List, Mapping, Set
 
 
 class AbstractDatasetHandler:
@@ -564,7 +564,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
         Parameters
         ----------
-        label_definitions: dict
+        label_definitions: Mapping
             The argument is, for example, label_definitions = {
                 np.nan: {"description": "unlabeled", "color": "#FFFF00"},
                 1:      {"description": "necrotic",  "color": "#FF0000"},
@@ -593,34 +593,38 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     def check_data_consistency(self) -> bool:
         # Check whether among feature vectors, labels, and dictionaries that were
         # supplied, are they for the same number of entities?
-        feature_vectors_length = (
+        feature_vectors_length: int = (
             self.feature_vectors.shape[0] if hasattr(self, "feature_vectors") else 0
         )
-        labels_length = self.labels.shape[0] if hasattr(self, "labels") else 0
-        dictionaries_length = (
+        labels_length: int = self.labels.shape[0] if hasattr(self, "labels") else 0
+        dictionaries_length: int = (
             len(self.dictionaries) if hasattr(self, "dictionaries") else 0
         )
         # Eliminate duplicates
-        all_lengths = set([feature_vectors_length, labels_length, dictionaries_length])
-        lengths_test = len(all_lengths) == 1 or (
+        all_lengths: Set[int] = set(
+            [feature_vectors_length, labels_length, dictionaries_length]
+        )
+        lengths_test: bool = len(all_lengths) == 1 or (
             len(all_lengths) == 2 and 0 in all_lengths
         )
 
         # Check whether among labels and label_definitions that were supplied, are they
         # for the same number of kinds of labels?
-        labels_width = (
+        labels_width: int = (
             (1 if len(self.labels.shape) == 1 else self.labels.shape[1])
             if hasattr(self, "labels")
             else 0
         )
-        label_definitions_width = (
+        label_definitions_width: int = (
             len(self.label_definitions) if hasattr(self, "label_definitions") else 0
         )
-        all_widths = set([labels_width, label_definitions_width])
-        widths_test = len(all_widths) == 1 or (len(all_widths) == 2 and 0 in all_widths)
+        all_widths: Set[int] = set([labels_width, label_definitions_width])
+        widths_test: bool = len(all_widths) == 1 or (
+            len(all_widths) == 2 and 0 in all_widths
+        )
 
         # Check whether every supplied label category has a definition.
-        definitions_test = (
+        definitions_test: bool = (
             not widths_test
             or labels_width == 0
             or label_definitions_width == 0
