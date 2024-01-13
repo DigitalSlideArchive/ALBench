@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import Dict, List, Mapping, Set
+from typing import List, Mapping, Set
 from . import dataset, model
 
 
@@ -307,7 +307,7 @@ class GenericStrategyHandler(AbstractStrategyHandler):
             raise ValueError(
                 f"set_learning_parameters given invalid key(s): {invalid_keys}"
             )
-        self.parameters: Dict[str, str] = parameters
+        self.parameters: Mapping[str, str] = parameters
 
     def get_learning_parameters(self) -> Mapping:
         return self.parameters

@@ -19,7 +19,7 @@
 from __future__ import annotations
 import numpy as np
 from check import NDArrayFloat, NDArrayInt, SequenceFloat, SequenceInt
-from typing import Dict, List, Optional, Tuple
+from typing import Mapping, List, Optional, Tuple
 
 
 def create_dataset(
@@ -27,7 +27,7 @@ def create_dataset(
     number_of_features: int,
     number_of_categories_by_label: List[int],
     **kwargs,
-) -> Tuple[NDArrayFloat, List[Dict], NDArrayInt]:
+) -> Tuple[NDArrayFloat, List[Mapping], NDArrayInt]:
     """
     Create a toy set of feature vectors
     """
@@ -38,7 +38,7 @@ def create_dataset(
 
     # Note that apparently TensorFlow requires that the labels be consecutive integers
     # starting with zero.  So, we will use -1 for "unknown".
-    my_label_definitions: List[Dict] = [
+    my_label_definitions: List[Mapping] = [
         {
             -1: {"description": f"Label{label_index}Unknown"},
             **{
@@ -76,7 +76,7 @@ def create_dataset_4598_1280_4(
     number_of_features: int,
     number_of_categories_by_label: int,
     **kwargs,
-) -> Tuple[NDArrayFloat, List[Dict], NDArrayInt]:
+) -> Tuple[NDArrayFloat, List[Mapping], NDArrayInt]:
     import h5py as h5
 
     """Use the dataset from test/TCGA-A2-A0D0-DX1_xmin68482_ymin39071_MPP-0.2500.h5py"""
@@ -84,7 +84,7 @@ def create_dataset_4598_1280_4(
     with h5.File(filename) as ds:
         my_feature_vectors: NDArrayFloat = np.array(ds["features"])
         my_labels: NDArrayInt = np.array(ds["labels"])
-    my_label_definitions: List[Dict] = [
+    my_label_definitions: List[Mapping] = [
         {
             0: {"description": "other"},
             1: {"description": "tumor"},

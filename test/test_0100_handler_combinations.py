@@ -28,7 +28,7 @@ from check import check_deeply_numeric, NDArrayFloat, NDArrayInt
 from create import create_dataset_4598_1280_4
 from create import create_pytorch_model_with_dropout
 from create import create_tensorflow_model_with_dropout
-from typing import Any, Dict, List, Match, Optional, Type
+from typing import Any, Mapping, List, Match, Optional, Type
 
 
 def test_0100_handler_combinations() -> None:
@@ -50,7 +50,7 @@ def test_0100_handler_combinations() -> None:
     """
 
     # Specify some testing parameters
-    parameters: Dict[str, Any] = {
+    parameters: Mapping[str, Any] = {
         "number_of_superpixels": 4598,
         "number_of_features": 1280,
         "number_of_categories_by_label": [4],
@@ -90,7 +90,7 @@ def test_0100_handler_combinations() -> None:
             ):
                 # Create fresh handlers and components
                 my_feature_vectors: NDArrayFloat
-                my_label_definitions: List[Dict]
+                my_label_definitions: List[Mapping]
                 my_labels: NDArrayInt
                 my_feature_vectors, my_label_definitions, my_labels = dataset_creator(
                     **parameters

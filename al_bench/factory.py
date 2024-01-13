@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import Any, List, Mapping, MutableMapping, Sequence
+from typing import Any, Dict, List, Mapping, Sequence
 
 
 class ComputeCertainty:
@@ -116,7 +116,7 @@ class ComputeCertainty:
         # Find the two largest values within each row.
         partitioned = np.partition(predictions, -2, axis=-1)[..., -2:]
 
-        scores: MutableMapping[str, NDArray[np.float_]] = dict()
+        scores: Dict[str, NDArray[np.float_]] = dict()
         # When certainty is defined by confidence, use the largest prediction
         # probability.
         if "confidence" in self.certainty_type:

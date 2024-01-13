@@ -28,7 +28,7 @@ import random
 import shutil
 import torch
 from check import NDArrayFloat, NDArrayInt
-from typing import Dict, List, Tuple
+from typing import Mapping, List, Tuple
 
 
 class BayesianCNN(bbald.consistent_mc_dropout.BayesianModule):
@@ -95,7 +95,7 @@ def test_0120_bayesian_model() -> None:
     # values 0 through 9.
     num_classes: int = 10
     # We have one label per feature_vector so we need a list of one dictionary.
-    my_label_definitions: List[Dict[int, Dict[str, str]]]
+    my_label_definitions: List[Mapping[int, Mapping[str, str]]]
     my_label_definitions = [{i: {"description": repr(i)} for i in range(num_classes)}]
     # We will indicate the validation examples by their indices.
     validation_indices: NDArrayInt

@@ -20,14 +20,14 @@ from __future__ import annotations
 import al_bench as alb
 import al_bench.strategy
 from exercise import exercise_strategy_handler
-from typing import Any, Dict, Type
+from typing import Any, Mapping, Type
 
 
 def test_0030_strategy_handler_interface() -> None:
     """Purpose: Test that high-level operations work"""
 
     # Specify some testing parameters
-    parameters: Dict[str, Any] = {
+    parameters: Mapping[str, Any] = {
         "number_of_superpixels": 1000,
         "number_of_features": 2048,
         "number_of_categories_by_label": [5, 7],
