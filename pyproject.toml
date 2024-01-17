@@ -18,8 +18,8 @@ dependencies = [
 dynamic = ["version", "description"]
 
 # [project.optional-dependencies]
-# torch = ["torch>=1.11<2.0"]
-# tensorflow = ["tensorflow>=2.6<3.0"]
+# torch = ["torch>=1.11,<2.0"]
+# tensorflow = ["tensorflow>=2.6,<3.0"]
 
 [project.urls]
 Source = "https://github.com/DigitalSlideArchive/ALBench"
