@@ -38,7 +38,8 @@ def check_deeply_numeric(x: Any) -> bool:
 
 
 def deeply_allclose(a: Any, b: Any, rtol=1e-05, atol=1e-08, equal_nan=False) -> bool:
-    response: bool = (
+    response: bool
+    response = (
         isinstance(b, (int, float, np.int32, np.int64, np.float32, np.float64))
         and np.allclose(a, b, rtol, atol, equal_nan)
         if (isinstance(a, (int, float, np.int32, np.int64, np.float32, np.float64)))

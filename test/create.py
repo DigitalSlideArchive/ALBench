@@ -32,13 +32,15 @@ def create_dataset(
     Create a toy set of feature vectors
     """
     rng = np.random.default_rng()
-    my_feature_vectors: NDArrayFloat = rng.normal(
+    my_feature_vectors: NDArrayFloat
+    my_feature_vectors = rng.normal(
         0, 1, size=(number_of_superpixels, number_of_features)
     ).astype(np.float64)
 
     # Note that apparently TensorFlow requires that the labels be consecutive integers
     # starting with zero.  So, we will use -1 for "unknown".
-    my_label_definitions: List[Mapping] = [
+    my_label_definitions: List[Mapping]
+    my_label_definitions = [
         {
             -1: {"description": f"Label{label_index}Unknown"},
             **{
@@ -55,7 +57,8 @@ def create_dataset(
 
     # Create a random label for each superpixel.  Avoid -1, which we are using for
     # "unknown".
-    my_labels: NDArrayInt = np.concatenate(
+    my_labels: NDArrayInt
+    my_labels = np.concatenate(
         [
             np.array(
                 np.clip(
@@ -84,7 +87,8 @@ def create_dataset_4598_1280_4(
     with h5.File(filename) as ds:
         my_feature_vectors: NDArrayFloat = np.array(ds["features"])
         my_labels: NDArrayInt = np.array(ds["labels"])
-    my_label_definitions: List[Mapping] = [
+    my_label_definitions: List[Mapping]
+    my_label_definitions = [
         {
             0: {"description": "other"},
             1: {"description": "tumor"},
@@ -279,7 +283,8 @@ def create_dirichlet_predictions(
         num_repeats = 1
 
     predictions: NDArrayFloat = np.zeros((num_samples, num_repeats, num_classes))
-    sample_pseudocounts: NDArrayFloat = rng_gamma(
+    sample_pseudocounts: NDArrayFloat
+    sample_pseudocounts = rng_gamma(
         alpha=alpha_hyperprior,
         beta=beta_hyperprior,
         shape=(num_samples, num_classes),

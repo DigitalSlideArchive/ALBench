@@ -50,7 +50,8 @@ def test_0100_handler_combinations() -> None:
     """
 
     # Specify some testing parameters
-    parameters: Mapping[str, Any] = {
+    parameters: Mapping[str, Any]
+    parameters = {
         "number_of_superpixels": 4598,
         "number_of_features": 1280,
         "number_of_categories_by_label": [4],
@@ -95,9 +96,8 @@ def test_0100_handler_combinations() -> None:
                 my_feature_vectors, my_label_definitions, my_labels = dataset_creator(
                     **parameters
                 )
-                my_dataset_handler: alb.dataset.AbstractDatasetHandler = (
-                    DatasetHandler()
-                )
+                my_dataset_handler: alb.dataset.AbstractDatasetHandler
+                my_dataset_handler = DatasetHandler()
                 my_dataset_handler.set_all_feature_vectors(my_feature_vectors)
                 my_dataset_handler.set_all_label_definitions(my_label_definitions)
                 my_dataset_handler.set_all_labels(my_labels)
@@ -114,9 +114,8 @@ def test_0100_handler_combinations() -> None:
                 my_model_handler: alb.model.AbstractModelHandler = ModelHandler()
                 my_model_handler.set_model(my_model)
 
-                my_strategy_handler: alb.strategy.AbstractStrategyHandler = (
-                    StrategyHandler()
-                )
+                my_strategy_handler: alb.strategy.AbstractStrategyHandler
+                my_strategy_handler = StrategyHandler()
                 my_strategy_handler.set_dataset_handler(my_dataset_handler)
                 my_strategy_handler.set_model_handler(my_model_handler)
                 my_strategy_handler.set_learning_parameters(
@@ -128,33 +127,40 @@ def test_0100_handler_combinations() -> None:
                 # Start with nothing labeled yet
                 currently_labeled_examples: NDArrayInt = np.array((), dtype=np.int64)
 
-                # dataset_match: Optional[Match[str]] = re.search(
+                # dataset_match: Optional[Match[str]]
+                # dataset_match = re.search(
                 #     r"<class 'al_bench\.dataset\.(.*)'>",
                 #     f"{type(my_dataset_handler)}",
                 # )
-                # dataset_string: str = (
+                # dataset_string: str
+                # dataset_string = (
                 #     "dataset_handler_NOT_FOUND"
                 #     if dataset_match is None
                 #     else dataset_match.group(1)
                 # )
-                model_match: Optional[Match[str]] = re.search(
+                model_match: Optional[Match[str]]
+                model_match = re.search(
                     r"<class 'al_bench\.model\.(.*)'>", f"{type(my_model_handler)}"
                 )
-                model_string: str = (
+                model_string: str
+                model_string = (
                     "model_handler_NOT_FOUND"
                     if model_match is None
                     else model_match.group(1)
                 )
-                strategy_match: Optional[Match[str]] = re.search(
+                strategy_match: Optional[Match[str]]
+                strategy_match = re.search(
                     r"<class 'al_bench\.strategy\.(.*)'>",
                     f"{type(my_strategy_handler)}",
                 )
-                strategy_string: str = (
+                strategy_string: str
+                strategy_string = (
                     "strategy_handler_NOT_FOUND"
                     if strategy_match is None
                     else strategy_match.group(1)
                 )
-                combination_name: str = "-".join(
+                combination_name: str
+                combination_name = "-".join(
                     [
                         # dataset_string,
                         model_string,

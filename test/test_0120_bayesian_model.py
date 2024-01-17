@@ -85,9 +85,8 @@ def test_0120_bayesian_model() -> None:
     dataset_list = train_dataset_list + test_dataset_list
     # Unzip the data set into separate (unlabeled) input data and their labels.  Data
     # only:
-    my_feature_vectors: NDArrayFloat = np.concatenate(
-        [d[0].numpy() for d in dataset_list]
-    )
+    my_feature_vectors: NDArrayFloat
+    my_feature_vectors = np.concatenate([d[0].numpy() for d in dataset_list])
 
     # Each is list of one label only:
     my_labels: NDArrayInt = np.array([[d[1]] for d in dataset_list])

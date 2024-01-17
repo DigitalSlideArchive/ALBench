@@ -59,7 +59,8 @@ def test_0040_factory() -> None:
         certainty_type, percentiles, cutoffs
     )
     # Create dummy input for testing
-    predictions: NDArrayFloat = np.array(
+    predictions: NDArrayFloat
+    predictions = np.array(
         [
             [
                 [6.32163380, 3.41019114, 3.30049889, 2.06819065, 1.52704675],

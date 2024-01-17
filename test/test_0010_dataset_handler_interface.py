@@ -27,7 +27,8 @@ def test_0010_dataset_handler_interface() -> None:
     """Purpose: Test that high-level operations work"""
 
     # Specify some testing parameters
-    parameters: Mapping[str, Any] = {
+    parameters: Mapping[str, Any]
+    parameters = {
         "number_of_superpixels": 1000,
         "number_of_features": 2048,
         "number_of_categories_by_label": [5, 7],

@@ -593,38 +593,42 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     def check_data_consistency(self) -> bool:
         # Check whether among feature vectors, labels, and dictionaries that were
         # supplied, are they for the same number of entities?
-        feature_vectors_length: int = (
+        feature_vectors_length: int
+        feature_vectors_length = (
             self.feature_vectors.shape[0] if hasattr(self, "feature_vectors") else 0
         )
         labels_length: int = self.labels.shape[0] if hasattr(self, "labels") else 0
-        dictionaries_length: int = (
+        dictionaries_length: int
+        dictionaries_length = (
             len(self.dictionaries) if hasattr(self, "dictionaries") else 0
         )
         # Eliminate duplicates
-        all_lengths: Set[int] = set(
-            [feature_vectors_length, labels_length, dictionaries_length]
-        )
-        lengths_test: bool = len(all_lengths) == 1 or (
+        all_lengths: Set[int]
+        all_lengths = set([feature_vectors_length, labels_length, dictionaries_length])
+        lengths_test: bool
+        lengths_test = len(all_lengths) == 1 or (
             len(all_lengths) == 2 and 0 in all_lengths
         )
 
         # Check whether among labels and label_definitions that were supplied, are they
         # for the same number of kinds of labels?
-        labels_width: int = (
+        labels_width: int
+        labels_width = (
             (1 if len(self.labels.shape) == 1 else self.labels.shape[1])
             if hasattr(self, "labels")
             else 0
         )
-        label_definitions_width: int = (
+        label_definitions_width: int
+        label_definitions_width = (
             len(self.label_definitions) if hasattr(self, "label_definitions") else 0
         )
         all_widths: Set[int] = set([labels_width, label_definitions_width])
-        widths_test: bool = len(all_widths) == 1 or (
-            len(all_widths) == 2 and 0 in all_widths
-        )
+        widths_test: bool
+        widths_test = len(all_widths) == 1 or (len(all_widths) == 2 and 0 in all_widths)
 
         # Check whether every supplied label category has a definition.
-        definitions_test: bool = (
+        definitions_test: bool
+        definitions_test = (
             not widths_test
             or labels_width == 0
             or label_definitions_width == 0

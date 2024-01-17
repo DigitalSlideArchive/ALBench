@@ -187,7 +187,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         pass
 
         # These parameters must be supplied to the set_learning_parameters call.
-        self.required_parameters_keys: List[str] = [
+        self.required_parameters_keys: List[str]
+        self.required_parameters_keys = [
             "label_of_interest",
             "maximum_queries",
             "number_to_select_per_query",
@@ -361,7 +362,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         validation_labels = self.dataset_handler.get_validation_labels()
         if len(validation_labels.shape) == 1:
             validation_labels = validation_labels[:, np.newaxis]
-        validation_args: List = (
+        validation_args: List
+        validation_args = (
             list()
             if len(validation_feature_vectors.shape) == 0
             else [validation_feature_vectors, validation_labels]
@@ -372,9 +374,8 @@ class GenericStrategyHandler(AbstractStrategyHandler):
 
         # Do initial training
         self.model_handler.reinitialize_weights()
-        current_feature_vectors: NDArray[np.float_] = feature_vectors[
-            labeled_indices, :
-        ]
+        current_feature_vectors: NDArray[np.float_]
+        current_feature_vectors = feature_vectors[labeled_indices, :]
         current_labels: NDArray[np.int_] = labels[labeled_indices, label_of_interest]
         if len(current_feature_vectors) > 0:
             print(f"Training with {current_feature_vectors.shape[0]} examples")
@@ -386,13 +387,13 @@ class GenericStrategyHandler(AbstractStrategyHandler):
         for query in range(maximum_queries):
             # Evaluate the pool of possibilities
             print(f"Predicting for {feature_vectors.shape[0]} examples")
-            self.predictions: NDArray[np.float_] = self.model_handler.predict(
-                feature_vectors, log_it=all_p
-            )
+            self.predictions: NDArray[np.float_]
+            self.predictions = self.model_handler.predict(feature_vectors, log_it=all_p)
             if not all_p:
                 # Log the predictions for the unlabeled examples only
                 unlabeled_indices: Set[int] = all_indices - set(labeled_indices)
-                unlabeled_predictions: NDArray[np.float_] = self.predictions[
+                unlabeled_predictions: NDArray[np.float_]
+                unlabeled_predictions = self.predictions[
                     np.fromiter(unlabeled_indices, dtype=np.int64)
                 ]
                 self.model_handler.get_logger().on_predict_end(
@@ -490,7 +491,8 @@ class LeastConfidenceStrategyHandler(GenericStrategyHandler):
         examples with the smallest maximum score.
         """
         number_to_select: int = int(self.parameters["number_to_select_per_query"])
-        number_of_feature_vectors: int = (
+        number_of_feature_vectors: int
+        number_of_feature_vectors = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
 
@@ -538,7 +540,8 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         examples with the smallest gap between highest and second-highest score.
         """
         number_to_select: int = int(self.parameters["number_to_select_per_query"])
-        number_of_feature_vectors: int = (
+        number_of_feature_vectors: int
+        number_of_feature_vectors = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
 
@@ -560,7 +563,8 @@ class LeastMarginStrategyHandler(GenericStrategyHandler):
         # Find the largest and second largest values, and compute their difference
         predict_indices: NDArray[np.int_] = np.arange(len(predictions))
         predict_argsort: NDArray[np.int_] = np.argsort(predictions, axis=-1)
-        predict_score: NDArray[np.float_] = (
+        predict_score: NDArray[np.float_]
+        predict_score = (
             predictions[predict_indices, predict_argsort[:, -1]]
             - predictions[predict_indices, predict_argsort[:, -2]]
         )
@@ -591,7 +595,8 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         examples with the highest entropy.
         """
         number_to_select: int = int(self.parameters["number_to_select_per_query"])
-        number_of_feature_vectors: int = (
+        number_of_feature_vectors: int
+        number_of_feature_vectors = (
             self.dataset_handler.get_all_feature_vectors().shape[0]
         )
 
@@ -667,7 +672,8 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
         number_to_select: int = int(self.parameters["number_to_select_per_query"])
         # Use the subset of self.predictions that excludes labeled_indices and
         # validation_indices
-        available_indices: NDArray[np.int_] = np.fromiter(
+        available_indices: NDArray[np.int_]
+        available_indices = np.fromiter(
             set(range(self.predictions.shape[0]))
             - (set(labeled_indices) | set(validation_indices)),
             dtype=np.int64,

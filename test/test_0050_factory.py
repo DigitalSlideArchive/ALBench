@@ -66,9 +66,8 @@ def test_0050_factory() -> None:
         percentiles=percentiles,
         cutoffs=cutoffs,
     )
-    certainties: Mapping[str, Mapping[str, Any]] = compute_certainty.from_numpy_array(
-        predictions
-    )
+    certainties: Mapping[str, Mapping[str, Any]]
+    certainties = compute_certainty.from_numpy_array(predictions)
 
     # Note that applying np.argsort twice produces integers in the same order as the
     # original input.

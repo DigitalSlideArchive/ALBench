@@ -139,7 +139,8 @@ class _AbstractCommon:
 
         def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
             model_steps: Tuple[ModelStep] = (ModelStep.ON_TRAIN_END,)
-            y_dictionary: Mapping[str, str] = {
+            y_dictionary: Mapping[str, str]
+            y_dictionary = {
                 "loss": "Loss/train",
                 "val_loss": "Loss/validation",
                 "accuracy": "Accuracy/train",
@@ -152,7 +153,8 @@ class _AbstractCommon:
 
         def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
             model_steps: Tuple[ModelStep] = (ModelStep.ON_TRAIN_EPOCH_END,)
-            y_dictionary: Mapping[str, str] = {
+            y_dictionary: Mapping[str, str]
+            y_dictionary = {
                 "loss": "Loss/train",
                 "val_loss": "Loss/test",
                 "accuracy": "Accuracy/train",
@@ -200,9 +202,8 @@ class _AbstractCommon:
                         if len(predictions_list) == 0:
                             continue
 
-                        predictions: NDArray[np.float_] = np.concatenate(
-                            predictions_list, axis=0
-                        )
+                        predictions: NDArray[np.float_]
+                        predictions = np.concatenate(predictions_list, axis=0)
                         predictions_list = list()
                         statistcs: Mapping[
                             str, Mapping[float, float]
@@ -211,9 +212,8 @@ class _AbstractCommon:
                         )
                         # Report percentile scores
                         x_value: float = entry[x_key]
-                        utc_seconds: float = (
-                            entry["utcnow"] - beginning
-                        ).total_seconds()
+                        utc_seconds: float
+                        utc_seconds = (entry["utcnow"] - beginning).total_seconds()
                         for statistic_kind, statistic_percentiles in statistcs.items():
                             for percentile, y_value in statistic_percentiles.items():
                                 name: str
@@ -597,15 +597,15 @@ class _Common(_AbstractCommon):
         # predictions may have shape with indexes for (example, class) or for (example,
         # random_sample, class).  We'll make the latter look like the former.
         predictions = predictions.reshape((-1, predictions.shape[-1]))
-        negative_entropy_score: NDArray[np.float_] = -scipy.stats.entropy(
-            predictions, axis=-1
-        )
+        negative_entropy_score: NDArray[np.float_]
+        negative_entropy_score = -scipy.stats.entropy(predictions, axis=-1)
         # Find second highest and highest scoring classes
         margin_argsort: NDArray[np.int_] = np.argpartition(predictions, -2, axis=-1)
         prediction_indices: NDArray[np.int_] = np.arange(len(predictions))
         confidence_score: NDArray[np.float_]
         confidence_score = predictions[prediction_indices, margin_argsort[:, -1]]
-        margin_score: NDArray[np.float_] = (
+        margin_score: NDArray[np.float_]
+        margin_score = (
             confidence_score - predictions[prediction_indices, margin_argsort[:, -2]]
         )
 
@@ -832,7 +832,8 @@ class _TensorFlow(_AbstractPlatform):
             optimizer="adam", loss=self.loss_function, metrics=["accuracy"]
         )
 
-        validation_args: Mapping[str, Any] = (
+        validation_args: Mapping[str, Any]
+        validation_args = (
             dict()
             if len(validation_features) == 0
             else {"validation_data": (validation_features, validation_labels)}
@@ -857,7 +858,8 @@ class _TensorFlow(_AbstractPlatform):
         """
 
         if log_it:
-            predictions: NDArray[np.float_] = self.model.predict(
+            predictions: NDArray[np.float_]
+            predictions = self.model.predict(
                 features, verbose=0, callbacks=[self.logger]
             )
         else:
@@ -940,7 +942,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         )
 
         if do_validation:
-            validation_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+            validation_features_labels: _PyTorch._ZipDataset
+            validation_features_labels = _PyTorch._ZipDataset(
                 validation_features, validation_labels
             )
             # Note that DataLoader has additional parameters that we may wish to use in
@@ -1009,9 +1012,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                         validation_correct += new_correct
                     val_loss: float = validation_loss / validation_size
                     val_accuracy: float = validation_correct / validation_size
-                    more_logs: Mapping[str, Any] = dict(
-                        val_loss=val_loss, val_accuracy=val_accuracy
-                    )
+                    more_logs: Mapping[str, Any]
+                    more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                     logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 
@@ -1089,7 +1091,8 @@ class SamplingBayesianPyTorchModelHandler(
         )
 
         if do_validation:
-            validation_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+            validation_features_labels: _PyTorch._ZipDataset
+            validation_features_labels = _PyTorch._ZipDataset(
                 validation_features, validation_labels
             )
             # Note that DataLoader has additional parameters that we may wish to use in
@@ -1170,9 +1173,8 @@ class SamplingBayesianPyTorchModelHandler(
                         validation_correct += new_correct
                     val_loss: float = validation_loss / validation_size
                     val_accuracy: float = validation_correct / validation_size
-                    more_logs: Mapping[str, Any] = dict(
-                        val_loss=val_loss, val_accuracy=val_accuracy
-                    )
+                    more_logs: Mapping[str, Any]
+                    more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                     logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 
