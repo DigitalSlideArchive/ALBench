@@ -55,7 +55,7 @@ class ComputeCertainty:
             certainty_type = self.all_certainty_types
         if isinstance(certainty_type, str):
             certainty_type = [certainty_type]
-        if not all([ct in self.all_certainty_types for ct in certainty_type]):
+        if not all(ct in self.all_certainty_types for ct in certainty_type):
             raise ValueError(f"Something wrong with {certainty_type = }")
         self.certainty_type: Sequence[str] = certainty_type
 
@@ -71,7 +71,7 @@ class ComputeCertainty:
             cutoffs = {certainty_type[0]: cutoffs}
         # If we have no information for a certainty type, default to no cutoffs.
         cutoffs = {**{k: [] for k in certainty_type}, **cutoffs}
-        if not all([cut in certainty_type for cut in cutoffs.keys()]):
+        if not all(cut in certainty_type for cut in cutoffs.keys()):
             raise ValueError(f"Something wrong with {cutoffs = }")
         cutoffs = {key: [float(c) for c in value] for key, value in cutoffs.items()}
         self.cutoffs: Mapping[str, Sequence[float]] = cutoffs
@@ -175,13 +175,12 @@ class ComputeCertainty:
         response = {
             source_name: {
                 "scores": scores[source_name],
-                "percentiles": {
-                    percentile: percentile_score
-                    for percentile, percentile_score in zip(
+                "percentiles": dict(
+                    zip(
                         self.percentiles,
                         np.percentile(scores[source_name], self.percentiles),
                     )
-                },
+                ),
                 "cdf": {
                     cutoff: (scores[source_name] < cutoff).sum() / num_predictions * 100
                     for cutoff in self.cutoffs[source_name]

@@ -567,7 +567,7 @@ def main(args):  # noqa: C901
     else:
         print("Fitting PCA ... ")
         df = pd.DataFrame(
-            data=slide_superpixel_data, columns=[_ for _ in range(args.fcn)]
+            data=slide_superpixel_data, columns=(_ for _ in range(args.fcn))
         )
         df_sample = df.reindex(np.random.permutation(df.index)).sample(
             frac=args.pca_sample_scale

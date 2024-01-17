@@ -24,7 +24,7 @@ import numpy as np
 import scipy.stats
 from datetime import datetime
 from numpy.typing import NDArray
-from typing import cast, Any, List, Mapping, Sequence, Tuple
+from typing import cast, Any, List, Mapping, Optional, Sequence, Tuple
 
 
 class ModelStep(enum.Enum):
@@ -84,10 +84,8 @@ class _AbstractCommon:
 
         def append_to_log(self, d: Mapping[str, Any]) -> None:
             if not all(
-                [
-                    isinstance(e, (int, float, np.float32, np.float64, np.ndarray))
-                    for e in d["logs"].values()
-                ]
+                isinstance(e, (int, float, np.float32, np.float64, np.ndarray))
+                for e in d["logs"].values()
             ):
                 raise ValueError(f"Logger.append_to_log bad dictionary: {repr(d)}")
             self.log.append(d)
@@ -527,8 +525,8 @@ class _AbstractPlatform:
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]],
+        validation_labels: Optional[NDArray[np.int_]],
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -612,12 +610,9 @@ class _Common(_AbstractCommon):
         # Report percentile scores
         response: Mapping[str, Mapping[float, float]]
         response = {
-            statistic_kind: {
-                percentile: percentile_score
-                for percentile, percentile_score in zip(
-                    percentiles, np.percentile(source_score, percentiles)
-                )
-            }
+            statistic_kind: dict(
+                zip(percentiles, np.percentile(source_score, percentiles))
+            )
             for statistic_kind, source_score in zip(
                 ("confidence", "margin", "negative_entropy"),
                 (confidence_score, margin_score, negative_entropy_score),
@@ -817,13 +812,18 @@ class _TensorFlow(_AbstractPlatform):
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]] = None,
+        validation_labels: Optional[NDArray[np.int_]] = None,
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
+        if validation_features is None:
+            validation_features = np.array((), dtype=np.float64)
+        if validation_labels is None:
+            validation_labels = np.array((), dtype=np.int64)
+
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
@@ -905,14 +905,19 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]] = None,
+        validation_labels: Optional[NDArray[np.int_]] = None,
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
         import torch
+
+        if validation_features is None:
+            validation_features = np.array((), dtype=np.float64)
+        if validation_labels is None:
+            validation_labels = np.array((), dtype=np.int64)
 
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
@@ -996,7 +1001,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 validation_correct: float = 0.0
                 with torch.no_grad():
                     self.model.eval()  # What does this do?!!!
-                    for i, data in enumerate(my_validation_data_loader):
+                    for data in my_validation_data_loader:
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
                         outputs = self.model(inputs)
@@ -1058,8 +1063,8 @@ class SamplingBayesianPyTorchModelHandler(
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]] = None,
+        validation_labels: Optional[NDArray[np.int_]] = None,
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -1067,6 +1072,10 @@ class SamplingBayesianPyTorchModelHandler(
         """
         import torch
 
+        if validation_features is None:
+            validation_features = np.array((), dtype=np.float64)
+        if validation_labels is None:
+            validation_labels = np.array((), dtype=np.int64)
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
@@ -1149,7 +1158,7 @@ class SamplingBayesianPyTorchModelHandler(
                 validation_correct = 0.0
                 with torch.no_grad():
                     self.model.eval()  # What does this do?!!!
-                    for i, data in enumerate(my_validation_data_loader):
+                    for data in my_validation_data_loader:
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
                         outputs = self.model(inputs, num_validation_samples)

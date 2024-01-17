@@ -178,18 +178,14 @@ def test_0100_handler_combinations() -> None:
                 ################
                 my_log: List = my_strategy_handler.get_log()
                 assert isinstance(my_log, list)
-                assert all([isinstance(e, dict) for e in my_log])
-                assert all([isinstance(e["utcnow"], datetime.datetime) for e in my_log])
+                assert all(isinstance(e, dict) for e in my_log)
+                assert all(isinstance(e["utcnow"], datetime.datetime) for e in my_log)
                 assert all(
-                    [isinstance(e["model_step"], alb.model.ModelStep) for e in my_log]
+                    isinstance(e["model_step"], alb.model.ModelStep) for e in my_log
                 )
-                assert all([isinstance(e["logs"], dict) for e in my_log])
+                assert all(isinstance(e["logs"], dict) for e in my_log)
                 assert all(
-                    [
-                        check_deeply_numeric(v)
-                        for e in my_log
-                        for v in e["logs"].values()
-                    ]
+                    check_deeply_numeric(v) for e in my_log for v in e["logs"].values()
                 )
                 my_strategy_handler.write_train_log_for_tensorboard(
                     log_dir=os.path.join("runs", combination_name)

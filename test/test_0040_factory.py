@@ -216,19 +216,14 @@ def test_0040_factory() -> None:
         or key in certainty_type
     }
     assert all(
-        [
-            output[key0][key1] == expected_output[key0][key1]
-            for key0 in expected_output_keys | output.keys()
-            for key1 in expected_output[key0].keys() | output[key0].keys()
-            if key1 != "scores"
-        ]
+        output[key0][key1] == expected_output[key0][key1]
+        for key0 in expected_output_keys | output.keys()
+        for key1 in expected_output[key0].keys() | output[key0].keys()
+        if key1 != "scores"
     )
     assert all(
-        [
-            ((output[key]["scores"] - expected_output[key]["scores"]) ** 2).sum()
-            < 1e-12
-            for key in expected_output_keys | output.keys()
-        ]
+        ((output[key]["scores"] - expected_output[key]["scores"]) ** 2).sum() < 1e-12
+        for key in expected_output_keys | output.keys()
     )
 
 

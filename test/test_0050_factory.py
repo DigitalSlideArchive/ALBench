@@ -113,8 +113,7 @@ def test_0050_factory() -> None:
         print("import numpy as np")
         print(f"expected_certainties = {deep_print(certainties)}")
         cutoffs = {
-            k: [cut for cut in v["percentiles"].values()]
-            for k, v in expected_certainties.items()
+            k: list(v["percentiles"].values()) for k, v in expected_certainties.items()
         }
         print(f"best_cutoffs = {deep_print(cutoffs)}")
 
