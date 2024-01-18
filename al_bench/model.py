@@ -246,7 +246,7 @@ class _AbstractCommon:
         # invokes it for us, we cannot simply supply training_size through this
         # interface.  Instead we grab it from self.training_size and require that the
         # user has already set that to something reasonable.
-        def on_train_begin(self, logs: Mapping[str, Any] = dict()) -> None:
+        def on_train_begin(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -256,7 +256,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_train_end(self, logs: Mapping[str, Any] = dict()) -> None:
+        def on_train_end(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -266,7 +266,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_epoch_begin(self, epoch: int, logs: Mapping[str, Any] = dict()) -> None:
+        def on_epoch_begin(self, epoch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -277,7 +277,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_epoch_end(self, epoch: int, logs: Mapping[str, Any] = dict()) -> None:
+        def on_epoch_end(self, epoch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -288,9 +288,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_train_batch_begin(
-            self, batch: int, logs: Mapping[str, Any] = dict()
-        ) -> None:
+        def on_train_batch_begin(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -301,9 +299,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_train_batch_end(
-            self, batch: int, logs: Mapping[str, Any] = dict()
-        ) -> None:
+        def on_train_batch_end(self, batch: int, logs: Mapping[str, Any]) -> None:
             # For tensorflow, logs.keys() == ["loss", "accuracy"]
             self.append_to_log(
                 {
@@ -315,7 +311,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_begin(self, logs: Mapping[str, Any] = dict()) -> None:
+        def on_test_begin(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -325,7 +321,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_end(self, logs: Mapping[str, Any] = dict()) -> None:
+        def on_test_end(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -335,9 +331,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_batch_begin(
-            self, batch: int, logs: Mapping[str, Any] = dict()
-        ) -> None:
+        def on_test_batch_begin(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -348,9 +342,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_batch_end(
-            self, batch: int, logs: Mapping[str, Any] = dict()
-        ) -> None:
+        def on_test_batch_end(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -361,7 +353,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_begin(self, logs: Mapping[str, Any] = dict()) -> None:
+        def on_predict_begin(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -371,7 +363,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_end(self, logs: Mapping[str, Any] = dict()) -> None:
+        def on_predict_end(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -381,9 +373,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_batch_begin(
-            self, batch: int, logs: Mapping[str, Any] = dict()
-        ) -> None:
+        def on_predict_batch_begin(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -394,9 +384,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_batch_end(
-            self, batch: int, logs: Mapping[str, Any] = dict()
-        ) -> None:
+        def on_predict_batch_end(self, batch: int, logs: Mapping[str, Any]) -> None:
             # For tensorflow, logs.keys() == ["outputs"]
             self.append_to_log(
                 {
@@ -930,7 +918,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
 
         self.logger.training_size = train_features.shape[0]
-        self.logger.on_train_begin()
+        self.logger.on_train_begin(logs=dict())
 
         # Get `epochs` from training parameters!!!
         number_of_epochs: int = 10
@@ -959,13 +947,13 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
 
         # Loop over the dataset multiple times
         for epoch in range(number_of_epochs):
-            self.logger.on_epoch_begin(epoch)
+            self.logger.on_epoch_begin(epoch, logs=dict())
             train_loss: float = 0.0
             train_size: int = 0
             train_correct: float = 0.0
             self.model.train()  # What does this do?!!!
             for i, data in enumerate(my_train_data_loader):
-                self.logger.on_train_batch_begin(i)
+                self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -1033,7 +1021,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         import torch
 
         if log_it:
-            self.logger.on_predict_begin()
+            self.logger.on_predict_begin(logs=dict())
         with torch.no_grad():
             self.model.eval()  # What does this do?!!!
             # Use non_blocking=True in the self.model call!!!
@@ -1083,7 +1071,7 @@ class SamplingBayesianPyTorchModelHandler(
         do_validation: bool = len(validation_features) != 0
 
         self.logger.training_size = train_features.shape[0]
-        self.logger.on_train_begin()
+        self.logger.on_train_begin(logs=dict())
 
         # Get `epochs` from training parameters!!!
         number_of_epochs: int = 10
@@ -1115,12 +1103,12 @@ class SamplingBayesianPyTorchModelHandler(
         num_validation_samples: int = 1
         # Loop over the dataset multiple times
         for epoch in range(number_of_epochs):
-            self.logger.on_epoch_begin(epoch)
+            self.logger.on_epoch_begin(epoch, logs=dict())
             train_loss: float = 0.0
             train_size: int = 0
             train_correct: float = 0.0
             for i, data in enumerate(my_train_data_loader):
-                self.logger.on_train_batch_begin(i)
+                self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -1200,7 +1188,7 @@ class SamplingBayesianPyTorchModelHandler(
         # Instead, get `num_predict_samples` from somewhere!!!
         num_predict_samples = 100
         if log_it:
-            self.logger.on_predict_begin()
+            self.logger.on_predict_begin(logs=dict())
         # For this Bayesian model, torch is expecting a channels==1 dimension at
         # shape[1].  Why?!!!
         features = np.expand_dims(features, 1)
