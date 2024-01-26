@@ -20,7 +20,7 @@ from __future__ import annotations
 import h5py as h5
 import numpy as np
 from numpy.typing import NDArray
-from typing import Iterable, List, MutableMapping
+from typing import Iterable, List, Mapping, Set
 
 
 class AbstractDatasetHandler:
@@ -168,13 +168,13 @@ class AbstractDatasetHandler:
             "Abstract method AbstractDatasetHandler::query_oracle should not be called."
         )
 
-    def set_all_dictionaries(self, dictionaries: Iterable[MutableMapping]) -> None:
+    def set_all_dictionaries(self, dictionaries: Iterable[Mapping]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_dictionaries"
             " should not be called."
         )
 
-    def get_all_dictionaries(self) -> Iterable[MutableMapping]:
+    def get_all_dictionaries(self) -> Iterable[Mapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_dictionaries"
             " should not be called."
@@ -187,9 +187,7 @@ class AbstractDatasetHandler:
         )
 
     def set_some_dictionaries(
-        self,
-        dictionary_indices: NDArray[np.int_],
-        dictionaries: Iterable[MutableMapping],
+        self, dictionary_indices: NDArray[np.int_], dictionaries: Iterable[Mapping]
     ) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_some_dictionaries"
@@ -198,7 +196,7 @@ class AbstractDatasetHandler:
 
     def get_some_dictionaries(
         self, dictionary_indices: NDArray[np.int_]
-    ) -> Iterable[MutableMapping]:
+    ) -> Iterable[Mapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_some_dictionaries"
             " should not be called."
@@ -222,15 +220,13 @@ class AbstractDatasetHandler:
             " should not be called."
         )
 
-    def set_all_label_definitions(
-        self, label_definitions: Iterable[MutableMapping]
-    ) -> None:
+    def set_all_label_definitions(self, label_definitions: Iterable[Mapping]) -> None:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::set_all_label_definitions"
             " should not be called."
         )
 
-    def get_all_label_definitions(self) -> Iterable[MutableMapping]:
+    def get_all_label_definitions(self) -> Iterable[Mapping]:
         raise NotImplementedError(
             "Abstract method AbstractDatasetHandler::get_all_label_definitions"
             " should not be called."
@@ -454,7 +450,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     Handle the dictionary of supplemental information for each stored entity.
     """
 
-    def set_all_dictionaries(self, dictionaries: Iterable[MutableMapping]) -> None:
+    def set_all_dictionaries(self, dictionaries: Iterable[Mapping]) -> None:
         """
         Set the entire database of dictionaries -- one per feature vector -- from a
         supplied list of Python dict objects.
@@ -464,16 +460,16 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         function.
         """
         if isinstance(dictionaries, list) and all(
-            [isinstance(e, dict) for e in dictionaries]
+            isinstance(e, dict) for e in dictionaries
         ):
-            self.dictionaries: List[MutableMapping] = dictionaries
+            self.dictionaries: List[Mapping] = dictionaries
         else:
             raise ValueError(
                 "The argument to set_all_dictionaries must be a list of Python"
                 " dict objects"
             )
 
-    def get_all_dictionaries(self) -> Iterable[MutableMapping]:
+    def get_all_dictionaries(self) -> Iterable[Mapping]:
         """
         Get the entire database of dictionaries as a list (or tuple) of Python dict
         objects.
@@ -516,9 +512,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         del self.validation_indices
 
     def set_some_dictionaries(
-        self,
-        dictionary_indices: NDArray[np.int_],
-        dictionaries: Iterable[MutableMapping],
+        self, dictionary_indices: NDArray[np.int_], dictionaries: Iterable[Mapping]
     ) -> None:
         """
         This overwrites existing dictionaries.  It does not (yet) handle insert, delete,
@@ -545,7 +539,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
 
     def get_some_dictionaries(
         self, dictionary_indices: NDArray[np.int_]
-    ) -> Iterable[MutableMapping]:
+    ) -> Iterable[Mapping]:
         """
         This fetches a subset of existing dictionaries.
 
@@ -566,13 +560,11 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     supplemental information of each stored entity.
     """
 
-    def set_all_label_definitions(
-        self, label_definitions: Iterable[MutableMapping]
-    ) -> None:
+    def set_all_label_definitions(self, label_definitions: Iterable[Mapping]) -> None:
         """
         Parameters
         ----------
-        label_definitions: dict
+        label_definitions: Mapping
             The argument is, for example, label_definitions = {
                 np.nan: {"description": "unlabeled", "color": "#FFFF00"},
                 1:      {"description": "necrotic",  "color": "#FF0000"},
@@ -580,16 +572,16 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         """
 
         if isinstance(label_definitions, list) and all(
-            [isinstance(e, dict) for e in label_definitions]
+            isinstance(e, dict) for e in label_definitions
         ):
-            self.label_definitions: List[MutableMapping] = label_definitions
+            self.label_definitions: List[Mapping] = label_definitions
         else:
             raise ValueError(
                 "The argument to set_all_label_definitions must be a list of Python"
                 " dict objects"
             )
 
-    def get_all_label_definitions(self) -> Iterable[MutableMapping]:
+    def get_all_label_definitions(self) -> Iterable[Mapping]:
         """
         Returns
         -------
@@ -601,33 +593,41 @@ class GenericDatasetHandler(AbstractDatasetHandler):
     def check_data_consistency(self) -> bool:
         # Check whether among feature vectors, labels, and dictionaries that were
         # supplied, are they for the same number of entities?
+        feature_vectors_length: int
         feature_vectors_length = (
             self.feature_vectors.shape[0] if hasattr(self, "feature_vectors") else 0
         )
-        labels_length = self.labels.shape[0] if hasattr(self, "labels") else 0
+        labels_length: int = self.labels.shape[0] if hasattr(self, "labels") else 0
+        dictionaries_length: int
         dictionaries_length = (
             len(self.dictionaries) if hasattr(self, "dictionaries") else 0
         )
         # Eliminate duplicates
-        all_lengths = set([feature_vectors_length, labels_length, dictionaries_length])
+        all_lengths: Set[int]
+        all_lengths = {feature_vectors_length, labels_length, dictionaries_length}
+        lengths_test: bool
         lengths_test = len(all_lengths) == 1 or (
             len(all_lengths) == 2 and 0 in all_lengths
         )
 
         # Check whether among labels and label_definitions that were supplied, are they
         # for the same number of kinds of labels?
+        labels_width: int
         labels_width = (
             (1 if len(self.labels.shape) == 1 else self.labels.shape[1])
             if hasattr(self, "labels")
             else 0
         )
+        label_definitions_width: int
         label_definitions_width = (
             len(self.label_definitions) if hasattr(self, "label_definitions") else 0
         )
-        all_widths = set([labels_width, label_definitions_width])
+        all_widths: Set[int] = {labels_width, label_definitions_width}
+        widths_test: bool
         widths_test = len(all_widths) == 1 or (len(all_widths) == 2 and 0 in all_widths)
 
         # Check whether every supplied label category has a definition.
+        definitions_test: bool
         definitions_test = (
             not widths_test
             or labels_width == 0
@@ -639,11 +639,9 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             or (
                 len(self.labels.shape) == 2
                 and all(
-                    [
-                        len(set(self.labels[:, col]) - set(self.label_definitions[col]))
-                        == 0
-                        for col in range(self.labels.shape[1])
-                    ]
+                    len(set(self.labels[:, col]) - set(self.label_definitions[col]))
+                    == 0
+                    for col in range(self.labels.shape[1])
                 )
             )
         )

@@ -24,24 +24,24 @@ import numpy as np
 import scipy.stats
 from datetime import datetime
 from numpy.typing import NDArray
-from typing import cast, Any, Dict, List, Mapping, MutableMapping, Sequence
+from typing import cast, Any, List, Mapping, Optional, Sequence, Tuple
 
 
 class ModelStep(enum.Enum):
-    ON_TRAIN_BEGIN = 100
-    ON_TRAIN_END = 105
-    ON_TRAIN_EPOCH_BEGIN = 120
-    ON_TRAIN_EPOCH_END = 125
-    ON_TRAIN_BATCH_BEGIN = 140
-    ON_TRAIN_BATCH_END = 145
-    ON_TEST_BEGIN = 200
-    ON_TEST_END = 205
-    ON_TEST_BATCH_BEGIN = 240
-    ON_TEST_BATCH_END = 245
-    ON_PREDICT_BEGIN = 300
-    ON_PREDICT_END = 305
-    ON_PREDICT_BATCH_BEGIN = 340
-    ON_PREDICT_BATCH_END = 345
+    ON_TRAIN_BEGIN: int = 100
+    ON_TRAIN_END: int = 105
+    ON_TRAIN_EPOCH_BEGIN: int = 120
+    ON_TRAIN_EPOCH_END: int = 125
+    ON_TRAIN_BATCH_BEGIN: int = 140
+    ON_TRAIN_BATCH_END: int = 145
+    ON_TEST_BEGIN: int = 200
+    ON_TEST_END: int = 205
+    ON_TEST_BATCH_BEGIN: int = 240
+    ON_TEST_BATCH_END: int = 245
+    ON_PREDICT_BEGIN: int = 300
+    ON_PREDICT_END: int = 305
+    ON_PREDICT_BATCH_BEGIN: int = 340
+    ON_PREDICT_BATCH_END: int = 345
 
 
 # !!! Does it matter that the model.Logger class requires `import tensorflow.keras`
@@ -82,12 +82,10 @@ class _AbstractCommon:
         def get_log(self) -> List:
             return self.log
 
-        def append_to_log(self, d: Dict[str, Any]) -> None:
+        def append_to_log(self, d: Mapping[str, Any]) -> None:
             if not all(
-                [
-                    isinstance(e, (int, float, np.float32, np.float64, np.ndarray))
-                    for e in d["logs"].values()
-                ]
+                isinstance(e, (int, float, np.float32, np.float64, np.ndarray))
+                for e in d["logs"].values()
             ):
                 raise ValueError(f"Logger.append_to_log bad dictionary: {repr(d)}")
             self.log.append(d)
@@ -102,13 +100,13 @@ class _AbstractCommon:
         ) -> bool:
             from torch.utils.tensorboard import SummaryWriter
 
-            beginning = datetime.utcfromtimestamp(0)
+            beginning: datetime = datetime.utcfromtimestamp(0)
             with SummaryWriter(*args, **kwargs) as writer:
                 for entry in self.log:
                     logs: Mapping = entry["logs"]
                     if entry["model_step"] not in model_steps or len(logs) == 0:
                         continue
-                    utc_seconds = (entry["utcnow"] - beginning).total_seconds()
+                    utc_seconds: float = (entry["utcnow"] - beginning).total_seconds()
                     x_value: float = entry[x_key]
                     for key in logs.keys() & y_dictionary.keys():
                         name: str = y_dictionary[key]
@@ -138,8 +136,9 @@ class _AbstractCommon:
             return True
 
         def write_train_log_for_tensorboard(self, *args, **kwargs) -> bool:
-            model_steps = (ModelStep.ON_TRAIN_END,)
-            y_dictionary: Mapping = {
+            model_steps: Tuple[ModelStep] = (ModelStep.ON_TRAIN_END,)
+            y_dictionary: Mapping[str, str]
+            y_dictionary = {
                 "loss": "Loss/train",
                 "val_loss": "Loss/validation",
                 "accuracy": "Accuracy/train",
@@ -151,8 +150,9 @@ class _AbstractCommon:
             )
 
         def write_epoch_log_for_tensorboard(self, *args, **kwargs) -> bool:
-            model_steps = (ModelStep.ON_TRAIN_EPOCH_END,)
-            y_dictionary: Mapping = {
+            model_steps: Tuple[ModelStep] = (ModelStep.ON_TRAIN_EPOCH_END,)
+            y_dictionary: Mapping[str, str]
+            y_dictionary = {
                 "loss": "Loss/train",
                 "val_loss": "Loss/test",
                 "accuracy": "Accuracy/train",
@@ -169,7 +169,7 @@ class _AbstractCommon:
             if len(self.log) == 0:
                 return False
             x_key: str = "training_size"
-            beginning = datetime.utcfromtimestamp(0)
+            beginning: datetime = datetime.utcfromtimestamp(0)
             percentiles: Sequence[float] = (5, 10, 25, 50)
             predictions_list: List[NDArray[np.float_]] = list()
 
@@ -177,7 +177,7 @@ class _AbstractCommon:
 
             with SummaryWriter(*args, **kwargs) as writer:
                 for entry in self.log:
-                    model_step = entry["model_step"]
+                    model_step: ModelStep = entry["model_step"]
 
                     if model_step == ModelStep.ON_PREDICT_BEGIN:
                         # Clear accumulated records
@@ -200,17 +200,17 @@ class _AbstractCommon:
                         if len(predictions_list) == 0:
                             continue
 
-                        predictions: NDArray[np.float_] = np.concatenate(
-                            predictions_list, axis=0
-                        )
+                        predictions: NDArray[np.float_]
+                        predictions = np.concatenate(predictions_list, axis=0)
                         predictions_list = list()
-                        statistcs: Mapping = (
-                            self.model_handler.compute_certainty_statistics(
-                                predictions, percentiles
-                            )
+                        statistcs: Mapping[
+                            str, Mapping[float, float]
+                        ] = self.model_handler.compute_certainty_statistics(
+                            predictions, percentiles
                         )
                         # Report percentile scores
                         x_value: float = entry[x_key]
+                        utc_seconds: float
                         utc_seconds = (entry["utcnow"] - beginning).total_seconds()
                         for statistic_kind, statistic_percentiles in statistcs.items():
                             for percentile, y_value in statistic_percentiles.items():
@@ -246,7 +246,7 @@ class _AbstractCommon:
         # invokes it for us, we cannot simply supply training_size through this
         # interface.  Instead we grab it from self.training_size and require that the
         # user has already set that to something reasonable.
-        def on_train_begin(self, logs: Dict[str, Any] = dict()) -> None:
+        def on_train_begin(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -256,7 +256,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_train_end(self, logs: Dict[str, Any] = dict()) -> None:
+        def on_train_end(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -266,7 +266,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_epoch_begin(self, epoch: int, logs: Dict[str, Any] = dict()) -> None:
+        def on_epoch_begin(self, epoch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -277,7 +277,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_epoch_end(self, epoch: int, logs: Dict[str, Any] = dict()) -> None:
+        def on_epoch_end(self, epoch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -288,9 +288,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_train_batch_begin(
-            self, batch: int, logs: Dict[str, Any] = dict()
-        ) -> None:
+        def on_train_batch_begin(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -301,7 +299,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_train_batch_end(self, batch: int, logs: Dict[str, Any] = dict()) -> None:
+        def on_train_batch_end(self, batch: int, logs: Mapping[str, Any]) -> None:
             # For tensorflow, logs.keys() == ["loss", "accuracy"]
             self.append_to_log(
                 {
@@ -313,7 +311,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_begin(self, logs: Dict[str, Any] = dict()) -> None:
+        def on_test_begin(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -323,7 +321,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_end(self, logs: Dict[str, Any] = dict()) -> None:
+        def on_test_end(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -333,9 +331,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_batch_begin(
-            self, batch: int, logs: Dict[str, Any] = dict()
-        ) -> None:
+        def on_test_batch_begin(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -346,7 +342,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_test_batch_end(self, batch: int, logs: Dict[str, Any] = dict()) -> None:
+        def on_test_batch_end(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -357,7 +353,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_begin(self, logs: Dict[str, Any] = dict()) -> None:
+        def on_predict_begin(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -367,7 +363,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_end(self, logs: Dict[str, Any] = dict()) -> None:
+        def on_predict_end(self, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -377,9 +373,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_batch_begin(
-            self, batch: int, logs: Dict[str, Any] = dict()
-        ) -> None:
+        def on_predict_batch_begin(self, batch: int, logs: Mapping[str, Any]) -> None:
             self.append_to_log(
                 {
                     "utcnow": datetime.utcnow(),
@@ -390,9 +384,7 @@ class _AbstractCommon:
                 }
             )
 
-        def on_predict_batch_end(
-            self, batch: int, logs: Dict[str, Any] = dict()
-        ) -> None:
+        def on_predict_batch_end(self, batch: int, logs: Mapping[str, Any]) -> None:
             # For tensorflow, logs.keys() == ["outputs"]
             self.append_to_log(
                 {
@@ -444,7 +436,7 @@ class _AbstractCommon:
 
     def compute_certainty_statistics(
         self, predictions: NDArray[np.float_], percentiles: Sequence[float]
-    ) -> Mapping:
+    ) -> Mapping[str, Mapping[float, float]]:
         """
         Ask that the model provide statistics about its certainty in the supplied
         predictions.
@@ -521,8 +513,8 @@ class _AbstractPlatform:
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]],
+        validation_labels: Optional[NDArray[np.int_]],
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -579,7 +571,7 @@ class _Common(_AbstractCommon):
 
     def compute_certainty_statistics(
         self, predictions: NDArray[np.float_], percentiles: Sequence[float]
-    ) -> Mapping:
+    ) -> Mapping[str, Mapping[float, float]]:
         # Compute several scores for each prediction.  High scores correspond to high
         # certainty.
 
@@ -591,32 +583,29 @@ class _Common(_AbstractCommon):
         # predictions may have shape with indexes for (example, class) or for (example,
         # random_sample, class).  We'll make the latter look like the former.
         predictions = predictions.reshape((-1, predictions.shape[-1]))
-        negative_entropy_score: NDArray[np.float_] = -scipy.stats.entropy(
-            predictions, axis=-1
-        )
+        negative_entropy_score: NDArray[np.float_]
+        negative_entropy_score = -scipy.stats.entropy(predictions, axis=-1)
         # Find second highest and highest scoring classes
         margin_argsort: NDArray[np.int_] = np.argpartition(predictions, -2, axis=-1)
         prediction_indices: NDArray[np.int_] = np.arange(len(predictions))
         confidence_score: NDArray[np.float_]
         confidence_score = predictions[prediction_indices, margin_argsort[:, -1]]
-        margin_score: NDArray[np.float_] = (
+        margin_score: NDArray[np.float_]
+        margin_score = (
             confidence_score - predictions[prediction_indices, margin_argsort[:, -2]]
         )
 
         # Report percentile scores
-        response: MutableMapping = dict()
-        statistic_kind: str
-        source_score: NDArray[np.float_]
-        for statistic_kind, source_score in zip(
-            ("confidence", "margin", "negative_entropy"),
-            (confidence_score, margin_score, negative_entropy_score),
-        ):
-            response[statistic_kind] = dict()
-            percentile_scores: NDArray[np.float_] = np.percentile(
-                source_score, percentiles
+        response: Mapping[str, Mapping[float, float]]
+        response = {
+            statistic_kind: dict(
+                zip(percentiles, np.percentile(source_score, percentiles))
             )
-            for percentile, percentile_score in zip(percentiles, percentile_scores):
-                response[statistic_kind][percentile] = percentile_score
+            for statistic_kind, source_score in zip(
+                ("confidence", "margin", "negative_entropy"),
+                (confidence_score, margin_score, negative_entropy_score),
+            )
+        }
         return response
 
 
@@ -811,13 +800,18 @@ class _TensorFlow(_AbstractPlatform):
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]] = None,
+        validation_labels: Optional[NDArray[np.int_]] = None,
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
+        if validation_features is None:
+            validation_features = np.array((), dtype=np.float64)
+        if validation_labels is None:
+            validation_labels = np.array((), dtype=np.int64)
+
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
@@ -826,7 +820,8 @@ class _TensorFlow(_AbstractPlatform):
             optimizer="adam", loss=self.loss_function, metrics=["accuracy"]
         )
 
-        validation_args: Dict[str, Any] = (
+        validation_args: Mapping[str, Any]
+        validation_args = (
             dict()
             if len(validation_features) == 0
             else {"validation_data": (validation_features, validation_labels)}
@@ -851,7 +846,8 @@ class _TensorFlow(_AbstractPlatform):
         """
 
         if log_it:
-            predictions: NDArray[np.float_] = self.model.predict(
+            predictions: NDArray[np.float_]
+            predictions = self.model.predict(
                 features, verbose=0, callbacks=[self.logger]
             )
         else:
@@ -897,14 +893,19 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]] = None,
+        validation_labels: Optional[NDArray[np.int_]] = None,
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
         provided.  Add training weights!!!
         """
         import torch
+
+        if validation_features is None:
+            validation_features = np.array((), dtype=np.float64)
+        if validation_labels is None:
+            validation_labels = np.array((), dtype=np.int64)
 
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
@@ -917,7 +918,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         # https://towardsdatascience.com/a-tale-of-two-frameworks-985fa7fcec.
 
         self.logger.training_size = train_features.shape[0]
-        self.logger.on_train_begin()
+        self.logger.on_train_begin(logs=dict())
 
         # Get `epochs` from training parameters!!!
         number_of_epochs: int = 10
@@ -926,7 +927,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         train_features_labels: _PyTorch._ZipDataset
         train_features_labels = _PyTorch._ZipDataset(train_features, train_labels)
         # Instead, get `batch_size` from somewhere!!!
-        batch_size = 1
+        batch_size: int = 1
         # Note that DataLoader has additional parameters that we may wish to use in a
         # future implementation
         my_train_data_loader = torch.utils.data.DataLoader(
@@ -934,7 +935,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         )
 
         if do_validation:
-            validation_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+            validation_features_labels: _PyTorch._ZipDataset
+            validation_features_labels = _PyTorch._ZipDataset(
                 validation_features, validation_labels
             )
             # Note that DataLoader has additional parameters that we may wish to use in
@@ -945,13 +947,13 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
 
         # Loop over the dataset multiple times
         for epoch in range(number_of_epochs):
-            self.logger.on_epoch_begin(epoch)
+            self.logger.on_epoch_begin(epoch, logs=dict())
             train_loss: float = 0.0
-            train_size = 0
-            train_correct = 0.0
+            train_size: int = 0
+            train_correct: float = 0.0
             self.model.train()  # What does this do?!!!
             for i, data in enumerate(my_train_data_loader):
-                self.logger.on_train_batch_begin(i)
+                self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -962,7 +964,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 loss: Any = self.criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
-                new_size = inputs.size(0)
+                new_size: int = inputs.size(0)
                 train_size += new_size
                 new_loss: float = loss.item() * inputs.size(0)
                 train_loss += new_loss
@@ -974,7 +976,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 accuracy = new_correct / new_size
                 if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                     accuracy = accuracy[()]
-                logs: Dict[str, Any] = {"loss": loss, "accuracy": accuracy}
+                logs: Mapping[str, Any] = {"loss": loss, "accuracy": accuracy}
                 self.logger.on_train_batch_end(i, logs)
             loss = train_loss / train_size
             accuracy = train_correct / train_size
@@ -983,11 +985,11 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
             logs = {"loss": loss, "accuracy": accuracy}
             if do_validation:
                 validation_loss: float = 0.0
-                validation_size = 0
-                validation_correct = 0.0
+                validation_size: int = 0
+                validation_correct: float = 0.0
                 with torch.no_grad():
                     self.model.eval()  # What does this do?!!!
-                    for i, data in enumerate(my_validation_data_loader):
+                    for data in my_validation_data_loader:
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
                         outputs = self.model(inputs)
@@ -1003,9 +1005,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                         validation_correct += new_correct
                     val_loss: float = validation_loss / validation_size
                     val_accuracy: float = validation_correct / validation_size
-                    more_logs: Dict[str, Any] = dict(
-                        val_loss=val_loss, val_accuracy=val_accuracy
-                    )
+                    more_logs: Mapping[str, Any]
+                    more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                     logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 
@@ -1020,7 +1021,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         import torch
 
         if log_it:
-            self.logger.on_predict_begin()
+            self.logger.on_predict_begin(logs=dict())
         with torch.no_grad():
             self.model.eval()  # What does this do?!!!
             # Use non_blocking=True in the self.model call!!!
@@ -1050,8 +1051,8 @@ class SamplingBayesianPyTorchModelHandler(
         self,
         train_features: NDArray[np.float_],
         train_labels: NDArray[np.int_],
-        validation_features: NDArray[np.float_] = np.array((), dtype=np.float64),
-        validation_labels: NDArray[np.int_] = np.array((), dtype=np.int64),
+        validation_features: Optional[NDArray[np.float_]] = None,
+        validation_labels: Optional[NDArray[np.int_]] = None,
     ) -> None:
         """
         Ask the model to train.  This is generally called each time new labels have been
@@ -1059,6 +1060,10 @@ class SamplingBayesianPyTorchModelHandler(
         """
         import torch
 
+        if validation_features is None:
+            validation_features = np.array((), dtype=np.float64)
+        if validation_labels is None:
+            validation_labels = np.array((), dtype=np.int64)
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
@@ -1066,7 +1071,7 @@ class SamplingBayesianPyTorchModelHandler(
         do_validation: bool = len(validation_features) != 0
 
         self.logger.training_size = train_features.shape[0]
-        self.logger.on_train_begin()
+        self.logger.on_train_begin(logs=dict())
 
         # Get `epochs` from training parameters!!!
         number_of_epochs: int = 10
@@ -1083,7 +1088,8 @@ class SamplingBayesianPyTorchModelHandler(
         )
 
         if do_validation:
-            validation_features_labels: _PyTorch._ZipDataset = _PyTorch._ZipDataset(
+            validation_features_labels: _PyTorch._ZipDataset
+            validation_features_labels = _PyTorch._ZipDataset(
                 validation_features, validation_labels
             )
             # Note that DataLoader has additional parameters that we may wish to use in
@@ -1092,17 +1098,17 @@ class SamplingBayesianPyTorchModelHandler(
                 validation_features_labels, batch_size=batch_size
             )
 
-        num_train_samples = 1
+        num_train_samples: int = 1
         # !!! num_validation_samples cannot be >1 in this code for some unknown reason
         num_validation_samples: int = 1
         # Loop over the dataset multiple times
         for epoch in range(number_of_epochs):
-            self.logger.on_epoch_begin(epoch)
+            self.logger.on_epoch_begin(epoch, logs=dict())
             train_loss: float = 0.0
-            train_size = 0
-            train_correct = 0.0
+            train_size: int = 0
+            train_correct: float = 0.0
             for i, data in enumerate(my_train_data_loader):
-                self.logger.on_train_batch_begin(i)
+                self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -1115,7 +1121,7 @@ class SamplingBayesianPyTorchModelHandler(
                 criterion_loss = self.criterion(outputs.squeeze(1), labels)
                 criterion_loss.backward()
                 optimizer.step()
-                new_size = inputs.size(0)
+                new_size: int = inputs.size(0)
                 train_size += new_size
                 new_loss: float = criterion_loss.item() * inputs.size(0)
                 train_loss += new_loss
@@ -1127,7 +1133,7 @@ class SamplingBayesianPyTorchModelHandler(
                 accuracy: float = new_correct / new_size
                 if not isinstance(accuracy, (int, float, np.float32, np.float64)):
                     accuracy = accuracy[()]
-                logs: Dict[str, Any] = {"loss": loss, "accuracy": accuracy}
+                logs: Mapping[str, Any] = {"loss": loss, "accuracy": accuracy}
                 self.logger.on_train_batch_end(i, logs)
             loss = train_loss / train_size
             accuracy = train_correct / train_size
@@ -1140,7 +1146,7 @@ class SamplingBayesianPyTorchModelHandler(
                 validation_correct = 0.0
                 with torch.no_grad():
                     self.model.eval()  # What does this do?!!!
-                    for i, data in enumerate(my_validation_data_loader):
+                    for data in my_validation_data_loader:
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
                         outputs = self.model(inputs, num_validation_samples)
@@ -1164,9 +1170,8 @@ class SamplingBayesianPyTorchModelHandler(
                         validation_correct += new_correct
                     val_loss: float = validation_loss / validation_size
                     val_accuracy: float = validation_correct / validation_size
-                    more_logs: Dict[str, Any] = dict(
-                        val_loss=val_loss, val_accuracy=val_accuracy
-                    )
+                    more_logs: Mapping[str, Any]
+                    more_logs = dict(val_loss=val_loss, val_accuracy=val_accuracy)
                     logs = {**logs, **more_logs}
             self.logger.on_epoch_end(epoch, logs)
 
@@ -1183,7 +1188,7 @@ class SamplingBayesianPyTorchModelHandler(
         # Instead, get `num_predict_samples` from somewhere!!!
         num_predict_samples = 100
         if log_it:
-            self.logger.on_predict_begin()
+            self.logger.on_predict_begin(logs=dict())
         # For this Bayesian model, torch is expecting a channels==1 dimension at
         # shape[1].  Why?!!!
         features = np.expand_dims(features, 1)

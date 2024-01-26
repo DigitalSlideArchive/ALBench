@@ -66,9 +66,8 @@ def test_0050_factory() -> None:
         percentiles=percentiles,
         cutoffs=cutoffs,
     )
-    certainties: Mapping[str, Mapping[str, Any]] = compute_certainty.from_numpy_array(
-        predictions
-    )
+    certainties: Mapping[str, Mapping[str, Any]]
+    certainties = compute_certainty.from_numpy_array(predictions)
 
     # Note that applying np.argsort twice produces integers in the same order as the
     # original input.
@@ -114,8 +113,7 @@ def test_0050_factory() -> None:
         print("import numpy as np")
         print(f"expected_certainties = {deep_print(certainties)}")
         cutoffs = {
-            k: [cut for cut in v["percentiles"].values()]
-            for k, v in expected_certainties.items()
+            k: list(v["percentiles"].values()) for k, v in expected_certainties.items()
         }
         print(f"best_cutoffs = {deep_print(cutoffs)}")
 

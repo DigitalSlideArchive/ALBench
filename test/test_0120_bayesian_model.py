@@ -28,7 +28,7 @@ import random
 import shutil
 import torch
 from check import NDArrayFloat, NDArrayInt
-from typing import Dict, List, Tuple
+from typing import Mapping, List, Tuple
 
 
 class BayesianCNN(bbald.consistent_mc_dropout.BayesianModule):
@@ -76,18 +76,17 @@ def test_0120_bayesian_model() -> None:
     # al_bench datasets are supplied as numpy arrays.
     # Build the numpy arrays from a subset of the data
     train_dataset_list: List[Tuple[torch.Tensor, int]]
-    train_dataset_list = random.sample([d for d in train_dataset], 500)
+    train_dataset_list = random.sample(list(train_dataset), 500)
     test_dataset_list: List[Tuple[torch.Tensor, int]]
-    test_dataset_list = random.sample([d for d in test_dataset], 50)
+    test_dataset_list = random.sample(list(test_dataset), 50)
     num_training_indices: int = len(train_dataset_list)
     num_validation_indices: int = len(test_dataset_list)
     dataset_list: List[Tuple[torch.Tensor, int]]
     dataset_list = train_dataset_list + test_dataset_list
     # Unzip the data set into separate (unlabeled) input data and their labels.  Data
     # only:
-    my_feature_vectors: NDArrayFloat = np.concatenate(
-        [d[0].numpy() for d in dataset_list]
-    )
+    my_feature_vectors: NDArrayFloat
+    my_feature_vectors = np.concatenate([d[0].numpy() for d in dataset_list])
 
     # Each is list of one label only:
     my_labels: NDArrayInt = np.array([[d[1]] for d in dataset_list])
@@ -95,7 +94,7 @@ def test_0120_bayesian_model() -> None:
     # values 0 through 9.
     num_classes: int = 10
     # We have one label per feature_vector so we need a list of one dictionary.
-    my_label_definitions: List[Dict[int, Dict[str, str]]]
+    my_label_definitions: List[Mapping[int, Mapping[str, str]]]
     my_label_definitions = [{i: {"description": repr(i)} for i in range(num_classes)}]
     # We will indicate the validation examples by their indices.
     validation_indices: NDArrayInt
