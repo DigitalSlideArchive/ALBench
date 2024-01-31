@@ -77,7 +77,7 @@ def create_dataset(
 def create_dataset_4598_1280_4(
     number_of_superpixels: int,
     number_of_features: int,
-    number_of_categories_by_label: int,
+    number_of_categories_by_label,
     **kwargs,
 ) -> Tuple[NDArrayFloat, List[Mapping], NDArrayInt]:
     import h5py as h5
@@ -98,7 +98,7 @@ def create_dataset_4598_1280_4(
     ]
     assert number_of_superpixels == my_feature_vectors.shape[0]
     assert number_of_features == my_feature_vectors.shape[1]
-    assert isinstance(number_of_categories_by_label, list)
+    assert isinstance(number_of_categories_by_label, (list, tuple))
     assert len(number_of_categories_by_label) == len(my_label_definitions)
     assert number_of_categories_by_label[0] == len(my_label_definitions[0])
 
