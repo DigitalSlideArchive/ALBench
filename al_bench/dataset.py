@@ -455,14 +455,17 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         Set the entire database of dictionaries -- one per feature vector -- from a
         supplied list of Python dict objects.
 
-        N.B. if we were handed a (read-only) tuple then we cannot change a subset of
-        them.  If this functionality is needed then supply `list(dictionaries)` to this
-        function.
+        N.B. if we store a (read-only) tuple of dictionaries then we cannot change a
+        subset of them, so we convert any such tuple to a list.
         """
-        if isinstance(dictionaries, list) and all(
+        if isinstance(dictionaries, (list, tuple)) and all(
             isinstance(e, dict) for e in dictionaries
         ):
-            self.dictionaries: List[Mapping] = dictionaries
+            self.dictionaries: List[Mapping] = (
+                dictionaries.copy()
+                if isinstance(dictionaries, list)
+                else list(dictionaries)
+            )
         else:
             raise ValueError(
                 "The argument to set_all_dictionaries must be a list of Python"
@@ -524,16 +527,7 @@ class GenericDatasetHandler(AbstractDatasetHandler):
         use dictionary_indices=5, dictionaries={'a': 1, 'b': 2} OR use
         dictionary_indices=[5], dictionaries=[{'a': 1, 'b': 2}].
 
-        N.B. This will fail if the intially supplied value for dictionaries was a
-        *tuple* of dictionaries rather than a *list* of dictionaries, because tuples are
-        read-only.
         """
-        if isinstance(self.dictionaries, tuple):
-            raise ValueError(
-                "set_some_dictionaries cannot be used unless the initially supplied"
-                " dictionaries are supplied in a list instead of a tuple"
-            )
-
         for k, v in zip(dictionary_indices, dictionaries):
             self.dictionaries[k] = v
 
@@ -571,10 +565,14 @@ class GenericDatasetHandler(AbstractDatasetHandler):
             }
         """
 
-        if isinstance(label_definitions, list) and all(
+        if isinstance(label_definitions, (list, tuple)) and all(
             isinstance(e, dict) for e in label_definitions
         ):
-            self.label_definitions: List[Mapping] = label_definitions
+            self.label_definitions: List[Mapping] = (
+                label_definitions.copy()
+                if isinstance(label_definitions, list)
+                else list(label_definitions)
+            )
         else:
             raise ValueError(
                 "The argument to set_all_label_definitions must be a list of Python"

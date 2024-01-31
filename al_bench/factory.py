@@ -67,7 +67,7 @@ class ComputeCertainty:
 
         if cutoffs is None:
             cutoffs = {}
-        if len(certainty_type) == 1 and isinstance(cutoffs, list):
+        if len(certainty_type) == 1 and isinstance(cutoffs, (list, tuple)):
             cutoffs = {certainty_type[0]: cutoffs}
         # If we have no information for a certainty type, default to no cutoffs.
         cutoffs = {**{k: [] for k in certainty_type}, **cutoffs}
