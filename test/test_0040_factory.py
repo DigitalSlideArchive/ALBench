@@ -17,11 +17,14 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import Sequence
+
 import numpy as np
+
 import al_bench as alb
 import al_bench.factory
-from check import deep_print, NDArrayFloat
-from typing import Sequence
+from check import NDArrayFloat, deep_print
 
 
 def test_0040_factory() -> None:

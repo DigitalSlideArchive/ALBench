@@ -17,9 +17,11 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import Any, Sequence, Union
+
 import numpy as np
 from numpy.typing import NDArray
-from typing import Any, Sequence, Union
 
 NDArrayFloat = NDArray[np.float_]
 NDArrayInt = NDArray[np.int_]

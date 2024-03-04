@@ -17,9 +17,12 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import List, Mapping, Optional, Tuple
+
 import numpy as np
+
 from check import NDArrayFloat, NDArrayInt, SequenceFloat, SequenceInt
-from typing import Mapping, List, Optional, Tuple
 
 
 def create_dataset(

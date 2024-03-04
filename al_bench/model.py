@@ -17,14 +17,16 @@
 # ==========================================================================
 
 from __future__ import annotations
+
 import copy
 import enum
 import math
+from datetime import datetime
+from typing import Any, List, Mapping, Optional, Sequence, Tuple, cast
+
 import numpy as np
 import scipy.stats
-from datetime import datetime
 from numpy.typing import NDArray
-from typing import cast, Any, List, Mapping, Optional, Sequence, Tuple
 
 
 class ModelStep(enum.Enum):

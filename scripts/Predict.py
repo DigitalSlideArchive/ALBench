@@ -48,8 +48,10 @@ python Predict.py -h
 """
 
 import argparse
+
 import h5py as h5
 import numpy as np
+
 import networks
 
 

@@ -17,15 +17,17 @@
 # ==========================================================================
 
 from __future__ import annotations
-import al_bench as alb
-import al_bench.factory
+
+from typing import Any, Mapping
+
 import numpy as np
 import torch
-from check import deeply_allclose, deep_print, NDArrayFloat, NDArrayInt
+
+import al_bench as alb
+import al_bench.factory
+from check import NDArrayFloat, NDArrayInt, deep_print, deeply_allclose
 from create import create_dirichlet_predictions
-from data_0050_factory import best_cutoffs
-from data_0050_factory import expected_certainties
-from typing import Any, Mapping
+from data_0050_factory import best_cutoffs, expected_certainties
 
 
 def test_0050_factory() -> None:

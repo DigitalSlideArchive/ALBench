@@ -17,10 +17,12 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import Any, Mapping, Type
+
 import al_bench as alb
 import al_bench.strategy
 from exercise import exercise_strategy_handler
-from typing import Any, Mapping, Type
 
 
 def test_0030_strategy_handler_interface() -> None:
