@@ -17,18 +17,21 @@
 # ==========================================================================
 
 from __future__ import annotations
-import al_bench as alb
-import al_bench.strategy
+
+import os
+import random
+import shutil
+from typing import List, Mapping, Tuple
+
 import batchbald_redux as bbald
 import batchbald_redux.consistent_mc_dropout
 import batchbald_redux.repeated_mnist
 import numpy as np
-import os
-import random
-import shutil
 import torch
+
+import al_bench as alb
+import al_bench.strategy
 from check import NDArrayFloat, NDArrayInt
-from typing import Mapping, List, Tuple
 
 
 class BayesianCNN(bbald.consistent_mc_dropout.BayesianModule):

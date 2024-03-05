@@ -17,10 +17,12 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import Any, Dict, List, Mapping, Sequence
+
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import Any, Dict, List, Mapping, Sequence
 
 
 class ComputeCertainty:

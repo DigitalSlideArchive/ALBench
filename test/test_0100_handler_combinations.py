@@ -17,18 +17,21 @@
 # ==========================================================================
 
 from __future__ import annotations
-import al_bench as alb
-import al_bench.strategy
+
 import datetime
-import numpy as np
 import os
 import random
 import re
-from check import check_deeply_numeric, NDArrayFloat, NDArrayInt
-from create import create_dataset_4598_1280_4
-from create import create_pytorch_model_with_dropout
-from create import create_tensorflow_model_with_dropout
-from typing import Any, Mapping, List, Match, Optional, Type
+from typing import Any, List, Mapping, Match, Optional, Type
+
+import numpy as np
+
+import al_bench as alb
+import al_bench.strategy
+from check import NDArrayFloat, NDArrayInt, check_deeply_numeric
+from create import (create_dataset_4598_1280_4,
+                    create_pytorch_model_with_dropout,
+                    create_tensorflow_model_with_dropout)
 
 
 def test_0100_handler_combinations() -> None:

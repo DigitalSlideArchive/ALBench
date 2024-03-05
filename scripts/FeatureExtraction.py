@@ -42,32 +42,27 @@ python FeatureExtraction.py --projectName path/to/myproject --superpixelSize 64 
 
 """
 
-import os
 import json
-import h5py
+import logging
+import os
 import time
 
-import pandas as pd
+import h5py
+import joblib  # was: from sklearn.externals import joblib
 import numpy as np
+import pandas as pd
+from keras import applications
+from keras.applications.vgg16 import preprocess_input
+from keras.models import Model
+from keras.preprocessing import image
+from PIL import Image  # was: from scipy.misc import imresize
+from sklearn.decomposition import PCA
 
 import histomicstk.preprocessing.color_normalization as htk_cnorm
 import histomicstk.utils as htk_utils
-
 import large_image
-
-from keras.models import Model
-from keras.preprocessing import image
-from keras.applications.vgg16 import preprocess_input
-from keras import applications
-
 from ctk_cli import CLIArgumentParser
-from PIL import Image  # was: from scipy.misc import imresize
-from sklearn.decomposition import PCA
-import joblib  # was: from sklearn.externals import joblib
-
 from histomicstk.cli import utils as cli_utils
-
-import logging
 
 logging.basicConfig(level=logging.CRITICAL)
 

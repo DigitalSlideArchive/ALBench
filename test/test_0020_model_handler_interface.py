@@ -17,10 +17,12 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import Any, Mapping, Type
+
 import al_bench as alb
 import al_bench.model
 from exercise import exercise_model_handler
-from typing import Any, Mapping, Type
 
 
 def test_0020_model_handler_interface() -> None:

@@ -42,28 +42,24 @@ python SuperpixelSegmentation.py --projectName path/to/myproject --superpixelSiz
 
 """
 
-import os
 import json
+import logging
+import os
 import time
+
 import h5py
-
 import numpy as np
-import dask
-
-import histomicstk.preprocessing.color_normalization as htk_cnorm
-import histomicstk.segmentation as htk_seg
-import histomicstk.utils as htk_utils
-
-import large_image
-
-from ctk_cli import CLIArgumentParser
 from scipy import ndimage
 from skimage.measure import regionprops
 from skimage.segmentation import slic
 
+import dask
+import histomicstk.preprocessing.color_normalization as htk_cnorm
+import histomicstk.segmentation as htk_seg
+import histomicstk.utils as htk_utils
+import large_image
+from ctk_cli import CLIArgumentParser
 from histomicstk.cli import utils as cli_utils
-
-import logging
 
 logging.basicConfig(level=logging.CRITICAL)
 

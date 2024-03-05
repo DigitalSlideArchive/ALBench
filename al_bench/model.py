@@ -17,14 +17,16 @@
 # ==========================================================================
 
 from __future__ import annotations
+
 import copy
 import enum
 import math
+from datetime import datetime
+from typing import Any, List, Mapping, Optional, Sequence, Tuple, cast
+
 import numpy as np
 import scipy.stats
-from datetime import datetime
 from numpy.typing import NDArray
-from typing import cast, Any, List, Mapping, Optional, Sequence, Tuple
 
 
 class ModelStep(enum.Enum):
@@ -951,7 +953,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
             train_loss: float = 0.0
             train_size: int = 0
             train_correct: float = 0.0
-            self.model.train()  # What does this do?!!!
+            self.model.train()  # Tell torch that we will be doing training
             for i, data in enumerate(my_train_data_loader):
                 self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
@@ -988,7 +990,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                 validation_size: int = 0
                 validation_correct: float = 0.0
                 with torch.no_grad():
-                    self.model.eval()  # What does this do?!!!
+                    self.model.eval()  # Tell torch that we will be doing predictions
                     for data in my_validation_data_loader:
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
@@ -1023,7 +1025,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         if log_it:
             self.logger.on_predict_begin(logs=dict())
         with torch.no_grad():
-            self.model.eval()  # What does this do?!!!
+            self.model.eval()  # Tell torch that we will be doing predictions
             # Use non_blocking=True in the self.model call!!!
             predictions_raw = self.model(torch.from_numpy(features))
             predictions: NDArray[np.float_] = predictions_raw.detach().cpu().numpy()
@@ -1067,7 +1069,7 @@ class SamplingBayesianPyTorchModelHandler(
         assert not np.any(np.isnan(train_features))
         assert not np.any(np.isnan(train_labels))
         assert (len(validation_features) == 0) == (len(validation_labels) == 0)
-        self.model.train()  # What does this do?!!!
+        self.model.train()  # Tell torch that we will be doing training
         do_validation: bool = len(validation_features) != 0
 
         self.logger.training_size = train_features.shape[0]
@@ -1145,7 +1147,7 @@ class SamplingBayesianPyTorchModelHandler(
                 validation_size = 0
                 validation_correct = 0.0
                 with torch.no_grad():
-                    self.model.eval()  # What does this do?!!!
+                    self.model.eval()  # Tell torch that we will be doing predictions
                     for data in my_validation_data_loader:
                         inputs, labels = data
                         # Use non_blocking=True in the self.model call!!!
@@ -1193,7 +1195,7 @@ class SamplingBayesianPyTorchModelHandler(
         # shape[1].  Why?!!!
         features = np.expand_dims(features, 1)
         with torch.no_grad():
-            self.model.eval()  # What does this do?!!!
+            self.model.eval()  # Tell torch that we will be doing predictions
             # Use non_blocking=True in the self.model call!!!
             predictions_raw = self.model(
                 torch.from_numpy(features), num_predict_samples

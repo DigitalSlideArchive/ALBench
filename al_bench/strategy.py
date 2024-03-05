@@ -17,10 +17,13 @@
 # ==========================================================================
 
 from __future__ import annotations
+
+from typing import List, Mapping, Optional, Set
+
 import numpy as np
 import scipy.stats
 from numpy.typing import NDArray
-from typing import List, Mapping, Optional, Set
+
 from . import dataset, model
 
 
