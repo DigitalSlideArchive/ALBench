@@ -22,8 +22,7 @@ from typing import List
 
 import numpy as np
 
-from create import (create_dataset, create_toy_pytorch_model,
-                    create_toy_tensorflow_model)
+from create import create_dataset, create_toy_pytorch_model, create_toy_tensorflow_model
 
 
 def exercise_dataset_handler(

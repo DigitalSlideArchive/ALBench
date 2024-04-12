@@ -29,9 +29,11 @@ import numpy as np
 import al_bench as alb
 import al_bench.strategy
 from check import NDArrayFloat, NDArrayInt, check_deeply_numeric
-from create import (create_dataset_4598_1280_4,
-                    create_pytorch_model_with_dropout,
-                    create_tensorflow_model_with_dropout)
+from create import (
+    create_dataset_4598_1280_4,
+    create_pytorch_model_with_dropout,
+    create_tensorflow_model_with_dropout,
+)
 
 
 def test_0100_handler_combinations() -> None:
