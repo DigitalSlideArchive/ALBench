@@ -205,9 +205,8 @@ class _AbstractCommon:
                         predictions: NDArray[np.float_]
                         predictions = np.concatenate(predictions_list, axis=0)
                         predictions_list = list()
-                        statistcs: Mapping[
-                            str, Mapping[float, float]
-                        ] = self.model_handler.compute_certainty_statistics(
+                        statistcs: Mapping[str, Mapping[float, float]]
+                        statistcs = self.model_handler.compute_certainty_statistics(
                             predictions, percentiles
                         )
                         # Report percentile scores

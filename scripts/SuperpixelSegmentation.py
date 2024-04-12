@@ -50,8 +50,6 @@ import time
 import h5py
 import numpy as np
 from scipy import ndimage
-from skimage.measure import regionprops
-from skimage.segmentation import slic
 
 import dask
 import histomicstk.preprocessing.color_normalization as htk_cnorm
@@ -60,6 +58,8 @@ import histomicstk.utils as htk_utils
 import large_image
 from ctk_cli import CLIArgumentParser
 from histomicstk.cli import utils as cli_utils
+from skimage.measure import regionprops
+from skimage.segmentation import slic
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -289,10 +289,9 @@ def main(args):  # noqa: C901
 
             start_time = time.time()
 
-            (
-                im_fgnd_mask_lres,
-                fgnd_seg_scale,
-            ) = cli_utils.segment_wsi_foreground_at_low_res(ts)
+            (im_fgnd_mask_lres, fgnd_seg_scale) = (
+                cli_utils.segment_wsi_foreground_at_low_res(ts)
+            )
 
             fgnd_time = time.time() - start_time
 

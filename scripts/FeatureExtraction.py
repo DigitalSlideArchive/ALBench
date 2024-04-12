@@ -48,7 +48,6 @@ import os
 import time
 
 import h5py
-import joblib  # was: from sklearn.externals import joblib
 import numpy as np
 import pandas as pd
 from keras import applications
@@ -56,13 +55,14 @@ from keras.applications.vgg16 import preprocess_input
 from keras.models import Model
 from keras.preprocessing import image
 from PIL import Image  # was: from scipy.misc import imresize
-from sklearn.decomposition import PCA
 
 import histomicstk.preprocessing.color_normalization as htk_cnorm
 import histomicstk.utils as htk_utils
+import joblib  # was: from sklearn.externals import joblib
 import large_image
 from ctk_cli import CLIArgumentParser
 from histomicstk.cli import utils as cli_utils
+from sklearn.decomposition import PCA
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -397,10 +397,9 @@ def main(args):  # noqa: C901
 
                     start_time = time.time()
 
-                    (
-                        im_fgnd_mask_lres,
-                        fgnd_seg_scale,
-                    ) = cli_utils.segment_wsi_foreground_at_low_res(ts)
+                    (im_fgnd_mask_lres, fgnd_seg_scale) = (
+                        cli_utils.segment_wsi_foreground_at_low_res(ts)
+                    )
 
                     fgnd_time = time.time() - start_time
 
@@ -475,35 +474,31 @@ def main(args):  # noqa: C901
 
                         # detect superpixel data
                         if args.inputPCAModel:
-                            (
-                                tile_features,
-                                tile_x_centroids,
-                                tile_y_centroids,
-                            ) = compute_superpixel_data_pca(
-                                model,
-                                pca,
-                                img_paths[i],
-                                tile_position,
-                                centroid_paths[j],
-                                args,
-                                it_kwargs,
-                                src_mu_lab,
-                                src_sigma_lab,
+                            (tile_features, tile_x_centroids, tile_y_centroids) = (
+                                compute_superpixel_data_pca(
+                                    model,
+                                    pca,
+                                    img_paths[i],
+                                    tile_position,
+                                    centroid_paths[j],
+                                    args,
+                                    it_kwargs,
+                                    src_mu_lab,
+                                    src_sigma_lab,
+                                )
                             )
                         else:
-                            (
-                                tile_features,
-                                tile_x_centroids,
-                                tile_y_centroids,
-                            ) = compute_superpixel_data(
-                                model,
-                                img_paths[i],
-                                tile_position,
-                                centroid_paths[j],
-                                args,
-                                it_kwargs,
-                                src_mu_lab,
-                                src_sigma_lab,
+                            (tile_features, tile_x_centroids, tile_y_centroids) = (
+                                compute_superpixel_data(
+                                    model,
+                                    img_paths[i],
+                                    tile_position,
+                                    centroid_paths[j],
+                                    args,
+                                    it_kwargs,
+                                    src_mu_lab,
+                                    src_sigma_lab,
+                                )
                             )
 
                         print(f"tile_position = {tile_position}")
