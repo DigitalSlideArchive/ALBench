@@ -154,6 +154,8 @@ class ComputeCertainty:
             # the remaining will be rated as more certain via a constant.
             batch_size: int = min(self.batchbald_batch_size, predictions.shape[0])
             num_samples: int = self.batchbald_num_samples
+            epsilon = 7.8886090522101180541e-31
+            predictions[predictions < epsilon] = epsilon
             log_predictions = np.log(predictions)
             with torch.no_grad():
                 bald: bbald.batchbald.CandidateBatch
