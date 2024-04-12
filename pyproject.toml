@@ -17,9 +17,9 @@ dependencies = [
 ]
 dynamic = ["version", "description"]
 
-# [project.optional-dependencies]
-# torch = ["torch>=1.11,<2.0"]
-# tensorflow = ["tensorflow>=2.6,<3.0"]
+[project.optional-dependencies]
+torch = ["torch>=1.11,<2.0"]    # Use e.g. --extra-index-url https://download.pytorch.org/whl/cu117
+tensorflow = ["tensorflow>=2.6,<3.0"]
 
 [project.urls]
 Source = "https://github.com/DigitalSlideArchive/ALBench"
