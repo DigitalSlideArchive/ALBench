@@ -643,9 +643,9 @@ class MaximumEntropyStrategyHandler(GenericStrategyHandler):
         return predict_order
 
 
-class BaldStrategyHandler(GenericStrategyHandler):
+class BALDStrategyHandler(GenericStrategyHandler):
     def __init__(self) -> None:
-        super(BaldStrategyHandler, self).__init__()
+        super(BALDStrategyHandler, self).__init__()
 
     def select_next_indices(
         self,
@@ -654,17 +654,17 @@ class BaldStrategyHandler(GenericStrategyHandler):
     ) -> NDArray[np.int_]:
         """
         Select new examples to be labeled by the expert.  This choses the unlabeled
-        examples based upon the BALD criterion.  (See also BatchBaldStrategyHandler.)
+        examples based upon the BALD criterion.  (See also BatchBALDStrategyHandler.)
         """
         print(f"self.predictions.shape = {self.predictions.shape}")
         raise NotImplementedError(
-            "BaldStrategyHandler::select_next_indices is not yet implemented."
+            "BALDStrategyHandler::select_next_indices is not yet implemented."
         )
 
 
-class BatchBaldStrategyHandler(GenericStrategyHandler):
+class BatchBALDStrategyHandler(GenericStrategyHandler):
     def __init__(self) -> None:
-        super(BatchBaldStrategyHandler, self).__init__()
+        super(BatchBALDStrategyHandler, self).__init__()
 
     def select_next_indices(
         self,
@@ -673,7 +673,7 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
     ) -> NDArray[np.int_]:
         """
         Select new examples to be labeled by the expert.  This chooses the unlabeled
-        examples based upon the Batch-BALD criterion.  (See also BaldStrategyHandler.)
+        examples based upon the BatchBALD criterion.  (See also BALDStrategyHandler.)
         """
         if validation_indices is None:
             validation_indices = np.array((), dtype=np.int64)
@@ -714,3 +714,8 @@ class BatchBaldStrategyHandler(GenericStrategyHandler):
                 dtype=torch.double,
             )
         return available_indices[candidates.indices]
+
+
+# Support legacy names for now
+BaldStrategyHandler = BALDStrategyHandler
+BatchBaldStrategyHandler = BatchBALDStrategyHandler
