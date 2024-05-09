@@ -31,7 +31,7 @@ class ComputeCertainty:
     negative_entropy: str = "negative_entropy"
     batchbald: str = "batchbald"
     all_certainty_types: List[str]
-    all_certainty_types = ["confidence", "margin", "negative_entropy", "batchbald"]
+    all_certainty_types = [confidence, margin, negative_entropy, batchbald]
 
     def __init__(self, certainty_type, percentiles, cutoffs) -> None:
         """

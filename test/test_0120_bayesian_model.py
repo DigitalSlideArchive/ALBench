@@ -143,7 +143,9 @@ def test_0120_bayesian_model() -> None:
     name: str
     my_strategy_handler: alb.strategy.AbstractStrategyHandler
     for name, my_strategy_handler in (
-        ("BatchBALD", alb.strategy.BatchBaldStrategyHandler()),
+        # ("BatchBALD", alb.strategy.BatchBALDStrategyHandler()),
+        # Deliberately use legacy name, to test that it is still supported.
+        ("BatchBald", alb.strategy.BatchBaldStrategyHandler()),
     ):
         my_strategy_handler.set_dataset_handler(my_dataset_handler)
         my_strategy_handler.set_model_handler(my_model_handler)
