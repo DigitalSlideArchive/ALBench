@@ -122,7 +122,7 @@ class ComputeCertainty:
         # When certainty is defined by confidence, use the largest prediction
         # probability.
         if "confidence" in self.certainty_type:
-            scores["confidence"] = partitioned[..., -1]
+            scores["confidence"] = partitioned[..., -1].copy()
 
         # When certainty is defined by margin, use the difference between the largest
         # and second largest prediction probabilities.
@@ -154,9 +154,10 @@ class ComputeCertainty:
             # the remaining will be rated as more certain via a constant.
             batch_size: int = min(self.batchbald_batch_size, predictions.shape[0])
             num_samples: int = self.batchbald_num_samples
-            epsilon = 7.8886090522101180541e-31
-            predictions[predictions < epsilon] = epsilon
-            log_predictions = np.log(predictions)
+            epsilon = 7.8886090522101180541e-31  # 2**-100
+            predictions_copy = predictions.copy()
+            predictions_copy[predictions_copy < epsilon] = epsilon
+            log_predictions = np.log(predictions_copy)
             with torch.no_grad():
                 bald: bbald.batchbald.CandidateBatch
                 bald = bbald.batchbald.get_batchbald_batch(
@@ -165,13 +166,21 @@ class ComputeCertainty:
                     num_samples,
                     dtype=torch.double,
                 )
-
-            # By default, set all scores to very_certain
-            very_certain = max(bald.scores) + 1.0
-            scores["batchbald"] = np.full(predictions.shape[:-1], very_certain)
-            # Override the default for those scores that we have computed
             bald_indices = np.array(bald.indices)
             bald_scores = np.array(bald.scores)
+            # For samples that are not ranked by batchbald, we will fallback to using
+            # (possibly shifted) confidence scores.  Predictions will be averaged over
+            # Bayesian samples and then the most likely mean prediction score will be
+            # the confidence.  These confidence scores are shifted, if needed, to ensure
+            # that the confidences scores are interpretted as more certain than the
+            # batchbald scores.  Because the user labels the most uncertain (lowest)
+            # scores first, this puts the batchbald selections first, followed by the
+            # remaining selections once the batchbald selections are exhausted.
+            max_bald_scores = max(0.0, max(bald_scores))
+            scores["batchbald"] = np.full(predictions.shape[:-1], max_bald_scores)
+            scores["batchbald"] += np.max(
+                np.mean(predictions, axis=-2, keepdims=True), axis=-1
+            )
             scores["batchbald"][bald_indices, :] = bald_scores[:, np.newaxis]
 
         # Report scores, percentile scores, and cutoff percentiles
