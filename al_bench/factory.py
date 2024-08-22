@@ -78,15 +78,19 @@ class ComputeCertainty:
         cutoffs = {key: [float(c) for c in value] for key, value in cutoffs.items()}
         self.cutoffs: Mapping[str, Sequence[float]] = cutoffs
 
-        # Defaults.  See
+        # Defaults.  These can be overridden with setter methods.
         self.batchbald_batch_size: int = 100
         self.batchbald_num_samples: int = 10000
+        self.batchbald_excluded_samples: NDArray[np.int_] = np.array([], dtype=np.int_)
 
     def set_batchbald_batch_size(self, batchbald_batch_size: int) -> None:
         self.batchbald_batch_size = batchbald_batch_size
 
     def set_batchbald_num_samples(self, batchbald_num_samples: int) -> None:
         self.batchbald_num_samples = batchbald_num_samples
+
+    def set_batchbald_excluded_samples(self, exc_samples: NDArray[np.int_]) -> None:
+        self.batchbald_excluded_samples = exc_samples
 
     def from_numpy_array(
         self, predictions: NDArray[np.float_]
@@ -146,18 +150,31 @@ class ComputeCertainty:
                     f" are {predictions.shape}."
                 )
 
+            # Exclude samples we've been asked to exclude
+            included_samples: NDArray[np.int_] = np.setdiff1d(
+                np.arange(len(predictions)),
+                self.batchbald_excluded_samples,
+                assume_unique=False,
+            )
+            included_predictions: NDArray[np.float_] = predictions[
+                included_samples, ...
+            ]
+
+            # Convert prediction values to logarithms
+            epsilon: float = 7.8886090522101180541e-31  # 2**-100
+            included_predictions[included_predictions < epsilon] = epsilon
+            log_predictions: NDArray[np.float_] = np.log(included_predictions)
+
+            # Indicate how many predictions we want batchbald to rate as uncertain.  All
+            # the remaining will be rated as more certain via a fallback approach.
+            batch_size: int = min(self.batchbald_batch_size, len(log_predictions))
+            num_samples: int = self.batchbald_num_samples
+
+            # Do the BatchBALD calculation
             import torch
             import batchbald_redux as bbald
             import batchbald_redux.batchbald
 
-            # Indicate how many predictions we want batchbald to rate as uncertain.  All
-            # the remaining will be rated as more certain via a constant.
-            batch_size: int = min(self.batchbald_batch_size, predictions.shape[0])
-            num_samples: int = self.batchbald_num_samples
-            epsilon = 7.8886090522101180541e-31  # 2**-100
-            predictions_copy = predictions.copy()
-            predictions_copy[predictions_copy < epsilon] = epsilon
-            log_predictions = np.log(predictions_copy)
             with torch.no_grad():
                 bald: bbald.batchbald.CandidateBatch
                 bald = bbald.batchbald.get_batchbald_batch(
@@ -166,8 +183,9 @@ class ComputeCertainty:
                     num_samples,
                     dtype=torch.double,
                 )
-            bald_indices = np.array(bald.indices)
-            bald_scores = np.array(bald.scores)
+            bald_indices: NDArray[np.int_] = np.array(bald.indices)
+            bald_scores: NDArray[np.float_] = np.array(bald.scores)
+
             # For samples that are not ranked by batchbald, we will fallback to using
             # (possibly shifted) confidence scores.  Predictions will be averaged over
             # Bayesian samples and then the most likely mean prediction score will be
@@ -176,12 +194,18 @@ class ComputeCertainty:
             # batchbald scores.  Because the user labels the most uncertain (lowest)
             # scores first, this puts the batchbald selections first, followed by the
             # remaining selections once the batchbald selections are exhausted.
-            max_bald_scores = max(0.0, max(bald_scores))
-            scores["batchbald"] = np.full(predictions.shape[:-1], max_bald_scores)
+            max_bald_scores: float = max(0.0, max(bald_scores))
+            scores["batchbald"]: NDArray[np.float_] = np.full(
+                predictions.shape[:-1], max_bald_scores
+            )
             scores["batchbald"] += np.max(
                 np.mean(predictions, axis=-2, keepdims=True), axis=-1
             )
-            scores["batchbald"][bald_indices, :] = bald_scores[:, np.newaxis]
+
+            # Overwrite the fallback scores for the samples that are selected by batchbald.
+            scores["batchbald"][included_samples[bald_indices], :] = bald_scores[
+                :, np.newaxis
+            ]
 
         # Report scores, percentile scores, and cutoff percentiles
         response: Mapping[str, Mapping[str, Any]]
