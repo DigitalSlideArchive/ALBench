@@ -68,6 +68,7 @@ def test_0050_factory() -> None:
         percentiles=percentiles,
         cutoffs=cutoffs,
     )
+    compute_certainty.set_batchbald_excluded_samples(np.array((0,)))
     certainties: Mapping[str, Mapping[str, Any]]
     certainties = compute_certainty.from_numpy_array(predictions)
 
