@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union, cast
 
 import numpy as np
 import scipy.stats
@@ -33,7 +33,12 @@ class ComputeCertainty:
     all_certainty_types: List[str]
     all_certainty_types = [confidence, margin, negative_entropy, batchbald]
 
-    def __init__(self, certainty_type, percentiles, cutoffs) -> None:
+    def __init__(
+        self,
+        certainty_type: Optional[Union[str, Sequence[str]]],
+        percentiles: Optional[Sequence[float]],
+        cutoffs: Optional[Union[Sequence[float], Mapping[str, Sequence[float]]]],
+    ) -> None:
         """
         certainty_type can be "confidence", "margin", "negative_entropy", "batchbald" or
         a list (or tuple) of one or more of these.  A value of None means all certainty
@@ -72,7 +77,10 @@ class ComputeCertainty:
         if len(certainty_type) == 1 and isinstance(cutoffs, (list, tuple)):
             cutoffs = {certainty_type[0]: cutoffs}
         # If we have no information for a certainty type, default to no cutoffs.
-        cutoffs = {**{k: [] for k in certainty_type}, **cutoffs}
+        cutoffs = {
+            **{k: [] for k in certainty_type},
+            **cast(Mapping[str, Sequence[float]], cutoffs),
+        }
         if not all(cut in certainty_type for cut in cutoffs.keys()):
             raise ValueError(f"Something wrong with {cutoffs = }")
         cutoffs = {key: [float(c) for c in value] for key, value in cutoffs.items()}
@@ -120,6 +128,7 @@ class ComputeCertainty:
         # Normalize rows to sum to 1.0
         predictions = predictions / np.sum(predictions, axis=-1, keepdims=True)
         # Find the two largest values within each row.
+        partitioned: NDArray[np.float_]
         partitioned = np.partition(predictions, -2, axis=-1)[..., -2:]
 
         scores: Dict[str, NDArray[np.float_]] = dict()
