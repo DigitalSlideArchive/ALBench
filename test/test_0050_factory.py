@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import torch
@@ -35,15 +35,15 @@ def test_0050_factory() -> None:
     torch.manual_seed(20240102)
 
     # Gamma distribution has mean = alpha/beta and variance = alpha/beta^2.
-    num_samples = 24
-    num_repeats = 100
-    num_classes = 3
-    pseudocount_total_mean = 5.0
-    pseudocount_total_variance = 4.0
-    pseudocount_mean = pseudocount_total_mean / num_classes
-    pseudocount_variance = pseudocount_total_variance / num_classes
-    beta_hyperprior = pseudocount_mean / pseudocount_variance
-    alpha_hyperprior = pseudocount_mean * beta_hyperprior
+    num_samples: int = 24
+    num_repeats: int = 100
+    num_classes: int = 3
+    pseudocount_total_mean: float = 5.0
+    pseudocount_total_variance: float = 4.0
+    pseudocount_mean: float = pseudocount_total_mean / num_classes
+    pseudocount_variance: float = pseudocount_total_variance / num_classes
+    beta_hyperprior: float = pseudocount_mean / pseudocount_variance
+    alpha_hyperprior: float = pseudocount_mean * beta_hyperprior
     sample_pseudocounts: NDArrayFloat
     predictions: NDArrayFloat
     sample_pseudocounts, predictions = create_dirichlet_predictions(
@@ -57,7 +57,7 @@ def test_0050_factory() -> None:
 
     percentiles: NDArrayFloat = np.fromiter(range(0, 101, 10), dtype=float)
     compute_certainty: alb.factory.ComputeCertainty
-    cutoffs = (
+    cutoffs: Mapping[str, Sequence[float]] = (
         best_cutoffs
         if len(best_cutoffs)
         else {t: [] for t in alb.factory.ComputeCertainty.all_certainty_types}
@@ -68,6 +68,7 @@ def test_0050_factory() -> None:
         percentiles=percentiles,
         cutoffs=cutoffs,
     )
+    compute_certainty.set_batchbald_excluded_samples(np.array((0,)))
     certainties: Mapping[str, Mapping[str, Any]]
     certainties = compute_certainty.from_numpy_array(predictions)
 
@@ -77,7 +78,7 @@ def test_0050_factory() -> None:
     total_pseudocounts: NDArrayFloat = np.sum(sample_pseudocounts, axis=-1)
     batchbald_index: NDArrayInt = np.argsort(np.argsort(batchbald_scores))
     pseudocounts_index: NDArrayInt = np.argsort(np.argsort(total_pseudocounts))
-    correlation: float = np.corrcoef(batchbald_index, pseudocounts_index)[0, 1]
+    correlation: float = float(np.corrcoef(batchbald_index, pseudocounts_index)[0, 1])
 
     if True:
         print(f"{num_samples = }")
@@ -95,7 +96,7 @@ def test_0050_factory() -> None:
         # enough.  (Note that the threshold for large enough reasonably depends upon the
         # hyperpriors.)
         del certainties["batchbald"], expected_certainties["batchbald"]
-        passed = (
+        passed: bool = (
             deeply_allclose(certainties, expected_certainties) and correlation > 0.75
         )
         print(f"test_0050_factory() {'passed' if passed else 'failed'}")
