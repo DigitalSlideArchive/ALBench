@@ -712,8 +712,16 @@ class _PyTorch(_AbstractPlatform):
             return self.train_features[index, :], self.train_labels[index]
 
     def __init__(self) -> None:
+        import torch
+
         # _AbstractPlatform.__init__(self)
-        pass
+        self.device: torch.device = torch.device(
+            (
+                "cuda"
+                if torch.cuda.is_available() and torch.cuda.device_count() > 0
+                else "cpu"
+            )
+        )
 
     def set_model(self, model) -> None:
         """
@@ -727,6 +735,7 @@ class _PyTorch(_AbstractPlatform):
                 "The parameter of _PyTorch.set_model must be of type"
                 " torch.nn.modules.module.Module"
             )
+        model.to(self.device)
         self.model = model
         self.model_state_dict = copy.deepcopy(model.state_dict())
 
@@ -873,6 +882,8 @@ class AbstractModelHandler(_AbstractCommon, _AbstractStatistics, _AbstractPlatfo
 
 class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler):
     def __init__(self) -> None:
+        import torch
+
         _Common.__init__(self)
         _NonBayesian.__init__(self)
         _PyTorch.__init__(self)
@@ -883,10 +894,17 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
             import torch
 
             y_pred = torch.clamp(y_pred, 1e-9, 1 - 1e-9)
-            y_true = torch.eye(y_pred.shape[-1])[y_true]
+            y_true = torch.eye(y_pred.shape[-1]).to(self.device)[y_true]
             return -(y_true * torch.log(y_pred)).sum(dim=1).mean()
 
         self.criterion: Any = categorical_cross_entropy
+        self.device: torch.device = torch.device(
+            (
+                "cuda"
+                if torch.cuda.is_available() and torch.cuda.device_count() > 0
+                else "cpu"
+            )
+        )
 
     # !!! Implement any methods that cannot be implemented in the super classes
 
@@ -956,6 +974,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
             for i, data in enumerate(my_train_data_loader):
                 self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
@@ -992,6 +1012,8 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
                     self.model.eval()  # Tell torch that we will be doing predictions
                     for data in my_validation_data_loader:
                         inputs, labels = data
+                        inputs = inputs.to(self.device)
+                        labels = labels.to(self.device)
                         # Use non_blocking=True in the self.model call!!!
                         outputs = self.model(inputs)
                         loss = self.criterion(outputs, labels)
@@ -1026,7 +1048,7 @@ class PyTorchModelHandler(_Common, _NonBayesian, _PyTorch, AbstractModelHandler)
         with torch.no_grad():
             self.model.eval()  # Tell torch that we will be doing predictions
             # Use non_blocking=True in the self.model call!!!
-            predictions_raw = self.model(torch.from_numpy(features))
+            predictions_raw = self.model(torch.from_numpy(features).to(self.device))
             predictions: NDArray[np.float_] = predictions_raw.detach().cpu().numpy()
         if log_it:
             self.logger.on_predict_end({"outputs": predictions})
@@ -1045,6 +1067,13 @@ class SamplingBayesianPyTorchModelHandler(
         # AbstractModelHandler.__init__(self)
         # !!! Initialize any members that cannot be initialized in the super classes
         self.criterion = torch.nn.functional.nll_loss
+        self.device: torch.device = torch.device(
+            (
+                "cuda"
+                if torch.cuda.is_available() and torch.cuda.device_count() > 0
+                else "cpu"
+            )
+        )
 
     # !!! Implement any methods that cannot be implemented in the super classes
 
@@ -1111,6 +1140,8 @@ class SamplingBayesianPyTorchModelHandler(
             for i, data in enumerate(my_train_data_loader):
                 self.logger.on_train_batch_begin(i, logs=dict())
                 inputs, labels = data
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
                 # zero the parameter gradients
                 optimizer.zero_grad()
 
@@ -1149,6 +1180,8 @@ class SamplingBayesianPyTorchModelHandler(
                     self.model.eval()  # Tell torch that we will be doing predictions
                     for data in my_validation_data_loader:
                         inputs, labels = data
+                        inputs = inputs.to(self.device)
+                        labels = labels.to(self.device)
                         # Use non_blocking=True in the self.model call!!!
                         outputs = self.model(inputs, num_validation_samples)
                         # Collapse multiple predictions into single one
@@ -1197,7 +1230,7 @@ class SamplingBayesianPyTorchModelHandler(
             self.model.eval()  # Tell torch that we will be doing predictions
             # Use non_blocking=True in the self.model call!!!
             predictions_raw = self.model(
-                torch.from_numpy(features), num_predict_samples
+                torch.from_numpy(features).to(self.device), num_predict_samples
             )
             predictions: NDArray[np.float_] = predictions_raw.detach().cpu().numpy()
         # If we have just one prediction per sample then squeeze out that predictions
