@@ -705,10 +705,18 @@ class BatchBALDStrategyHandler(GenericStrategyHandler):
             if np.amin(self.predictions) >= 0.0
             else self.predictions
         )
+
+        torch_device: torch.device = torch.device(
+            (
+                "cuda"
+                if torch.cuda.is_available() and torch.cuda.device_count() > 0
+                else "cpu"
+            )
+        )
         with torch.no_grad():
             candidates: bbald.batchbald.CandidateBatch
             candidates = bbald.batchbald.get_batchbald_batch(
-                torch.from_numpy(log_predictions[available_indices]),
+                torch.from_numpy(log_predictions[available_indices]).to(torch_device),
                 number_to_select,
                 num_samples,
                 dtype=torch.double,
